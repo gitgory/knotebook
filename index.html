@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Graph Notes</title>
+    <link rel="stylesheet" href="styles/main.css?v=20">
+</head>
+<body>
+    <div id="app">
+        <!-- Landing Page -->
+        <div id="landing-page">
+            <div id="landing-content">
+                <h1>Graph Notes</h1>
+                <p>A visual note-taking app with graph structure</p>
+                <div id="landing-buttons">
+                    <button id="new-project-btn">New Notebook</button>
+                    <button id="import-project-btn">Import from File</button>
+                </div>
+                <div id="projects-section">
+                    <h2>Your Notebooks</h2>
+                    <div id="projects-list"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- New Project Modal -->
+        <div id="new-project-modal" class="hidden">
+            <div id="new-project-content">
+                <h3>New Notebook</h3>
+                <input type="text" id="new-project-name" placeholder="Notebook name...">
+                <div id="new-project-buttons">
+                    <button id="new-project-create">Create</button>
+                    <button id="new-project-cancel">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Project Menu (context menu for project actions) -->
+        <div id="project-menu" class="hidden">
+            <button class="project-menu-item" data-action="rename">Rename</button>
+            <button class="project-menu-item" data-action="settings">Settings</button>
+            <button class="project-menu-item" data-action="export">Export to File</button>
+            <button class="project-menu-item danger" data-action="delete">Delete</button>
+        </div>
+
+        <!-- Import Options Modal -->
+        <div id="import-modal" class="hidden">
+            <div id="import-content">
+                <h3>Import Notebook</h3>
+                <p id="import-filename"></p>
+                <div id="import-options">
+                    <button id="import-new">Create New Notebook</button>
+                    <button id="import-overwrite">Overwrite Existing...</button>
+                </div>
+                <button id="import-cancel">Cancel</button>
+            </div>
+        </div>
+
+        <!-- Graph View -->
+        <div id="graph-view" class="hidden">
+            <!-- Toolbar -->
+            <div id="toolbar">
+                <button id="home-btn" title="Back to Home">⌂</button>
+                <button id="add-node-btn" title="Add Note">+</button>
+                <button id="save-btn" title="Export to File">⬇</button>
+                <button id="fit-view-btn" title="Fit graph to view">⛶</button>
+                <div id="theme-selector">
+                    <button id="theme-toggle" title="Change theme">◐</button>
+                    <div id="theme-dropdown" class="hidden">
+                        <button class="theme-option active" data-theme="midnight">Midnight</button>
+                        <button class="theme-option" data-theme="obsidian">Obsidian</button>
+                        <button class="theme-option" data-theme="forest">Forest</button>
+                        <button class="theme-option" data-theme="ember">Ember</button>
+                        <button class="theme-option" data-theme="slate">Slate</button>
+                    </div>
+                </div>
+                <button id="help-btn" title="Keyboard shortcuts">?</button>
+                <button id="settings-btn" title="Notebook settings">⚙</button>
+                <div id="text-search">
+                    <input type="text" id="text-search-input" placeholder="Search..." title="Search notes (S)">
+                    <button id="text-search-clear" class="hidden" title="Clear search">×</button>
+                </div>
+                <button id="hashtag-sidebar-btn" title="Tags (H)">#</button>
+                <span id="breadcrumbs">Root</span>
+            </div>
+
+            <!-- Main canvas area -->
+            <div id="canvas-container">
+                <svg id="canvas">
+                    <!-- Edges will be rendered here (below nodes) -->
+                    <g id="edges-layer"></g>
+                    <!-- Nodes will be rendered here -->
+                    <g id="nodes-layer"></g>
+                </svg>
+            </div>
+
+            <!-- Selection action bar (mobile) -->
+            <div id="selection-action-bar" class="hidden">
+                <button id="action-edit" class="action-btn" data-action="edit">Edit</button>
+                <button id="action-connect" class="action-btn" data-action="connect">Connect</button>
+                <button id="action-duplicate" class="action-btn" data-action="duplicate">Duplicate</button>
+                <button id="action-delete" class="action-btn" data-action="delete">Delete</button>
+            </div>
+
+            <!-- Hashtag sidebar -->
+            <div id="hashtag-sidebar" class="hidden">
+                <div id="sidebar-header">
+                    <span>Tags</span>
+                    <button id="sidebar-close" title="Close">×</button>
+                </div>
+                <!-- TODO: Consider removing entirely (use text search) or merging with text search bar -->
+                <div id="hashtag-search">
+                    <input type="text" id="hashtag-input" placeholder="Filter #tag..." title="Filter by tag (/)">
+                    <button id="hashtag-clear" class="hidden" title="Clear filter">×</button>
+                </div>
+                <div id="sidebar-content">
+                    <div id="hashtag-list"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Note editor modal -->
+        <div id="editor-modal" class="hidden">
+            <div id="editor-content">
+                <h3>Edit Note</h3>
+                <input type="text" id="note-title" placeholder="Note title...">
+                <textarea id="note-text" placeholder="Enter your note..."></textarea>
+                <div id="hashtag-display"></div>
+                <div id="completion-control">
+                    <span id="completion-label">Status:</span>
+                    <button class="completion-btn" data-value="">None</button>
+                    <button class="completion-btn" data-value="no">To do</button>
+                    <button class="completion-btn" data-value="yes">Done</button>
+                    <button class="completion-btn" data-value="partial">Partial</button>
+                </div>
+                <div id="editor-buttons">
+                    <button id="editor-enter">Step into note</button>
+                    <button id="editor-save">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings modal -->
+        <div id="settings-modal" class="hidden">
+            <div id="settings-content">
+                <h3>Notebook Settings</h3>
+                <div class="settings-row">
+                    <span class="settings-label">New notes are tasks by default</span>
+                    <button id="settings-task-toggle" class="toggle-btn">Off</button>
+                </div>
+                <div id="settings-buttons">
+                    <button id="settings-close">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Help modal -->
+        <div id="help-modal" class="hidden">
+            <div id="help-content">
+                <!-- Desktop help -->
+                <div id="help-desktop">
+                    <h3>Keyboard Shortcuts</h3>
+                    <div id="help-shortcuts">
+                        <div class="shortcut-section">
+                            <h4>File</h4>
+                            <div class="shortcut-row"><span class="key">Ctrl+S</span> Export to file</div>
+                        </div>
+                        <div class="shortcut-section">
+                            <h4>Notes</h4>
+                            <div class="shortcut-row"><span class="key">N</span> New note</div>
+                            <div class="shortcut-row"><span class="key">Enter</span> Edit selected note</div>
+                            <div class="shortcut-row"><span class="key">C</span> Connect (create edge)</div>
+                            <div class="shortcut-row"><span class="key">Delete</span> Delete selected</div>
+                            <div class="shortcut-row"><span class="key">S</span> Search notes</div>
+                            <div class="shortcut-row"><span class="key">/</span> Filter by tag (in sidebar)</div>
+                            <div class="shortcut-row"><span class="key">H</span> Toggle tag sidebar</div>
+                            <div class="shortcut-row"><span class="key">Escape</span> Save &amp; close editor / clear</div>
+                            <div class="shortcut-row"><span class="key">Shift+Enter</span> New line in note body</div>
+                        </div>
+                        <div class="shortcut-section">
+                            <h4>View</h4>
+                            <div class="shortcut-row"><span class="key">F</span> Fit to view</div>
+                            <div class="shortcut-row"><span class="key">+</span> Zoom in</div>
+                            <div class="shortcut-row"><span class="key">-</span> Zoom out</div>
+                            <div class="shortcut-row"><span class="key">0</span> Reset zoom (100%)</div>
+                            <div class="shortcut-row"><span class="key">Alt+↑</span> Go back</div>
+                            <div class="shortcut-row"><span class="key">?</span> Show this help</div>
+                        </div>
+                        <div class="shortcut-section">
+                            <h4>Mouse</h4>
+                            <div class="shortcut-row"><span class="key">Drag</span> Move note(s)</div>
+                            <div class="shortcut-row"><span class="key">Double-click</span> Edit note</div>
+                            <div class="shortcut-row"><span class="key">Ctrl+Click</span> Multi-select</div>
+                            <div class="shortcut-row"><span class="key">Ctrl+Drag</span> Duplicate note(s)</div>
+                            <div class="shortcut-row"><span class="key">Shift+click</span> Toggle edge</div>
+                            <div class="shortcut-row"><span class="key">Shift+drag</span> Draw edge</div>
+                            <div class="shortcut-row"><span class="key">Click [n]</span> Enter note</div>
+                            <div class="shortcut-row"><span class="key">Scroll</span> Zoom</div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Mobile help -->
+                <div id="help-mobile">
+                    <h3>Touch Controls</h3>
+                    <div id="help-shortcuts">
+                        <div class="shortcut-section">
+                            <h4>Notes</h4>
+                            <div class="shortcut-row"><span class="key">Tap</span> Select note</div>
+                            <div class="shortcut-row"><span class="key">Double-tap</span> Edit note</div>
+                            <div class="shortcut-row"><span class="key">Long-press</span> Multi-select toggle</div>
+                            <div class="shortcut-row"><span class="key">Tap selected</span> Show actions</div>
+                            <div class="shortcut-row"><span class="key">Touch drag</span> Move note(s)</div>
+                            <div class="shortcut-row"><span class="key">Tap edge</span> Select edge</div>
+                        </div>
+                        <div class="shortcut-section">
+                            <h4>Canvas</h4>
+                            <div class="shortcut-row"><span class="key">Touch drag</span> Pan canvas</div>
+                            <div class="shortcut-row"><span class="key">Pinch</span> Zoom in/out</div>
+                            <div class="shortcut-row"><span class="key">Tap empty</span> Deselect / cancel</div>
+                        </div>
+                        <div class="shortcut-section">
+                            <h4>Toolbar</h4>
+                            <div class="shortcut-row"><span class="key">+</span> New note</div>
+                            <div class="shortcut-row"><span class="key">⬇</span> Export to file</div>
+                            <div class="shortcut-row"><span class="key">⛶</span> Fit to view</div>
+                            <div class="shortcut-row"><span class="key">#</span> Tag sidebar</div>
+                        </div>
+                    </div>
+                </div>
+                <button id="help-close">Close</button>
+            </div>
+        </div>
+
+        <!-- Hashtag autocomplete dropdown -->
+        <div id="hashtag-autocomplete" class="hidden">
+            <div id="hashtag-autocomplete-list"></div>
+        </div>
+    </div>
+
+    <script src="scripts/app.js?v=29"></script>
+</body>
+</html>

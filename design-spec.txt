@@ -1,0 +1,338 @@
+================================================================================
+GRAPH NOTES - DESIGN SPECIFICATION
+================================================================================
+Created: 2026-01-21
+Updated: 2026-01-25
+Status: Phase 8 (Tier 1/2 features in progress)
+
+================================================================================
+PROJECT OVERVIEW
+================================================================================
+
+A browser-based note-taking application where notes form a cyclic graph
+structure. Notes are nodes, relationships are edges. Notes can contain
+nested sub-graphs of other notes, creating a hierarchical/fractal structure.
+
+================================================================================
+KEY DECISIONS
+================================================================================
+
+1. VISUALIZATION
+   - Visual graph canvas interface using SVG
+   - Notes displayed as rounded rectangles (220x60 px)
+   - Relationships displayed as lines (1px thickness)
+   - Point-and-click interaction for manipulating nodes and edges
+   - Drag-and-drop repositioning of nodes
+   - Infinite canvas with pan (drag empty space) and zoom (scroll wheel)
+
+2. NOTE CONTENT
+   - Title field (displayed on node)
+   - Basic text content (no rich formatting)
+   - User-generated hashtags (e.g., #idea, #project), sorted alphabetically
+   - Completion status (opt-in): null | 'no' | 'yes' | 'partial'
+
+3. EDGES
+   - Simple, undirected connections
+   - No relationship types or labels
+   - No directionality (A-B is same as B-A)
+
+4. DATA STORAGE
+   - Projects stored in browser localStorage (works on mobile)
+   - Auto-save: debounced, 1-2 seconds after last change
+   - File export uses monolithic JSON format for portability
+   - Each note contains:
+     * ID, title, content
+     * Hashtags
+     * Canvas position (x, y)
+     * Child notes and child edges (for nesting)
+     * Creation/modification timestamps
+
+5. NESTING STRUCTURE
+   - Notes can contain their own sub-graph (canvas within a canvas)
+   - Nesting is unlimited in depth
+   - Edges only connect sibling notes (same parent)
+   - No cross-branch connections ("cousins" cannot connect)
+   - Visual indicator: stacked rectangles behind node (click to enter)
+     * 1 offset rect for 1-2 children, 2 offset rects for 3+ children
+   - Deletion behavior:
+     * Deleting a node promotes its children to the current level
+     * Child positions are adjusted to appear near the deleted parent
+     * Edges between promoted children are preserved
+     * Edges connected to the deleted node are removed
+
+6. USER INTERFACE
+   - Landing page with New Project / Load Project options
+   - Compact toolbar with icon buttons:
+     * ⌂ Home (return to landing page)
+     * + Add Note (appears at center of viewport with slight random offset)
+     * ⬇ Export to file
+     * ⛶ Fit to View
+     * ◐ Theme selector (dropdown)
+     * ? Keyboard shortcuts help
+     * [search field] Search notes by title/content
+     * # Hashtag sidebar toggle
+     * [search field] Filter by hashtag(s)
+   - Breadcrumb navigation for nested notes
+   - Node visual indicators:
+     * Dog-ear fold (top-left): note has body text beyond hashtags
+     * Completion icon (top-right): clickable status (To do / Done / Partial)
+     * Stacked rectangles (behind node): note has children (clickable to enter)
+
+7. THEMING
+   - 5 dark color themes: Midnight, Obsidian, Forest, Ember, Slate
+   - Theme selection persists in localStorage
+   - CSS custom properties for easy theming
+
+8. HASHTAG SEARCH/FILTER
+   - Toolbar input field, always visible
+   - Type one or more hashtags (e.g., #idea #project)
+   - OR logic: shows notes matching ANY entered hashtag
+   - Non-matching nodes and their edges are hidden
+   - Searches current navigation level only
+   - Clear filter: X button in field or clear text
+   - Clicking hashtag in editor populates search field
+   - Keyboard shortcut: / to focus search field
+   - Visual feedback: accent border on input when filter active
+
+9. HASHTAG SIDEBAR
+   - Right-side panel, toggled via # button or H key
+   - Shows all hashtags at current level with counts
+   - Click hashtag to filter by it
+   - Color picker for each hashtag (12-color preset palette)
+   - Hashtags displayed as colored pills
+   - Colors saved per-project in JSON file
+
+10. PROJECT STORAGE (localStorage + File Export)
+    - Projects stored in browser localStorage (works on mobile)
+    - Auto-save: debounced, 1-2 seconds after last change
+    - Landing page shows project list:
+      * Each project shows name and note count
+      * ⋮ menu button for actions (rename, delete, export)
+      * "New Project" button prompts for name
+      * "Import" button to load from file
+    - Import behavior: prompt to create new project or overwrite existing
+    - Delete always requires confirmation
+    - Toolbar ⬇ button repurposed as "Export to file"
+    - File export uses existing JSON format for portability
+
+11. TEXT SEARCH FILTER
+    - Toolbar "Search..." input, always visible alongside hashtag filter
+    - Matches against note title and content (case-insensitive)
+    - AND logic with hashtag filter (both must match if both active)
+    - Current level only (same scope as hashtag filter)
+    - Keyboard shortcut: S to focus search field
+    - Visual feedback: highlight border when filter active
+    - Clears on navigation, project switch, and going home
+
+12. COMPLETION STATUS
+    - Optional per-note status field for task management
+    - States: null (not set) → 'no' (To do) → 'yes' (Done) → 'partial' (Partial)
+    - Editor: row of status buttons (None / To do / Done / Partial)
+    - Node display: clickable icon in top-right area
+      * 'no': empty gray circle
+      * 'yes': green checkmark
+      * 'partial': orange half-circle
+    - Click indicator on node to cycle states (mouse and touch)
+    - Not set by default — opt-in via editor
+
+================================================================================
+IMPLEMENTATION STATUS
+================================================================================
+
+PHASE 1: CORE CANVAS ............................ [COMPLETE]
+   [x] HTML/CSS/JS project structure
+   [x] SVG-based canvas rendering
+   [x] Draw nodes as rounded rectangles
+   [x] Draw edges as lines between nodes
+   [x] Infinite canvas with pan/zoom
+   [x] Fit to View functionality
+
+PHASE 2: NODE INTERACTION ....................... [COMPLETE]
+   [x] Click to select node
+   [x] Drag to reposition node
+   [x] Double-click to edit node content
+   [x] Delete via keyboard (Delete/Backspace)
+   [x] Button to create new node
+
+PHASE 3: EDGE INTERACTION ....................... [COMPLETE]
+   [x] Shift+click two nodes to create edge
+   [x] Click edge to select
+   [x] Delete edge functionality
+   [x] Visual preview during edge creation
+
+PHASE 4: NOTE EDITOR ............................ [COMPLETE]
+   [x] Title input field
+   [x] Text content textarea
+   [x] Hashtag parsing and display
+   [x] Save button, "Step into note" button
+   [x] Escape or click outside to cancel/close
+
+PHASE 5: FILE SYSTEM ............................ [COMPLETE]
+   [x] JSON schema defined
+   [x] Save to local file (monolithic)
+   [x] Load from local file
+   [x] File picker integration
+
+PHASE 6: NESTING/NAVIGATION ..................... [COMPLETE]
+   [x] Click stacked area or editor button to enter note sub-graph
+   [x] Breadcrumb navigation
+   [x] Create child notes within a note
+   [x] Stacked rectangles indicate children (replaced [n] text indicator)
+
+PHASE 7: POLISH ................................. [COMPLETE]
+   [x] Visual styling and theming (5 themes)
+   [x] Landing page
+   [x] Icon-based toolbar
+   [x] Keyboard shortcuts (full set with help overlay)
+   [x] Search/filter by hashtag
+
+PHASE 8: TIER 1 FEATURES ....................... [IN PROGRESS]
+   [x] Text search filter (search by title/content)
+   [x] Hashtag alphabetical sort
+   [x] Body text indicator (dog-ear fold)
+   [x] Completion checkbox (tri-state with editor + node interaction)
+   [x] Children indicator redesign (stacked rectangles)
+   [ ] Mobile testing for #3 and #5
+
+================================================================================
+RESOLVED QUESTIONS
+================================================================================
+
+TECHNICAL:
+   - Canvas vs SVG? → SVG (easier interaction handling)
+   - Single file vs multiple files? → Single monolithic JSON file
+   - Browser compatibility? → Chrome/Edge (File System Access API)
+
+USER EXPERIENCE:
+   - Nested content indicator? → Stacked rectangles behind node (click to enter)
+   - Node shape? → Rounded rectangles (220x60 px)
+   - Long note text? → Title shown on node, full content in editor
+   - Canvas size? → Infinite canvas with pan/zoom (0.5x to 5x zoom)
+
+DATA MODEL:
+   - Unique note IDs? → Timestamp + counter: "note-{timestamp}-{n}"
+   - Orphaned edges? → Filtered out during render
+   - Position data? → Stored per-note
+   - Hashtags clickable? → Yes, clicking in editor populates search field
+
+================================================================================
+REMAINING QUESTIONS
+================================================================================
+
+   - Export to other formats (Markdown, plain text)?
+   - Import from other note apps?
+   - Force-directed graph layout option?
+   - Search across all notes and nested content?
+   - Drag nodes into another to make them children?
+
+================================================================================
+FILE STRUCTURE (ACTUAL)
+================================================================================
+
+/project-root
+  index.html              - Main entry point
+  design-spec.txt         - This specification document
+  ROADMAP.txt             - Task tracking and future plans
+  /styles/
+    main.css              - All styles including theme definitions
+  /scripts/
+    app.js                - All application logic (single file)
+
+================================================================================
+JSON SCHEMA
+================================================================================
+
+Project File Structure (used for JSON export/import):
+{
+  "version": 1,
+  "name": "Notebook Name",
+  "created": "2026-01-21T12:00:00Z",
+  "nodes": [ /* array of root-level notes */ ],
+  "edges": [ /* array of [nodeId, nodeId] pairs */ ],
+  "hashtagColors": {              // hashtag → hex color assignments
+    "#hashtag-name": "#3b82f6"
+  },
+  "settings": {                   // per-notebook settings
+    "defaultCompletion": null     // null (no default) | "no" (new notes default to To do)
+  }
+}
+
+Note Structure:
+{
+  "id": "note-1737489600000-1",
+  "title": "Note Title",
+  "content": "Note text content here with #hashtags",
+  "hashtags": ["#hashtags"],      // parsed from content, sorted alphabetically
+  "completion": null,             // null | "no" (To do) | "yes" (Done) | "partial"
+  "position": { "x": 100, "y": 200 },
+  "children": [ /* nested note objects (same structure, recursive) */ ],
+  "childEdges": [ /* edges between children: [[id, id], ...] */ ],
+  "created": "2026-01-21T12:00:00Z",
+  "modified": "2026-01-21T12:00:00Z"
+}
+
+================================================================================
+CONTROLS REFERENCE
+================================================================================
+
+MOUSE:
+  - Click node .............. Select node
+  - Drag node ............... Move node
+  - Double-click node ....... Open editor
+  - Shift+click node ........ Start/complete edge creation
+  - Click stacked area ...... Enter node (view children)
+  - Click completion icon ... Cycle completion state (no → yes → partial → no)
+  - Click edge .............. Select edge
+  - Click empty space ....... Cancel edge creation (if active)
+  - Drag empty space ........ Pan canvas
+  - Scroll wheel ............ Zoom in/out
+
+KEYBOARD:
+  - Ctrl+S .................. Export to file
+  - N ....................... Create new note (at viewport center)
+  - Enter ................... Edit selected node
+  - C ....................... Toggle edge mode (start/cancel edge creation)
+  - Delete/Backspace ........ Delete selected node or edge
+  - Escape .................. Cancel edge creation / clear selection / close modals
+  - F ....................... Fit to view
+  - + / = ................... Zoom in
+  - - ....................... Zoom out
+  - 0 ....................... Reset zoom to 100%
+  - Alt+Up .................. Go back (exit nested view)
+  - ? ....................... Show keyboard shortcuts help
+  - S ....................... Focus text search field
+  - / ....................... Focus hashtag search field
+  - H ....................... Toggle hashtag sidebar
+
+TOOLBAR:
+  - ⌂ ...................... Return to landing page
+  - + ...................... Add new note
+  - ⬇ ...................... Export to file
+  - ⛶ ...................... Fit all nodes to view
+  - ◐ ...................... Change color theme
+  - ? ...................... Show keyboard shortcuts
+  - [search field] ......... Search notes by title/content
+  - # ...................... Toggle hashtag sidebar
+  - [search field] ......... Filter by hashtag(s)
+
+MOBILE (TOUCH):
+  - Tap node ............... Select node
+  - Double-tap node ........ Open editor
+  - Drag node .............. Move node
+  - Long-press node ........ Show action bar (Edit, Connect, Duplicate, Delete)
+  - Tap edge ............... Select edge and show action bar (Delete)
+  - Tap stacked area ....... Enter node (view children)
+  - Tap completion icon .... Cycle completion state
+  - Tap empty space ........ Clear selection / hide action bar
+  - Drag empty space ....... Pan canvas
+  - Pinch .................. Zoom in/out
+
+EDITOR:
+  - Enter (in title) ....... Save and close editor
+  - Escape ................. Close editor (deletes empty notes)
+  - Click outside .......... Close editor (deletes empty notes)
+  - Save button ............ Save and close editor
+  - Step into note ......... Enter nested view (gray if empty, green if has children)
+  - Status buttons ......... Set completion: None / To do / Done / Partial
+
+================================================================================

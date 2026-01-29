@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(sudo iptables:*)",
+      "Bash(systemctl status:*)",
+      "Bash(where:*)",
+      "Bash(ipconfig:*)",
+      "Bash(findstr:*)",
+      "Bash(python generate_notebook.py:*)",
+      "Bash(find:*)"
+    ]
+  }
+}

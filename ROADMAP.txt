@@ -1,0 +1,196 @@
+================================================================================
+GRAPH NOTES - ROADMAP
+================================================================================
+Last updated: 2026-01-27
+
+================================================================================
+COMPLETED
+================================================================================
+
+[x] Phase 1: Core Canvas
+[x] Phase 2: Node Interaction
+[x] Phase 3: Edge Interaction
+[x] Phase 4: Note Editor
+[x] Phase 5: File System
+[x] Phase 6: Nesting/Navigation
+[x] Landing page
+[x] Canvas navigation
+[x] Color themes
+[x] Toolbar refinements
+[x] Visual polish
+[x] Search/filter by hashtag
+[x] Hashtag sidebar
+[x] localStorage + File Export/Import
+
+[x] Bug fixes (2026-01-23)
+    - Cancel new note now deletes empty nodes
+    - Edge hitbox increased for easier selection
+    - Enter key in title field saves and closes editor
+    - beforeunload warning for pending saves
+
+[x] UI improvements (2026-01-23)
+    - Clickable [n] indicator to enter nested notes
+    - Editor: "Step into note" button (green if has children, gray if empty)
+    - Editor: Removed Cancel/Delete buttons, use Escape or click outside
+    - Editor: Save button moved to right side
+    - Removed Shift+double-click (redundant with new entry methods)
+
+[x] Mobile selection action bar (2026-01-24)
+    - Floating action bar at bottom of screen
+    - Long-press node to reveal (Edit, Connect, Delete buttons)
+    - Tap edge to select and show action bar (Delete button)
+    - Visual feedback: selected edges now highlighted
+    - Fixed mobile sidebar positioning (first hashtag was cut off)
+
+See SESSION_NOTES.md for more recent changes.
+
+================================================================================
+RECENTLY COMPLETED (2026-01-27)
+================================================================================
+
+[x] Per-notebook settings with default completion mode (2026-01-27)
+    - Settings modal accessible from toolbar gear icon and notebook context menu
+    - "New notes are tasks by default" toggle (Off = None, On = To do)
+    - Settings persisted in localStorage and JSON export/import
+    - Old imports without settings key default to non-task mode
+
+[x] Auto-save editor with Cancel button (2026-01-27)
+    - Editor now saves on every close action (ESC, Enter, click outside, hashtag click, step-into)
+    - Cancel button (red) reverts all changes to pre-open state
+    - Shift+Enter inserts newline in body; plain Enter saves and closes
+    - Text selection drag out of editor no longer accidentally closes it
+    - Empty nodes still auto-deleted on both save and cancel
+
+[x] Completed notes visual styling (2026-01-27)
+    - Notes marked "Done" render with grayscale + 50% brightness
+    - Uses CSS filter (grayscale(1) brightness(0.5)) to keep nodes opaque
+    - Node stays fully interactive (clickable, draggable, selectable)
+
+[x] Terminology update (2026-01-27)
+    - "Project" → "Notebook" in all user-facing text
+    - "Hashtag" → "Tag" in all user-facing text
+    - Code identifiers unchanged (variable names, CSS classes, HTML IDs)
+
+[x] Text search filter (#1)
+    - Toolbar "Search..." input filters nodes by title and content
+    - Case-insensitive, AND logic with hashtag filter
+    - S keyboard shortcut to focus, Escape to clear
+    - Clears on navigation, project switch, and going home
+
+[x] Hashtag alphabetical sort (#2)
+    - parseHashtags() now sorts output alphabetically (case-insensitive)
+    - Consistent across node pills, editor display, and filter parsing
+    - Sidebar was already sorted independently
+
+[x] Body text indicator (#3) — needs mobile testing
+    - Dog-ear fold in top-left corner of node when content has text beyond hashtags
+    - SVG path (18×18px) that follows the node's rounded corner
+    - Accent color at 40% opacity
+
+[x] Completion checkbox (#5) — needs mobile testing
+    - Tri-state: To do (○) → Done (✓ green) → Partial (◐ orange) → To do
+    - Opt-in via editor status buttons (None / To do / Done / Partial)
+    - SVG icons (16px) in top-right area, hit target r=12
+    - Clickable on node to cycle states (mouse and touch)
+    - completion field added to node data model (null when not set)
+
+[x] Children indicator redesign (part of #3/#5 work)
+    - Replaced [n] text indicator with stacked rectangles behind the node
+    - 1 offset rect for 1-2 children, 2 offset rects for 3+ children
+    - Click stacked area to enter node (same behavior as old [n])
+
+================================================================================
+IN PROGRESS
+================================================================================
+
+(none)
+
+================================================================================
+UP NEXT
+================================================================================
+
+See plan-outline.txt for the full consolidated feature list (Tiers 1-4).
+
+================================================================================
+DECISIONS LOG
+================================================================================
+
+2026-01-27: Per-notebook settings
+    - Settings stored as `settings` object in project data (alongside nodes, edges, hashtagColors)
+    - First setting: `defaultCompletion` (null or 'no')
+    - Accessible from both toolbar (in-memory) and context menu (direct localStorage read/write)
+    - Completion control always visible in editor regardless of mode; only the default changes
+    - Backwards compatible: missing settings key defaults to { defaultCompletion: null }
+
+2026-01-27: Auto-save editor behavior
+    - Default close action: save (was cancel)
+    - Rationale: notes are saved more often than discarded; reduces friction
+    - Cancel = explicit revert via snapshot, not just "close without saving"
+    - Enter in textarea saves (Shift+Enter for newline) — matches chat-app patterns
+    - Click-outside uses mousedown+click guard to prevent accidental close during text selection drag
+
+2026-01-21: File storage → Monolithic JSON
+    - Considered individual files per note
+    - Chose monolithic for simplicity, atomic saves, and easy sharing
+
+2026-01-22: Hashtag search/filter design
+    - UI: Toolbar input (always visible) vs floating panel vs click-only
+    - Chose toolbar input for discoverability and multi-hashtag support
+    - Behavior: Hide non-matches vs dim vs highlight-only
+    - Chose hide for cleaner focus on relevant notes
+    - Scope: Current level only vs descendants vs entire project
+    - Chose current level for simplicity, can expand later
+    - Logic: OR (any match) vs AND (all must match)
+    - Chose OR for broader, more intuitive filtering
+
+2026-01-22: Project storage redesign
+    - Problem: File System Access API doesn't work on mobile
+    - Solution: localStorage as primary storage, file export for portability
+    - Auto-save: Debounced (1-2 sec) vs immediate vs periodic
+    - Chose debounced for balance of responsiveness and performance
+    - Project naming: Prompt on creation vs auto-name
+    - Chose prompt for intentional naming
+    - Import: Create new vs prompt for action
+    - Chose prompt to give user control over overwrites
+
+2026-01-23: Deletion behavior for nodes with children
+    - Cascade delete vs block deletion vs promote children
+    - Chose promote: children move to current level, preserving content
+    - Edges between promoted children preserved, edges to deleted node removed
+
+2026-01-25: Text search filter design (#1)
+    - Separate input vs combined with hashtag filter
+    - Chose separate: clearer purpose, both visible simultaneously
+    - Filter logic: AND between text search and hashtag filter
+    - Scope: same as hashtag filter (current level only)
+    - Matching: case-insensitive against node.title and node.content
+
+2026-01-25: Body text indicator design (#3)
+    - Options considered:
+      (a) Small dot in top-right corner → overlapped with completion indicator
+      (b) Small dot in bottom-left corner → hidden behind hashtag pills
+      (c) Hamburger menu icon (≡) after title text → looks like a clickable button
+      (d) Dog-ear triangle in top-left corner ← CHOSEN
+    - Chose dog-ear: universal "document has content" metaphor, subtle,
+      fits in unused corner, no overlap with other indicators
+
+2026-01-25: Completion checkbox design (#5)
+    - State cycle: null (not set) → no → yes → partial → no
+    - Activation: opt-in via editor (not always visible on every node)
+    - Node display: SVG icons in top-right area
+      * 'no': empty gray circle (○)
+      * 'yes': green checkmark (✓)
+      * 'partial': orange half-circle (◐)
+    - Interaction: click indicator on node to cycle, or set via editor buttons
+
+2026-01-25: Children indicator redesign (stacked rectangles)
+    - Options considered:
+      (a) Keep [n] text indicator — functional but text-heavy
+      (b) Different node shape (stacked rectangles) ← CHOSEN
+    - Chose stacked rects: more visually intuitive ("there's stuff underneath"),
+      common UI pattern (file vs folder), frees up bottom-right space,
+      looks cleaner than text-based indicator
+    - Depth: 1 offset rect (1-2 children), 2 offset rects (3+ children)
+    - Offset rects are clickable to enter the node
+
+================================================================================
