@@ -13,15 +13,19 @@ Idea                                    | Group                    | Impact  | E
 ----------------------------------------|--------------------------|---------|---------|-------|------
 Text search filter                      | Search & Filtering       | High    | Low     | Yes   | Toolbar search, case-insensitive, AND with hashtag filter
 Hashtag alphabetical sort               | Search & Filtering       | Low     | Low     | Yes   | parseHashtags() sorts output alphabetically
-Note body indicator                     | UI / UX Polish           | Low-Med | Low     | Yes   | Dog-ear fold in top-left corner
+Note body indicator                     | UI / UX Polish           | Low-Med | Low     | Yes   | Dog-ear fold in top-left corner; mobile tested
 Hashtag auto-complete                   | Search & Filtering       | Med     | Low     | Yes   | Dropdown on # in textarea and filter input
-Completion checkbox                     | Structured Fields        | High    | Low-Med | Yes   | Tri-state: To do / Done / Partial
-Move action bar above note              | UI / UX Polish           | Low-Med | Low     | Part  | Mobile UX; needs mobile testing
+Completion checkbox                     | Structured Fields        | High    | Low-Med | Yes   | Tri-state: To do / Done / Partial; mobile tested
+Move action bar above note              | UI / UX Polish           | Low-Med | Low     | Part  | Floats above node; flip logic broken (clips behind toolbar); doesn't follow dragged nodes (low priority)
 Gray out completed notes                | UI / UX Polish           | High    | Low     | Yes   | Grayscale + brightness filter on Done nodes
 Make completion-status bigger           | UI / UX Polish           | Med     | Low     | Yes   | 50% larger indicators
-Note editor saves by default            | Editor                   | High    | Low     | Yes   | Auto-save on ESC/Enter/click-away; Cancel reverts
+Note editor saves by default            | Editor                   | High    | Low     | Yes   | Auto-save on ESC/Enter/click-away; Cancel reverts; mobile tested
 Accidentally closing note editor        | Editor                   | High    | Low     | Yes   | mousedown+click guard on backdrop
 Force note save on field change         | Editor                   | Low     | Low     | Yes   | Covered by auto-save editor
+Mobile Save button in editor            | Editor                   | High    | Low     | No    | Add explicit Save button for mobile (tap-away unreliable on mobile keyboards)
+Highlight sidebar btn when filtering    | UI / UX Polish           | Med     | Low     | Yes   | Sidebar # button uses accent color when tag filters active
+Highlight breadcrumbs when nested       | UI / UX Polish           | Low     | Low     | Yes   | Breadcrumb text uses accent color when not at Root level
+Add new theme color palettes            | UI / UX Polish           | Med     | Low     | Yes   | Final: 10 themes (Midnight, Slate, Neon, Mint, Ocean, Sky, Obsidian, Aurora, Graphite, Sunset)
 Set default completion per notebook     | Structured Fields        | High    | Low     | Yes   | Per-notebook settings toggle
 Improved tag suggestions                | Search & Filtering       | High    | Low     | No    | If one tag remains, TAB should insert it even if not highlighted
 Cut max zoom in half                    | Navigation               | Med     | Low     | No    | Reduce maximum zoom-in level

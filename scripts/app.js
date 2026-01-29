@@ -287,6 +287,9 @@ function openProject(projectId) {
         textClearBtn.classList.add('hidden');
     }
 
+    // Update sidebar button state
+    updateSidebarButtonState();
+
     // Close sidebar
     const sidebar = document.getElementById('hashtag-sidebar');
     if (sidebar) {
@@ -495,6 +498,16 @@ function getVisibleNodeIds() {
     return state.nodes.filter(nodeMatchesFilter).map(n => n.id);
 }
 
+// Update sidebar button to show active state when filters are applied
+function updateSidebarButtonState() {
+    const sidebarBtn = document.getElementById('hashtag-sidebar-btn');
+    if (state.filterHashtags.length > 0) {
+        sidebarBtn.classList.add('active');
+    } else {
+        sidebarBtn.classList.remove('active');
+    }
+}
+
 // Update filter from input
 function updateFilter(inputValue) {
     const hashtags = parseHashtags(inputValue);
@@ -512,6 +525,7 @@ function updateFilter(inputValue) {
         clearBtn.classList.add('hidden');
     }
 
+    updateSidebarButtonState();
     render();
 }
 
@@ -532,6 +546,7 @@ function clearFilter() {
         document.getElementById('text-search-clear').classList.add('hidden');
     }
 
+    updateSidebarButtonState();
     render();
 }
 
@@ -1151,9 +1166,11 @@ function updateBreadcrumbs() {
     const el = document.getElementById('breadcrumbs');
     if (state.currentPath.length === 0) {
         el.textContent = 'Root';
+        el.classList.remove('active');
     } else {
         const names = state.currentPath.map(p => truncateText(p.title || 'Untitled', 15));
         el.textContent = 'Root > ' + names.join(' > ');
+        el.classList.add('active');
     }
 }
 

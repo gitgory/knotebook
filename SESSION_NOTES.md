@@ -4,6 +4,87 @@ This file tracks work across Claude Code sessions for continuity.
 
 ---
 
+## Session 2026-01-29 - Afternoon
+
+### Summary
+UI polish session focused on visual indicators and theme refinement. Added accent color highlighting to sidebar button when filters active and breadcrumbs when navigating nested notes. Curated and finalized theme collection from 30+ options down to 10 polished themes with evocative names. Updated landing page branding to "knotebook" with two-tone color styling.
+
+### Files Changed
+- `styles/main.css` - Added `#hashtag-sidebar-btn.active` and `#breadcrumbs.active` rules for accent color highlighting; deleted 15+ theme definitions; renamed remaining themes; increased landing page h1 to 4rem; added `.knote` span styling; increased clear button font-size to 18px; reduced theme dropdown font-size to 12px
+- `scripts/app.js` - Added `updateSidebarButtonState()` helper function; updated `updateFilter()`, `clearFilter()`, `openProject()` to call button state updater; modified `updateBreadcrumbs()` to add/remove active class
+- `index.html` - Updated theme dropdown with 10 final themes; split landing page h1 into styled spans; bumped cache versions to CSS v29, JS v31
+- `plan-outline.txt` - Updated feature entries with completion status
+
+### Tasks Completed
+- [x] Highlight sidebar # button with accent color when tag filters active
+- [x] Highlight breadcrumbs with accent color when not at Root level
+- [x] Increased clear button (×) size from 14px to 18px for better mobile usability
+- [x] Added 25 new theme color palettes with 3 accent colors each
+- [x] Deleted 17 themes after testing (kept only best 10)
+- [x] Renamed themes: Teal→deleted, Lavender→Aurora, Gold→Sunset, etc.
+- [x] Sorted theme dropdown by accent color hue for logical grouping
+- [x] Reduced theme dropdown text from 14px to 12px for compactness
+- [x] Changed landing page branding to "knotebook" with two-tone styling
+- [x] Increased landing page heading from 3rem to 4rem
+
+### Decisions Made
+- **Visual indicators for active states**: Sidebar button and breadcrumbs use theme's accent color to signal active state (filtering/navigation), maintaining consistency with existing accent color usage
+- **Theme curation approach**: Started with 25 candidates, iteratively deleted themes based on testing, kept only most distinct and visually appealing options
+- **Theme naming convention**: Mix of literal colors (Midnight, Slate) and evocative names (Aurora, Sunset, Neon, Ocean) for personality
+- **Two-tone branding**: "knote" uses highlight color, "book" uses accent color, creating visual interest and reinforcing dual-purpose (notes + knowledge)
+- **Third accent color reserved**: All new themes include `--accent-3` variable for future use, documented in CSS comment
+
+### Next Steps
+- [ ] Mobile testing: settings modal
+- [ ] Add Save button to note editor (mobile only)
+- [ ] Test new themes on mobile
+- [ ] Pick next feature from Tier 1 remaining items
+
+### Notes
+- Final 10 themes: Midnight (default), Slate, Neon, Mint, Ocean, Sky, Obsidian, Aurora, Graphite, Sunset
+- All themes use consistent structure: 2 dominants, 2 active accents, 1 reserved accent, danger colors
+- Landing page now displays "knotebook" in large text with split coloring
+- Global `/handoff` skill successfully moved to `%USERPROFILE%\.claude\skills\handoff\SKILL.md` for cross-project use
+
+---
+
+## Session 2026-01-28 - Morning
+
+### Summary
+Project infrastructure updates: renamed project folder, set up GitHub repository with GitHub Pages hosting, created Python script for generating table-of-contents file from app.js, and integrated TOC generation into the /handoff skill workflow.
+
+### Files Changed
+- Project folder renamed from `FirstClaude` to `knotebook`
+- New files created:
+  - `scripts/generate_toc.py` - Python script that extracts structure from app.js (sections, functions, line numbers)
+  - `scripts/toc.txt` - Generated table of contents output (~490 lines)
+  - `scripts/generate_toc.bat` - Windows batch file for running the script
+
+### Tasks Completed
+- [x] Renamed project folder to "knotebook"
+- [x] Created GitHub repository and published to GitHub Pages
+- [x] Built Python script to generate hierarchical TOC from app.js
+- [x] Generated initial toc.txt file
+- [x] Integrated TOC generation into /handoff skill
+
+### Decisions Made
+- **GitHub Pages hosting**: Live URL at https://gitgory.github.io/knotebook/
+- **Automated TOC regeneration**: TOC file regenerates automatically each time /handoff skill runs, keeping it in sync with codebase changes
+- **TOC not referenced in CLAUDE.md yet**: Deferred until workflow is more established
+
+### Mobile Testing Completed (2026-01-28)
+- [x] Auto-save editor - tap outside saves, double-tap to edit
+- [x] Sidebar tag filter - input positioning, autocomplete, clear button
+- [x] Autocomplete dropdown - full-width display, touch interaction
+- [x] Clear button (×) increased from 14px to 18px font-size for easier tapping
+
+### Next Steps
+- [ ] Mobile testing: settings modal
+- [ ] Add Save button to note editor (mobile only)
+- [ ] Pick next feature from Tier 1 remaining items
+
+---
+
 ## Session 2026-01-27 - Evening
 
 ### Summary

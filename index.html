@@ -4,14 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Graph Notes</title>
-    <link rel="stylesheet" href="styles/main.css?v=20">
+    <link rel="stylesheet" href="styles/main.css?v=29">
 </head>
 <body>
     <div id="app">
         <!-- Landing Page -->
         <div id="landing-page">
             <div id="landing-content">
-                <h1>Graph Notes</h1>
+                <h1><span class="knote">knote</span>book</h1>
                 <p>A visual note-taking app with graph structure</p>
                 <div id="landing-buttons">
                     <button id="new-project-btn">New Notebook</button>
@@ -69,10 +69,15 @@
                     <button id="theme-toggle" title="Change theme">◐</button>
                     <div id="theme-dropdown" class="hidden">
                         <button class="theme-option active" data-theme="midnight">Midnight</button>
-                        <button class="theme-option" data-theme="obsidian">Obsidian</button>
-                        <button class="theme-option" data-theme="forest">Forest</button>
-                        <button class="theme-option" data-theme="ember">Ember</button>
                         <button class="theme-option" data-theme="slate">Slate</button>
+                        <button class="theme-option" data-theme="neon">Neon</button>
+                        <button class="theme-option" data-theme="mint">Mint</button>
+                        <button class="theme-option" data-theme="ocean">Ocean</button>
+                        <button class="theme-option" data-theme="sky">Sky</button>
+                        <button class="theme-option" data-theme="obsidian">Obsidian</button>
+                        <button class="theme-option" data-theme="aurora">Aurora</button>
+                        <button class="theme-option" data-theme="graphite">Graphite</button>
+                        <button class="theme-option" data-theme="sunset">Sunset</button>
                     </div>
                 </div>
                 <button id="help-btn" title="Keyboard shortcuts">?</button>
@@ -238,6 +243,6 @@
         </div>
     </div>
 
-    <script src="scripts/app.js?v=29"></script>
+    <script src="scripts/app.js?v=31"></script>
 </body>
 </html>
