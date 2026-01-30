@@ -17,6 +17,9 @@ const state = {
     dragging: null,      // Node being dragged
     dragOffsets: {},     // Drag offsets for all selected nodes (for multi-drag)
     duplicating: false,  // True when Ctrl+drag duplicating nodes
+    ctrlHeld: false,     // True when Ctrl key held during mousedown
+    dragStartPos: null,  // Mouse position when mousedown (for drag threshold)
+    dragThresholdMet: false, // True when movement exceeds threshold
     currentPath: [],     // Navigation path (stack of parent nodes)
     nextId: 1,           // ID counter
     fileHandle: null,    // File system handle for saving
@@ -36,6 +39,9 @@ const state = {
 // Node dimensions
 const NODE_WIDTH = 220;
 const NODE_HEIGHT = 60;
+
+// Drag threshold for Ctrl+Drag (prevents accidental duplication on multi-select clicks)
+const DRAG_THRESHOLD = 10; // pixels
 
 // Preset color palette for hashtags (works across all dark themes)
 const HASHTAG_COLORS = [
@@ -2360,95 +2366,38 @@ function initEventListeners() {
                 const alreadySelected = state.selectedNodes.includes(nodeId);
                 const ctrlHeld = e.ctrlKey || e.metaKey;
 
-                if (ctrlHeld && alreadySelected) {
-                    // Ctrl+drag on selected node: duplicate mode
-                    state.duplicating = true;
+                // Store ctrl state and drag start position
+                state.ctrlHeld = ctrlHeld;
+                state.dragStartPos = { x: e.clientX, y: e.clientY };
+                state.dragThresholdMet = false;
 
-                    // Create deep copies of all selected nodes
-                    const canvasPos = screenToCanvas(e.clientX, e.clientY);
-                    const newNodeIds = [];
-                    const idMapping = {}; // Maps original ID to copy ID
-                    state.dragOffsets = {};
-
-                    state.selectedNodes.forEach(id => {
-                        const originalNode = state.nodes.find(n => n.id === id);
-                        if (originalNode) {
-                            const copy = deepCopyNode(originalNode, 0, 0);
-                            state.nodes.push(copy);
-                            newNodeIds.push(copy.id);
-                            idMapping[id] = copy.id;
-
-                            state.dragOffsets[copy.id] = {
-                                x: canvasPos.x - copy.position.x,
-                                y: canvasPos.y - copy.position.y
-                            };
-                        }
-                    });
-
-                    // Copy edges where both endpoints are in the selection
-                    state.edges.forEach(edge => {
-                        const [srcId, dstId] = edge;
-                        if (idMapping[srcId] && idMapping[dstId]) {
-                            state.edges.push([idMapping[srcId], idMapping[dstId]]);
-                        }
-                    });
-
-                    // Select the new copies and start dragging them
-                    state.selectedNodes = newNodeIds;
-                    state.dragging = newNodeIds[0];
-                    updateSelectionVisuals();
-                    render();
-
-                } else if (ctrlHeld && !alreadySelected) {
+                if (ctrlHeld && !alreadySelected) {
                     // Ctrl+click on unselected node: add to selection
                     selectNode(nodeId, true);
-                    // Set up for potential drag
-                    if (state.selectedNodes.includes(nodeId)) {
-                        state.dragging = nodeId;
-                        const canvasPos = screenToCanvas(e.clientX, e.clientY);
-                        state.dragOffsets = {};
-                        state.selectedNodes.forEach(id => {
-                            const n = state.nodes.find(n => n.id === id);
-                            if (n) {
-                                state.dragOffsets[id] = {
-                                    x: canvasPos.x - n.position.x,
-                                    y: canvasPos.y - n.position.y
-                                };
-                            }
-                        });
-                    }
-
+                } else if (ctrlHeld && alreadySelected) {
+                    // Ctrl+click on already-selected: keep selection (will duplicate on drag if threshold met)
+                    // Don't change selection
                 } else if (!alreadySelected) {
                     // Click on unselected node: replace selection
                     selectNode(nodeId, false);
-                    state.dragging = nodeId;
-                    const canvasPos = screenToCanvas(e.clientX, e.clientY);
-                    state.dragOffsets = {};
-                    state.selectedNodes.forEach(id => {
-                        const n = state.nodes.find(n => n.id === id);
-                        if (n) {
-                            state.dragOffsets[id] = {
-                                x: canvasPos.x - n.position.x,
-                                y: canvasPos.y - n.position.y
-                            };
-                        }
-                    });
-
                 } else {
-                    // Click on already-selected node without Ctrl: keep selection, start drag
-                    state.dragging = nodeId;
-                    const canvasPos = screenToCanvas(e.clientX, e.clientY);
-                    state.dragOffsets = {};
-                    state.selectedNodes.forEach(id => {
-                        const n = state.nodes.find(n => n.id === id);
-                        if (n) {
-                            state.dragOffsets[id] = {
-                                x: canvasPos.x - n.position.x,
-                                y: canvasPos.y - n.position.y
-                            };
-                        }
-                    });
+                    // Click on already-selected node without Ctrl: keep selection
+                    // Don't change selection
                 }
+
+                // Set up dragging state
+                state.dragging = nodeId;
+                const canvasPos = screenToCanvas(e.clientX, e.clientY);
+                state.dragOffsets = {};
+                state.selectedNodes.forEach(id => {
+                    const n = state.nodes.find(n => n.id === id);
+                    if (n) {
+                        state.dragOffsets[id] = {
+                            x: canvasPos.x - n.position.x,
+                            y: canvasPos.y - n.position.y
+                        };
+                    }
+                });
             }
         } else if (edgeEl) {
             const index = parseInt(edgeEl.dataset.index);
@@ -2484,7 +2433,51 @@ function initEventListeners() {
         }
 
         if (state.dragging && state.selectedNodes.length > 0) {
-            // Move all selected nodes together
+            // Check if we've exceeded the drag threshold (only for Ctrl+Drag)
+            if (state.ctrlHeld && !state.dragThresholdMet && state.dragStartPos) {
+                const dx = e.clientX - state.dragStartPos.x;
+                const dy = e.clientY - state.dragStartPos.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance >= DRAG_THRESHOLD) {
+                    // Threshold met - trigger duplication
+                    state.dragThresholdMet = true;
+                    state.duplicating = true;
+
+                    const newNodeIds = [];
+                    const idMapping = {}; // Maps original ID to copy ID
+                    const newDragOffsets = {};
+
+                    // Create deep copies of all selected nodes
+                    state.selectedNodes.forEach(id => {
+                        const originalNode = state.nodes.find(n => n.id === id);
+                        if (originalNode) {
+                            const copy = deepCopyNode(originalNode, 0, 0);
+                            state.nodes.push(copy);
+                            newNodeIds.push(copy.id);
+                            idMapping[id] = copy.id;
+
+                            // Use the same offsets for the copies
+                            newDragOffsets[copy.id] = state.dragOffsets[id];
+                        }
+                    });
+
+                    // Copy edges where both endpoints are in the selection
+                    state.edges.forEach(edge => {
+                        const [srcId, dstId] = edge;
+                        if (idMapping[srcId] && idMapping[dstId]) {
+                            state.edges.push([idMapping[srcId], idMapping[dstId]]);
+                        }
+                    });
+
+                    // Select the new copies
+                    state.selectedNodes = newNodeIds;
+                    state.dragOffsets = newDragOffsets;
+                    updateSelectionVisuals();
+                }
+            }
+
+            // Move all selected nodes together (whether originals or duplicates)
             state.selectedNodes.forEach(nodeId => {
                 const node = state.nodes.find(n => n.id === nodeId);
                 const offset = state.dragOffsets[nodeId];
@@ -2549,6 +2542,9 @@ function initEventListeners() {
 
         state.dragging = null;
         state.duplicating = false;
+        state.ctrlHeld = false;
+        state.dragStartPos = null;
+        state.dragThresholdMet = false;
         if (state.panning) {
             state.panning = false;
             canvas.style.cursor = 'default';
