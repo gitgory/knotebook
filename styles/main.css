@@ -790,6 +790,10 @@ body {
     user-select: none;
 }
 
+.node-title-expanded {
+    font-weight: 600;
+}
+
 .node-hashtags {
     fill: var(--accent);
     font-size: 11px;

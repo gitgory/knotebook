@@ -22,21 +22,21 @@ Make completion-status bigger           | UI / UX Polish           | Med     | L
 Note editor saves by default            | Editor                   | High    | Low     | Yes   | Auto-save on ESC/Enter/click-away; Cancel reverts; mobile tested
 Accidentally closing note editor        | Editor                   | High    | Low     | Yes   | mousedown+click guard on backdrop
 Force note save on field change         | Editor                   | Low     | Low     | Yes   | Covered by auto-save editor
-Mobile Save button in editor            | Editor                   | High    | Low     | No    | Add explicit Save button for mobile (tap-away unreliable on mobile keyboards)
+Mobile Save button in editor            | Editor                   | High    | Low     | Yes   | Explicit Save button for mobile; mobile tested 2026-01-29
 Highlight sidebar btn when filtering    | UI / UX Polish           | Med     | Low     | Yes   | Sidebar # button uses accent color when tag filters active
 Highlight breadcrumbs when nested       | UI / UX Polish           | Low     | Low     | Yes   | Breadcrumb text uses accent color when not at Root level
 Add new theme color palettes            | UI / UX Polish           | Med     | Low     | Yes   | Final: 10 themes (Midnight, Slate, Neon, Mint, Ocean, Sky, Obsidian, Aurora, Graphite, Sunset)
 Set default completion per notebook     | Structured Fields        | High    | Low     | Yes   | Per-notebook settings toggle
-Improved tag suggestions                | Search & Filtering       | High    | Low     | No    | If one tag remains, TAB should insert it even if not highlighted
-Cut max zoom in half                    | Navigation               | Med     | Low     | No    | Reduce maximum zoom-in level
-Ctrl+Drag only copies if selected       | Canvas                   | Med     | Low     | No    | Prevent accidental duplication on unselected nodes
+Improved tag suggestions                | Search & Filtering       | High    | Low     | No    | If one tag remains, TAB should insert it even if not highlighted; DUPLICATE of line 47
+Cut max zoom in half                    | Navigation               | Med     | Low     | Yes   | Max zoom reduced from 5x to 2.5x (2026-01-29)
+Ctrl+Drag only copies if selected       | Canvas                   | Med     | Low     | Yes   | Already implemented (line 2349); verified 2026-01-29
 Visually turn off certain hashtags      | Search & Filtering       | Med     | Low     | No    | Hide specific tags from node display
-Expand note to show full title          | UI / UX Polish           | Med     | Low     | No    | On hover, expand node to reveal truncated title
-Zoom to fit only visible nodes          | Navigation               | Med     | Low     | No    | Fit-to-view respects active filters
+Expand note to show full title          | UI / UX Polish           | Med     | Low     | Yes   | Hover over node shows full title with bold styling (2026-01-29)
+Zoom to fit only visible nodes          | Navigation               | Med     | Low     | Yes   | Fit-to-view respects active filters (2026-01-29)
 Export to Markdown/plain text           | Infrastructure           | Med     | Low     | No    | Text export for portability
 Better confirmation popups              | UI / UX Polish           | Low     | Low     | No    | Replace browser confirm() with styled modals
 Favicon                                 | UI / UX Polish           | Low     | Low     | No    | Add site icon
-Change themes                           | UI / UX Polish           | Low     | Low     | No    | Rework Forest and Ember themes
+Change themes                           | UI / UX Polish           | Low     | Low     | Yes   | Curated and renamed 10 final themes 2026-01-29
 
 
 TIER 2 - Enablers and solid returns
@@ -51,7 +51,7 @@ Batch edit notes                        | Selection & Batch Ops    | High    | H
 Filter notes by completion status       | Search & Filtering       | Med     | Med     | No    | Filter by To do / Done / Partial / None
 AND/OR logic for search filters         | Search & Filtering       | Med     | Med     | No    | Logical operators for hashtag and text search
 Note templates                          | Structured Fields        | Med     | Low     | No    | Predefined content/field presets per use case
-Copy/paste nodes                        | Canvas                   | Med     | Med     | No    | Clipboard support for nodes
+Copy/paste nodes                        | Canvas                   | Med     | Med     | N/A   | REMOVED: Ctrl+Drag already provides copy functionality
 Drag nodes into another (reparent)      | Canvas                   | Med     | Med     | No    | Drag a node onto another to make it a child
 Search across all nested content        | Search & Filtering       | Med     | Low-Med | No    | Search descendants, not just current level
 Snap grid for node alignment            | Canvas                   | Low     | Low     | No    | Optional grid snapping for tidy layouts

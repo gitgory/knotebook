@@ -756,16 +756,21 @@ function canvasToScreen(canvasX, canvasY) {
     };
 }
 
-// Get the bounding box of all nodes
-function getGraphBounds() {
-    if (state.nodes.length === 0) {
+// Get the bounding box of all nodes (optionally filtered to visible nodes only)
+function getGraphBounds(visibleOnly = false) {
+    // If visibleOnly is true, only include nodes that pass the current filters
+    const nodesToBound = visibleOnly
+        ? state.nodes.filter(nodeMatchesFilter)
+        : state.nodes;
+
+    if (nodesToBound.length === 0) {
         return { minX: 0, minY: 0, maxX: 800, maxY: 600 };
     }
 
     let minX = Infinity, minY = Infinity;
     let maxX = -Infinity, maxY = -Infinity;
 
-    for (const node of state.nodes) {
+    for (const node of nodesToBound) {
         minX = Math.min(minX, node.position.x);
         minY = Math.min(minY, node.position.y);
         maxX = Math.max(maxX, node.position.x + NODE_WIDTH);
@@ -847,7 +852,7 @@ function zoomAtPoint(delta, screenX, screenY) {
 
     // Apply zoom
     const zoomFactor = delta > 0 ? 0.9 : 1.1;
-    const newZoom = Math.max(0.5, Math.min(5, state.viewport.zoom * zoomFactor));
+    const newZoom = Math.max(0.5, Math.min(2.5, state.viewport.zoom * zoomFactor));
     state.viewport.zoom = newZoom;
 
     // Get canvas coordinates after zoom
@@ -864,7 +869,9 @@ function zoomAtPoint(delta, screenX, screenY) {
 function fitToView() {
     const container = document.getElementById('canvas-container');
     const rect = container.getBoundingClientRect();
-    const bounds = getGraphBounds();
+    // Use visible nodes only when filters are active
+    const hasActiveFilters = state.filterHashtags.length > 0 || state.filterText.trim() !== '';
+    const bounds = getGraphBounds(hasActiveFilters);
 
     if (state.nodes.length === 0) {
         // No nodes, reset to default view
@@ -988,7 +995,10 @@ function renderNodes() {
         title.setAttribute('class', 'node-title');
         title.setAttribute('x', 10);
         title.setAttribute('y', 25);
-        title.textContent = truncateText(node.title || 'Untitled', 20);
+        const fullTitle = node.title || 'Untitled';
+        title.textContent = truncateText(fullTitle, 20);
+        // Store full title for hover expansion
+        title.setAttribute('data-full-title', fullTitle);
         g.appendChild(title);
 
         // Hashtags as colored pills
@@ -2484,6 +2494,31 @@ function initEventListeners() {
 
         if (state.edgeStartNode) {
             renderEdgePreview(canvasPos.x, canvasPos.y);
+        }
+
+        // Title expansion on hover (only when not dragging/panning)
+        if (!state.dragging && !state.panning) {
+            const target = e.target;
+            const nodeEl = target.closest('.node');
+
+            // Collapse all previously expanded titles
+            document.querySelectorAll('.node-title-expanded').forEach(el => {
+                const fullTitle = el.getAttribute('data-full-title');
+                el.textContent = truncateText(fullTitle, 20);
+                el.classList.remove('node-title-expanded');
+            });
+
+            // Expand title if hovering over node body or title
+            if (nodeEl && (target.classList.contains('node-body') || target.classList.contains('node-title'))) {
+                const titleEl = nodeEl.querySelector('.node-title');
+                if (titleEl) {
+                    const fullTitle = titleEl.getAttribute('data-full-title');
+                    if (fullTitle && fullTitle.length > 20) {
+                        titleEl.textContent = fullTitle;
+                        titleEl.classList.add('node-title-expanded');
+                    }
+                }
+            }
         }
     });
 
