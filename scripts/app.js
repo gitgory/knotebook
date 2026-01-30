@@ -72,6 +72,10 @@ const autocomplete = {
 // Editor snapshot for cancel/revert
 let editorSnapshot = null;
 
+// Title expansion hover timeout
+let hoverTimeout = null;
+const HOVER_DELAY = 500; // milliseconds before expanding title on hover
+
 // Current project info
 let currentProjectId = null;
 let autoSaveTimeout = null;
@@ -2501,6 +2505,12 @@ function initEventListeners() {
             const target = e.target;
             const nodeEl = target.closest('.node');
 
+            // Clear any pending hover timeout
+            if (hoverTimeout) {
+                clearTimeout(hoverTimeout);
+                hoverTimeout = null;
+            }
+
             // Collapse all previously expanded titles
             document.querySelectorAll('.node-title-expanded').forEach(el => {
                 const fullTitle = el.getAttribute('data-full-title');
@@ -2508,14 +2518,17 @@ function initEventListeners() {
                 el.classList.remove('node-title-expanded');
             });
 
-            // Expand title if hovering over node body or title
+            // Expand title after delay if hovering over node body or title
             if (nodeEl && (target.classList.contains('node-body') || target.classList.contains('node-title'))) {
                 const titleEl = nodeEl.querySelector('.node-title');
                 if (titleEl) {
                     const fullTitle = titleEl.getAttribute('data-full-title');
                     if (fullTitle && fullTitle.length > 20) {
-                        titleEl.textContent = fullTitle;
-                        titleEl.classList.add('node-title-expanded');
+                        hoverTimeout = setTimeout(() => {
+                            titleEl.textContent = fullTitle;
+                            titleEl.classList.add('node-title-expanded');
+                            hoverTimeout = null;
+                        }, HOVER_DELAY);
                     }
                 }
             }
