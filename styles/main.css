@@ -1370,6 +1370,11 @@ body {
         max-height: 40vh;
         overflow-y: auto;
     }
+
+    /* Reduce textarea height on mobile so buttons are visible without scrolling */
+    #note-text {
+        height: 80px;
+    }
 }
 
 #help-close {
