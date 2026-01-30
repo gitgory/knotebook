@@ -2375,8 +2375,8 @@ function initEventListeners() {
                     // Ctrl+click on unselected node: add to selection
                     selectNode(nodeId, true);
                 } else if (ctrlHeld && alreadySelected) {
-                    // Ctrl+click on already-selected: keep selection (will duplicate on drag if threshold met)
-                    // Don't change selection
+                    // Ctrl+click on already-selected: will remove on mouseup if no drag occurs
+                    // Keep selection for now (mouseup will handle deselection)
                 } else if (!alreadySelected) {
                     // Click on unselected node: replace selection
                     selectNode(nodeId, false);
@@ -2537,6 +2537,21 @@ function initEventListeners() {
             if (nodeEl) {
                 const targetNodeId = nodeEl.dataset.id;
                 completeEdgeCreation(targetNodeId);
+            }
+        }
+
+        // Handle Ctrl+Click deselection (if no drag occurred)
+        if (state.ctrlHeld && !state.dragThresholdMet && state.dragging) {
+            const target = e.target;
+            const nodeEl = target.closest('.node');
+            if (nodeEl) {
+                const nodeId = nodeEl.dataset.id;
+                // If this node was already selected and we didn't drag, deselect it
+                if (state.selectedNodes.includes(nodeId)) {
+                    state.selectedNodes = state.selectedNodes.filter(id => id !== nodeId);
+                    updateSelectionVisuals();
+                    render();
+                }
             }
         }
 
