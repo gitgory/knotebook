@@ -3044,8 +3044,8 @@ function initEventListeners() {
         }
     });
 
-    // Editor buttons — Cancel reverts changes, Save closes (mobile only)
-    document.getElementById('editor-save').addEventListener('click', cancelEditor);
+    // Editor buttons — Cancel (X) reverts changes, Save closes (mobile only)
+    document.getElementById('editor-cancel').addEventListener('click', cancelEditor);
     document.getElementById('editor-save-mobile').addEventListener('click', saveEditor);
     // Click outside editor content to save (only if mousedown also started on backdrop,
     // so dragging a text selection out of the editor doesn't accidentally close it)
@@ -3096,10 +3096,12 @@ function initEventListeners() {
         }
     });
 
-    // Textarea: autocomplete gets first chance, then Enter saves, Escape saves
+    // Textarea: autocomplete gets first chance, then Enter saves on desktop, Escape saves
     document.getElementById('note-text').addEventListener('keydown', (e) => {
         if (handleAutocompleteKeydown(e)) return;
-        if (e.key === 'Enter' && !e.shiftKey) {
+        // On desktop: Enter saves (unless Shift). On mobile: Enter always inserts newline
+        const isMobile = window.innerWidth <= 600;
+        if (e.key === 'Enter' && !e.shiftKey && !isMobile) {
             e.preventDefault();
             saveEditor();
         }

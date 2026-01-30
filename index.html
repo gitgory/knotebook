@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>knotebook</title>
-    <link rel="stylesheet" href="styles/main.css?v=33">
+    <link rel="stylesheet" href="styles/main.css?v=34">
 </head>
 <body>
     <div id="app">
@@ -128,7 +128,10 @@
         <!-- Note editor modal -->
         <div id="editor-modal" class="hidden">
             <div id="editor-content">
-                <h3>Edit Note</h3>
+                <div id="editor-header">
+                    <h3>Edit Note</h3>
+                    <button id="editor-cancel">×</button>
+                </div>
                 <input type="text" id="note-title" placeholder="Note title...">
                 <textarea id="note-text" placeholder="Enter your note..."></textarea>
                 <div id="hashtag-display"></div>
@@ -140,9 +143,8 @@
                     <button class="completion-btn" data-value="partial">Partial</button>
                 </div>
                 <div id="editor-buttons">
-                    <button id="editor-enter">Step into note</button>
+                    <button id="editor-enter">Step in</button>
                     <button id="editor-save-mobile" class="mobile-only">Save</button>
-                    <button id="editor-save">Cancel</button>
                 </div>
             </div>
         </div>
@@ -244,6 +246,6 @@
         </div>
     </div>
 
-    <script src="scripts/app.js?v=33"></script>
+    <script src="scripts/app.js?v=34"></script>
 </body>
 </html>
