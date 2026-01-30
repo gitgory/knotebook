@@ -2936,6 +2936,12 @@ function initEventListeners() {
             return;
         }
 
+        // Don't handle shortcuts when a modal is open
+        const confirmModal = document.getElementById('confirm-modal');
+        if (confirmModal && !confirmModal.classList.contains('hidden')) {
+            return;
+        }
+
         // Only handle shortcuts when in graph view
         const inGraphView = !document.getElementById('graph-view').classList.contains('hidden');
         if (!inGraphView) return;

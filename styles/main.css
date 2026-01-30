@@ -1276,6 +1276,7 @@ body {
     font-weight: bold;
     cursor: pointer;
     transition: background 0.2s, transform 0.1s;
+    outline: none;
 }
 
 #confirm-buttons button:active {
