@@ -18,6 +18,7 @@ const state = {
     dragOffsets: {},     // Drag offsets for all selected nodes (for multi-drag)
     duplicating: false,  // True when Ctrl+drag duplicating nodes
     ctrlHeld: false,     // True when Ctrl key held during mousedown
+    ctrlClickNode: null, // Node ID that was Ctrl+clicked (for toggle deselection)
     dragStartPos: null,  // Mouse position when mousedown (for drag threshold)
     dragThresholdMet: false, // True when movement exceeds threshold
     currentPath: [],     // Navigation path (stack of parent nodes)
@@ -2370,13 +2371,14 @@ function initEventListeners() {
                 state.ctrlHeld = ctrlHeld;
                 state.dragStartPos = { x: e.clientX, y: e.clientY };
                 state.dragThresholdMet = false;
+                state.ctrlClickNode = null; // Reset
 
                 if (ctrlHeld && !alreadySelected) {
                     // Ctrl+click on unselected node: add to selection
                     selectNode(nodeId, true);
                 } else if (ctrlHeld && alreadySelected) {
-                    // Ctrl+click on already-selected: will remove on mouseup if no drag occurs
-                    // Keep selection for now (mouseup will handle deselection)
+                    // Ctrl+click on already-selected: mark for potential deselection on mouseup
+                    state.ctrlClickNode = nodeId;
                 } else if (!alreadySelected) {
                     // Click on unselected node: replace selection
                     selectNode(nodeId, false);
@@ -2541,23 +2543,17 @@ function initEventListeners() {
         }
 
         // Handle Ctrl+Click deselection (if no drag occurred)
-        if (state.ctrlHeld && !state.dragThresholdMet && state.dragging) {
-            const target = e.target;
-            const nodeEl = target.closest('.node');
-            if (nodeEl) {
-                const nodeId = nodeEl.dataset.id;
-                // If this node was already selected and we didn't drag, deselect it
-                if (state.selectedNodes.includes(nodeId)) {
-                    state.selectedNodes = state.selectedNodes.filter(id => id !== nodeId);
-                    updateSelectionVisuals();
-                    render();
-                }
-            }
+        if (state.ctrlClickNode && !state.dragThresholdMet) {
+            // Deselect the node that was Ctrl+clicked (it was already selected)
+            state.selectedNodes = state.selectedNodes.filter(id => id !== state.ctrlClickNode);
+            updateSelectionVisuals();
+            render();
         }
 
         state.dragging = null;
         state.duplicating = false;
         state.ctrlHeld = false;
+        state.ctrlClickNode = null;
         state.dragStartPos = null;
         state.dragThresholdMet = false;
         if (state.panning) {
