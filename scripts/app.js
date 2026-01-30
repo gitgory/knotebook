@@ -407,6 +407,58 @@ function hideNewProjectModal() {
     document.getElementById('new-project-modal').classList.add('hidden');
 }
 
+// Show confirmation modal and return a promise
+function showConfirmation(message) {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('confirm-modal');
+        const messageEl = document.getElementById('confirm-message');
+        const yesBtn = document.getElementById('confirm-yes');
+        const noBtn = document.getElementById('confirm-no');
+
+        messageEl.textContent = message;
+        modal.classList.remove('hidden');
+
+        // Focus Yes button by default
+        yesBtn.focus();
+
+        // Handle Yes
+        const handleYes = () => {
+            cleanup();
+            resolve(true);
+        };
+
+        // Handle No/Cancel
+        const handleNo = () => {
+            cleanup();
+            resolve(false);
+        };
+
+        // Handle keyboard
+        const handleKey = (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleYes();
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                handleNo();
+            }
+        };
+
+        // Cleanup function
+        const cleanup = () => {
+            modal.classList.add('hidden');
+            yesBtn.removeEventListener('click', handleYes);
+            noBtn.removeEventListener('click', handleNo);
+            document.removeEventListener('keydown', handleKey);
+        };
+
+        // Attach listeners
+        yesBtn.addEventListener('click', handleYes);
+        noBtn.addEventListener('click', handleNo);
+        document.addEventListener('keydown', handleKey);
+    });
+}
+
 function handleCreateProject() {
     const input = document.getElementById('new-project-name');
     const name = input.value.trim();
@@ -433,12 +485,13 @@ function handleRenameProject(projectId) {
     }
 }
 
-function handleDeleteProject(projectId) {
+async function handleDeleteProject(projectId) {
     const projects = getProjectsList();
     const project = projects.find(p => p.id === projectId);
     if (!project) return;
 
-    if (confirm(`Delete "${project.name}"? This cannot be undone.`)) {
+    const confirmed = await showConfirmation(`Delete "${project.name}"? This cannot be undone.`);
+    if (confirmed) {
         deleteProject(projectId);
         populateProjectsList();
     }
@@ -2275,7 +2328,7 @@ function handleImportAsNew() {
     openProject(projectId);
 }
 
-function handleImportOverwrite() {
+async function handleImportOverwrite() {
     if (!pendingImportData) return;
 
     const projects = getProjectsList();
@@ -2297,7 +2350,8 @@ function handleImportOverwrite() {
     }
 
     const targetProject = projects[index];
-    if (!confirm(`Overwrite "${targetProject.name}"? This cannot be undone.`)) {
+    const confirmed = await showConfirmation(`Overwrite "${targetProject.name}"? This cannot be undone.`);
+    if (!confirmed) {
         return;
     }
 
@@ -2982,14 +3036,17 @@ function initEventListeners() {
         // Delete or Backspace - Delete selected
         if (e.key === 'Delete' || (e.key === 'Backspace' && !e.altKey)) {
             if (state.selectedNodes.length > 0) {
+                e.preventDefault();
                 const count = state.selectedNodes.length;
                 const msg = count === 1
                     ? 'Delete this note? Any children will be moved to the current level.'
                     : `Delete ${count} notes? Any children will be moved to the current level.`;
-                if (confirm(msg)) {
-                    // Delete all selected nodes (copy array since deleteNode modifies it)
-                    [...state.selectedNodes].forEach(nodeId => deleteNode(nodeId));
-                }
+                showConfirmation(msg).then(confirmed => {
+                    if (confirmed) {
+                        // Delete all selected nodes (copy array since deleteNode modifies it)
+                        [...state.selectedNodes].forEach(nodeId => deleteNode(nodeId));
+                    }
+                });
             } else if (state.selectedEdge !== null) {
                 deleteSelectedEdge();
             }
@@ -3322,11 +3379,13 @@ function initEventListeners() {
             } else {
                 msg = `Delete ${count} notes? Any children will be moved to the current level.`;
             }
-            if (confirm(msg)) {
-                // Delete all selected nodes (copy array since deleteNode modifies it)
-                [...state.selectedNodes].forEach(nodeId => deleteNode(nodeId));
-                hideActionBar();
-            }
+            showConfirmation(msg).then(confirmed => {
+                if (confirmed) {
+                    // Delete all selected nodes (copy array since deleteNode modifies it)
+                    [...state.selectedNodes].forEach(nodeId => deleteNode(nodeId));
+                    hideActionBar();
+                }
+            });
         } else if (state.selectedEdge !== null) {
             deleteSelectedEdge();
             hideActionBar();

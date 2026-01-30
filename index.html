@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>knotebook</title>
-    <link rel="stylesheet" href="styles/main.css?v=39">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="stylesheet" href="styles/main.css?v=40">
 </head>
 <body>
     <div id="app">
@@ -163,6 +164,17 @@
             </div>
         </div>
 
+        <!-- Confirmation modal -->
+        <div id="confirm-modal" class="hidden">
+            <div id="confirm-content">
+                <p id="confirm-message"></p>
+                <div id="confirm-buttons">
+                    <button id="confirm-yes">Yes</button>
+                    <button id="confirm-no">Cancel</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Help modal -->
         <div id="help-modal" class="hidden">
             <div id="help-content">
@@ -246,6 +258,6 @@
         </div>
     </div>
 
-    <script src="scripts/app.js?v=39"></script>
+    <script src="scripts/app.js?v=40"></script>
 </body>
 </html>
