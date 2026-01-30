@@ -1092,6 +1092,15 @@ body {
     background: #16a34a;
 }
 
+#editor-save-mobile {
+    background: #22c55e;
+    color: #fff;
+}
+
+#editor-save-mobile:hover {
+    background: #16a34a;
+}
+
 #editor-save {
     background: #dc2626;
     color: #fff;
@@ -1266,13 +1275,22 @@ body {
     display: none;
 }
 
-/* On mobile: hide desktop help, show mobile help */
+/* Mobile-only elements hidden by default */
+.mobile-only {
+    display: none;
+}
+
+/* On mobile: hide desktop help, show mobile help, show mobile-only elements */
 @media (max-width: 600px) {
     #help-desktop {
         display: none;
     }
 
     #help-mobile {
+        display: block;
+    }
+
+    .mobile-only {
         display: block;
     }
 

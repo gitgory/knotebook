@@ -3044,8 +3044,9 @@ function initEventListeners() {
         }
     });
 
-    // Editor buttons — Cancel reverts changes
+    // Editor buttons — Cancel reverts changes, Save closes (mobile only)
     document.getElementById('editor-save').addEventListener('click', cancelEditor);
+    document.getElementById('editor-save-mobile').addEventListener('click', saveEditor);
     // Click outside editor content to save (only if mousedown also started on backdrop,
     // so dragging a text selection out of the editor doesn't accidentally close it)
     let editorMouseDownOnBackdrop = false;
