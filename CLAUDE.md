@@ -1,8 +1,8 @@
-# CLAUDE.md - Graph Notes
+# CLAUDE.md - knotebook
 
 ## Project Overview
 
-Graph Notes is a browser-based note-taking app with interactive graph visualization. Notes are nodes on an infinite SVG canvas; relationships are edges. Supports unlimited nesting (notes contain sub-graphs), hashtag organization, and 5 dark themes.
+knotebook is a browser-based note-taking app with interactive graph visualization. Notes ("knotes") are nodes on an infinite SVG canvas; relationships are edges. Supports unlimited nesting (notes contain sub-graphs) and hashtag organization.
 
 ## Tech Stack
 
@@ -20,18 +20,13 @@ scripts/app.js          # All application logic (~3200 lines)
 styles/main.css         # All styles (~1500 lines), 5 dark themes
 design-spec.txt         # Feature specification
 ROADMAP.txt             # Status, priorities, decisions log
-GRIGRI.txt              # User preferences and working style
 SESSION_NOTES.md        # Session-by-session work history
 knowledge/              # Quick reference docs
 ```
 
 ## Running the App
 
-Open `index.html` in a browser. For mobile testing or file import/export, serve via HTTP:
-
-```bash
-python -m http.server 8000
-```
+The app is hosted at https://gitgory.github.io/knotebook/
 
 ## Cache Busting (Important)
 
@@ -106,19 +101,40 @@ CSS and JS are versioned in index.html via query params:
 - **localStorage primary, JSON file export secondary** (no server/database)
 - **Monolithic single file** for JS (modularization deferred until >4000 lines)
 
+## Interaction Patterns
+
+**Desktop:**
+- Click to select node
+- Ctrl+Click to toggle node in multi-selection
+- Ctrl+Drag (≥10px movement) to duplicate selection
+- Shift+Click to start/complete edge creation
+- Hover over node (500ms delay) to expand truncated title
+
+**Mobile:**
+- Tap to select node
+- Long-press to add node to multi-selection (repeat on multiple nodes)
+- Double-tap to edit node
+- Tap outside or use action bar buttons for other actions
+
 ## Working with Grigri (Project Owner)
 
-- Present options with pros/cons for decisions; document the chosen option and reasoning
-- Don't explain basic programming concepts, but do explain JS-specific patterns and API details
-- Flag design assumptions aggressively
-- Flag potential blindspots proactively
-- Update `ROADMAP.txt` decisions log and `SESSION_NOTES.md` after substantive work
-- Test changes on both desktop and mobile
-- Prefers to receive options and select among them, especially when presented
-  with pros and cons of each option
-- May not be aware of the design assumptions he is making. Bring these to Grigri's attention.
-- May not be aware of common design paradigms or best practices. Bring these to Grigri's attention.
+- **May not be aware of common design paradigms or best practices. Bring these to Grigri's attention.**
+- **May not be aware of the design assumptions he is making. Bring these to Grigri's attention.**
 - May not anticipate platform-specific limitations until testing (e.g., File
   System Access API not available on mobile)
-- Relies on testing to surface edge cases rather than predicting them upfront
-- May rush to implementation before properly fleshing out the major design considerations
+- Present options with pros/cons for decisions; document the chosen option and reasoning
+- Don't explain basic programming concepts, but do explain JS-specific patterns and API details
+- Update `ROADMAP.txt` decisions log and `SESSION_NOTES.md` after substantive work
+- Test changes on both desktop and mobile
+
+## Git Commit Policy
+
+**Auto-commit when:**
+- Grigri asks for a test plan
+- Grigri asks if changes are ready to test
+- Grigri explicitly requests a commit
+
+**Ask before committing when:**
+- Completing implementation work
+- Making any other code changes
+- Default behavior unless above conditions are met

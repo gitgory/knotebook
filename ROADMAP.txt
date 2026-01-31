@@ -1,5 +1,5 @@
 ================================================================================
-GRAPH NOTES - ROADMAP
+KNOTEBOOK - ROADMAP
 ================================================================================
 Last updated: 2026-01-27
 
@@ -21,26 +21,9 @@ COMPLETED
 [x] Search/filter by hashtag
 [x] Hashtag sidebar
 [x] localStorage + File Export/Import
-
 [x] Bug fixes (2026-01-23)
-    - Cancel new note now deletes empty nodes
-    - Edge hitbox increased for easier selection
-    - Enter key in title field saves and closes editor
-    - beforeunload warning for pending saves
-
 [x] UI improvements (2026-01-23)
-    - Clickable [n] indicator to enter nested notes
-    - Editor: "Step into note" button (green if has children, gray if empty)
-    - Editor: Removed Cancel/Delete buttons, use Escape or click outside
-    - Editor: Save button moved to right side
-    - Removed Shift+double-click (redundant with new entry methods)
-
 [x] Mobile selection action bar (2026-01-24)
-    - Floating action bar at bottom of screen
-    - Long-press node to reveal (Edit, Connect, Delete buttons)
-    - Tap edge to select and show action bar (Delete button)
-    - Visual feedback: selected edges now highlighted
-    - Fixed mobile sidebar positioning (first hashtag was cut off)
 
 See SESSION_NOTES.md for more recent changes.
 
@@ -115,19 +98,17 @@ See plan-outline.txt for the full consolidated feature list (Tiers 1-4).
 DECISIONS LOG
 ================================================================================
 
-2026-01-27: Per-notebook settings
-    - Settings stored as `settings` object in project data (alongside nodes, edges, hashtagColors)
-    - First setting: `defaultCompletion` (null or 'no')
-    - Accessible from both toolbar (in-memory) and context menu (direct localStorage read/write)
-    - Completion control always visible in editor regardless of mode; only the default changes
-    - Backwards compatible: missing settings key defaults to { defaultCompletion: null }
-
-2026-01-27: Auto-save editor behavior
-    - Default close action: save (was cancel)
-    - Rationale: notes are saved more often than discarded; reduces friction
-    - Cancel = explicit revert via snapshot, not just "close without saving"
-    - Enter in textarea saves (Shift+Enter for newline) — matches chat-app patterns
-    - Click-outside uses mousedown+click guard to prevent accidental close during text selection drag
+2026-01-21: Startup decisions
+   - Canvas vs SVG? → SVG (easier interaction handling)
+   - Browser compatibility? → Chrome/Edge (File System Access API)
+   - Nested content indicator? → Stacked rectangles behind node (click to enter)
+   - Node shape? → Rounded rectangles (220x60 px)
+   - Long note text? → Title shown on node, full content in editor
+   - Canvas size? → Infinite canvas with pan/zoom (0.5x to 5x zoom)
+   - Unique note IDs? → Timestamp + counter: "note-{timestamp}-{n}"
+   - Orphaned edges? → Filtered out during render
+   - Position data? → Stored per-note
+   - Hashtags clickable? → Yes, clicking in editor populates search field
 
 2026-01-21: File storage → Monolithic JSON
     - Considered individual files per note
@@ -165,15 +146,6 @@ DECISIONS LOG
     - Scope: same as hashtag filter (current level only)
     - Matching: case-insensitive against node.title and node.content
 
-2026-01-25: Body text indicator design (#3)
-    - Options considered:
-      (a) Small dot in top-right corner → overlapped with completion indicator
-      (b) Small dot in bottom-left corner → hidden behind hashtag pills
-      (c) Hamburger menu icon (≡) after title text → looks like a clickable button
-      (d) Dog-ear triangle in top-left corner ← CHOSEN
-    - Chose dog-ear: universal "document has content" metaphor, subtle,
-      fits in unused corner, no overlap with other indicators
-
 2026-01-25: Completion checkbox design (#5)
     - State cycle: null (not set) → no → yes → partial → no
     - Activation: opt-in via editor (not always visible on every node)
@@ -192,5 +164,14 @@ DECISIONS LOG
       looks cleaner than text-based indicator
     - Depth: 1 offset rect (1-2 children), 2 offset rects (3+ children)
     - Offset rects are clickable to enter the node
+
+2026-01-27: Per-notebook settings
+    - Settings stored as `settings` object in project data (alongside nodes, edges, hashtagColors)
+    - First setting: `defaultCompletion` (null or 'no')
+    - Accessible from both toolbar (in-memory) and context menu (direct localStorage read/write)
+    - Completion control always visible in editor regardless of mode; only the default changes
+    - Backwards compatible: missing settings key defaults to { defaultCompletion: null }
+
+
 
 ================================================================================

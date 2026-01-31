@@ -4,6 +4,129 @@ This file tracks work across Claude Code sessions for continuity.
 
 ---
 
+## Session 2026-01-30 - Afternoon
+
+### Summary
+Completed Option B (Canvas & Navigation improvements) with all features tested and working. Added favicon and replaced all browser confirm() dialogs with custom styled modal. Established workflow guidelines in user-level CLAUDE.md for task planning and test plan automation.
+
+### Files Changed
+- `scripts/app.js` - Reduced max zoom from 5x to 2.5x; made fit-to-view respect active filters; added 10px drag threshold for Ctrl+Drag duplication; implemented Ctrl+Click toggle deselection; added showConfirmation() modal function; replaced 4 confirm() calls with custom modal; added modal check to keyboard shortcuts to prevent conflicts; bumped to v41
+- `styles/main.css` - Added hover expansion styling for node titles; added confirmation modal styles with red danger button and z-index 200; removed focus outline from confirmation buttons; bumped to v41
+- `index.html` - Added confirmation modal HTML; added favicon link; added data-full-title attribute to nodes; bumped versions to CSS v41, JS v41
+- `favicon.svg` - Created lowercase bold cyan "k" favicon on Slate theme surface background
+- `plan-outline.txt` - Marked 4 Tier 1 features complete (zoom limit, fit visible, Ctrl+Drag, hover expansion); updated duplicate entries; marked next session task
+- `C:\Users\GregoryAnnis\.claude\CLAUDE.md` - Created user-level workflow preferences document
+- `CLAUDE.md` (project) - Added interaction patterns documentation and git commit policy (not committed)
+- Created mockup files: `favicon-mockup.html`, `favicon-k-graph-mockup.html`, `favicon-k-lowercase-slate.html`, `favicon-text-k-mockup.html`, `favicon-k-final-variations.html`
+
+### Tasks Completed
+- [x] Implemented Option B - Canvas & Navigation (4 features)
+  - [x] Cut max zoom in half (5x → 2.5x)
+  - [x] Zoom to fit only visible nodes (respects filters)
+  - [x] Ctrl+Drag with 10px threshold (prevents accidental duplication)
+  - [x] Ctrl+Click toggle deselection for multi-select
+  - [x] Expand note title on hover (500ms delay, bold styling)
+- [x] Desktop testing - all Option B features passed
+- [x] Created favicon through iterative design process
+  - [x] Explored 3 initial concepts (letter K, graph icon, notebook)
+  - [x] Combined concepts into K-shaped graph variations
+  - [x] Refined to lowercase k with Slate theme colors
+  - [x] Final: lowercase bold cyan "k" in system font
+- [x] Replaced browser confirm() dialogs with custom modal
+  - [x] Styled modal with red "Yes" button, gray "Cancel"
+  - [x] Enter confirms, Escape cancels
+  - [x] Replaced 4 confirm() locations (delete notebook, overwrite import, delete nodes desktop/mobile)
+  - [x] Fixed editor opening after delete confirmation
+  - [x] Fixed white border on focus
+- [x] Desktop testing - confirmation modal passed all tests
+- [x] Established workflow preferences in user-level CLAUDE.md
+
+### Decisions Made
+- **Canvas & Navigation**: Completed all 4 features as a group for cohesive UX improvements
+- **Drag threshold**: 10px movement required before Ctrl+Drag duplicates, allows precise multi-select clicks
+- **Ctrl+Click toggle**: Marked node for deselection on mousedown, only deselects on mouseup if no drag occurred
+- **Hover expansion**: 500ms delay prevents expansion when quickly moving mouse across nodes; bold styling for emphasis
+- **Fit-to-view logic**: Automatically detects active filters (hashtag or text) and only fits visible nodes when filtering
+- **Favicon design process**: Explored multiple concepts before settling on simple text-based "k" that matches landing page typography
+- **Favicon final choice**: Option 4 from text mockup - lowercase bold cyan "k" (#22d3ee) on surface background (#3f3f46), using system font stack
+- **Confirmation modal styling**: Red "Yes" button for destructive actions, z-index 200 to appear above all other modals
+- **Keyboard shortcut conflict**: Added check to skip all shortcuts when confirmation modal is open, prevents Enter from triggering editor after deletion
+- **Workflow documentation**: Created user-level CLAUDE.md with task planning workflow requiring explicit plan confirmation before coding
+- **Test plan automation**: Auto-commit when test plan requested per user preference
+
+### Next Steps
+- [ ] **NEXT SESSION**: Implement "Visually turn off certain hashtags" (Tier 1 remaining)
+- [ ] Mobile testing for confirmation modal (Features 4-5 from test plan)
+- [ ] Complete remaining Option A features:
+  - [ ] Better confirmation popups ✓ (completed this session)
+  - [ ] Favicon ✓ (completed this session)
+  - [ ] Visually turn off certain hashtags (marked for next session)
+- [ ] Clean up mockup HTML files from project root
+- [ ] Consider Option C (Search & Tag Management) or other Tier 2 features
+
+### Notes
+- All 5 commits pushed successfully to GitHub
+- GitHub Pages should update within 10 minutes
+- Favicon uses SVG format for crisp scaling at all sizes
+- Custom confirmation modal replaces all browser confirm() dialogs for consistent UX
+- User prefers options/recommendations before implementation, explicit plan confirmation required
+- TOC regenerated successfully (516 lines)
+- Created 5 favicon mockup files for design exploration (not committed to repo)
+- Project-level CLAUDE.md updates (interaction patterns) not yet committed per user request
+
+---
+
+## Session 2026-01-29 - Evening
+
+### Summary
+Mobile editor redesign and UX improvements. Added mobile-only Save button, repositioned Cancel to header as × button, reduced textarea height to prevent keyboard overlap, and changed mobile keyboard behavior (Enter = newline). Increased landing page gradient contrast. Set up Git credential storage to avoid authentication prompts.
+
+### Files Changed
+- `index.html` - Added editor header wrapper, moved Cancel button to header as ×, added mobile-only Save button, updated cache versions (CSS v38, JS v34)
+- `scripts/app.js` - Updated editor button event listeners, changed textarea Enter key behavior on mobile (detects window width ≤600px for newline vs save)
+- `styles/main.css` - Added `.mobile-only` class and media query, styled #editor-header and #editor-cancel (× button), adjusted button layout (desktop centered, mobile flex with Save filling space), reduced mobile #note-text height to 80px, reduced mobile #editor-content max-height from 50vh to 40vh, increased landing page gradient contrast (--bg-secondary → --surface)
+- `C:\Users\GregoryAnnis\.git-credentials` - Stored GitHub PAT for automatic authentication
+- `C:\Users\GregoryAnnis\.claude\github-pat.txt` - Stored GitHub personal access token
+- `C:\Users\GregoryAnnis\.claude\github-username.txt` - Stored GitHub username (gitgory)
+
+### Tasks Completed
+- [x] Mobile testing: settings modal - all tests passed
+- [x] Added mobile-only Save button (green, flex-fills space)
+- [x] Changed "Step into note" → "Step in" (shorter text)
+- [x] Moved Cancel button to top-right header as red × (18px)
+- [x] Mobile textarea: Enter key inserts newline (not save)
+- [x] Desktop textarea: Enter key still saves (unchanged)
+- [x] Reduced mobile editor max-height from 50vh → 40vh (20% reduction)
+- [x] Reduced mobile textarea height from 150px → 80px
+- [x] Verified buttons visible without scrolling on mobile
+- [x] Increased landing page gradient contrast (--bg-secondary → --surface)
+- [x] Set up Git credential storage with PAT
+
+### Decisions Made
+- **Mobile Save button placement**: Option 1A chosen - three buttons with Save in middle ("Step in" | "Save" | "Cancel"), preserves all functionality while giving mobile users explicit save control
+- **Cancel button design**: Option B chosen - × button aligned with "Edit Note" heading in top-right, red background, 18px font size
+- **Mobile keyboard behavior**: Only textarea gets newline on Enter (mobile only), title field still saves on Enter on both platforms
+- **Editor height on mobile**: Reduced to 40vh (20% total reduction) after initial 45vh wasn't sufficient to avoid keyboard overlap
+- **Textarea height on mobile**: Option C chosen - reduce only on mobile to 80px (desktop keeps 150px), ensures buttons visible without scrolling
+- **Landing page gradient**: Kept original 135° angle, increased contrast by changing endpoint from --bg-secondary (#1a1a1a) to --surface (#2a2a2a) for more noticeable diagonal beam
+- **Git credentials**: Stored PAT and username in `C:\Users\GregoryAnnis\.claude\` directory for reuse across projects, configured Git credential helper to use stored credentials
+- **Always present options before implementing**: User preference established - always offer 2+ options with pros/cons before proceeding with solutions
+
+### Next Steps
+- [ ] Choose among Tier 1 and 2 items from roadmap, group by like tasks
+- [ ] Clean up gradient mockup files (gradient-*.html) from project directory
+- [ ] Consider next feature implementation
+
+### Notes
+- GitHub Pages deployment lag observed: commits pushed successfully but site took 10+ minutes to update from v33 → v38
+- Git credential storage configured globally (Windows Credential Manager via git-config credential.helper store)
+- All mobile editor tests passed: visual layout, Save button, Cancel (×), Step in, keyboard behavior, tap outside to save
+- Created multiple gradient mockup HTML files for design exploration (not committed to repo)
+- LF/CRLF warnings in Git are harmless (Windows line ending normalization)
+- User established workflow preference: always ask for confirmation before implementing solutions
+
+---
+
 ## Session 2026-01-29 - Afternoon
 
 ### Summary

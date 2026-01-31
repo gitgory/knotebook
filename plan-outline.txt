@@ -29,8 +29,8 @@ Add new theme color palettes            | UI / UX Polish           | Med     | L
 Set default completion per notebook     | Structured Fields        | High    | Low     | Yes   | Per-notebook settings toggle
 Improved tag suggestions                | Search & Filtering       | High    | Low     | No    | If one tag remains, TAB should insert it even if not highlighted; DUPLICATE of line 47
 Cut max zoom in half                    | Navigation               | Med     | Low     | Yes   | Max zoom reduced from 5x to 2.5x (2026-01-29)
-Ctrl+Drag only copies if selected       | Canvas                   | Med     | Low     | Yes   | Already implemented (line 2349); verified 2026-01-29
-Visually turn off certain hashtags      | Search & Filtering       | Med     | Low     | No    | Hide specific tags from node display
+Ctrl+Drag only copies if selected       | Canvas                   | Med     | Low     | Yes   | 10px drag threshold + toggle deselect; tested 2026-01-29
+Visually turn off certain hashtags      | Search & Filtering       | Med     | Low     | No    | Hide specific tags from node display; NEXT SESSION
 Expand note to show full title          | UI / UX Polish           | Med     | Low     | Yes   | Hover over node shows full title with bold styling (2026-01-29)
 Zoom to fit only visible nodes          | Navigation               | Med     | Low     | Yes   | Fit-to-view respects active filters (2026-01-29)
 Export to Markdown/plain text           | Infrastructure           | Med     | Low     | No    | Text export for portability

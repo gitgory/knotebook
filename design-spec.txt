@@ -194,26 +194,7 @@ PHASE 8: TIER 1 FEATURES ....................... [IN PROGRESS]
    [x] Children indicator redesign (stacked rectangles)
    [ ] Mobile testing for #3 and #5
 
-================================================================================
-RESOLVED QUESTIONS
-================================================================================
 
-TECHNICAL:
-   - Canvas vs SVG? → SVG (easier interaction handling)
-   - Single file vs multiple files? → Single monolithic JSON file
-   - Browser compatibility? → Chrome/Edge (File System Access API)
-
-USER EXPERIENCE:
-   - Nested content indicator? → Stacked rectangles behind node (click to enter)
-   - Node shape? → Rounded rectangles (220x60 px)
-   - Long note text? → Title shown on node, full content in editor
-   - Canvas size? → Infinite canvas with pan/zoom (0.5x to 5x zoom)
-
-DATA MODEL:
-   - Unique note IDs? → Timestamp + counter: "note-{timestamp}-{n}"
-   - Orphaned edges? → Filtered out during render
-   - Position data? → Stored per-note
-   - Hashtags clickable? → Yes, clicking in editor populates search field
 
 ================================================================================
 REMAINING QUESTIONS

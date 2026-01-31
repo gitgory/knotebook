@@ -1,0 +1,1379 @@
+{
+  "version": 1,
+  "name": "Feature Updates",
+  "created": "2026-01-31T00:54:28.272Z",
+  "nodes": [
+    {
+      "id": "note-1769580000001-1",
+      "title": "Text search filter",
+      "content": "Toolbar search, case-insensitive, AND with hashtag filter\n#search-and-filtering\n#impact-high\n#effort-low",
+      "hashtags": [
+        "#effort-low",
+        "#impact-high",
+        "#search-and-filtering"
+      ],
+      "completion": "yes",
+      "position": {
+        "x": -769.9644128113878,
+        "y": 615.2669039145908
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-28T03:11:01.551Z",
+      "modified": "2026-01-28T03:11:01.551Z"
+    },
+    {
+      "id": "note-1769580000002-2",
+      "title": "Hashtag alphabetical sort",
+      "content": "parseHashtags() sorts output alphabetically\n#search-and-filtering\n#impact-low\n#effort-low",
+      "hashtags": [
+        "#effort-low",
+        "#impact-low",
+        "#search-and-filtering"
+      ],
+      "completion": "yes",
+      "position": {
+        "x": -769.9644128113878,
+        "y": 711.2455516014236
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-28T03:11:01.551Z",
+      "modified": "2026-01-28T03:11:01.551Z"
+    },
+    {
+      "id": "note-1769580000003-3",
+      "title": "Note body indicator",
+      "content": "Dog-ear fold in top-left corner\n#ui-ux-polish\n#impact-low-med\n#effort-low",
+      "hashtags": [
+        "#effort-low",
+        "#impact-low-med",
+        "#ui-ux-polish"
+      ],
+      "completion": "yes",
+      "position": {
+        "x": -769.9644128113878,
+        "y": 815.2669039145908
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-28T03:11:01.551Z",
+      "modified": "2026-01-28T03:11:01.551Z"
+    },
+    {
+      "id": "note-1769580000004-4",
+      "title": "Hashtag auto-complete",
+      "content": "Dropdown on # in textarea and filter input\n#search-and-filtering\n#impact-med\n#effort-low",
+      "hashtags": [
+        "#effort-low",
+        "#impact-med",
+        "#search-and-filtering"
+      ],
+      "completion": "yes",
+      "position": {
+        "x": -769.9644128113878,
+        "y": 915.2669039145908
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-28T03:11:01.551Z",
+      "modified": "2026-01-28T03:11:01.551Z"
+    },
+    {
+      "id": "note-1769580000005-5",
+      "title": "Completion checkbox",
+      "content": "Tri-state: To do / Done / Partial\n#structured-fields\n#impact-high\n#effort-low-med",
+      "hashtags": [
+        "#effort-low-med",
+        "#impact-high",
+        "#structured-fields"
+      ],
+      "completion": "yes",
+      "position": {
+        "x": -769.9644128113878,
+        "y": 1015.2669039145908
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-28T03:11:01.551Z",
+      "modified": "2026-01-28T03:11:01.551Z"
+    },
+    {
+      "id": "note-1769580000006-6",
+      "title": "Move action bar above note",
+      "content": "Mobile UX; needs mobile testing\n#ui-ux-polish\n#impact-low-med\n#effort-low",
+      "hashtags": [
+        "#effort-low",
+        "#impact-low-med",
+        "#ui-ux-polish"
+      ],
+      "completion": "partial",
+      "position": {
+        "x": -396,
+        "y": 2
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-28T03:11:01.551Z",
+      "modified": "2026-01-29T08:22:17.087Z"
+    },
+    {
+      "id": "note-1769580000007-7",
+      "title": "Gray out completed notes",
+      "content": "Grayscale + brightness filter on Done nodes\n#ui-ux-polish\n#impact-high\n#effort-low",
+      "hashtags": [
+        "#effort-low",
+        "#impact-high",
+        "#ui-ux-polish"
+      ],
+      "completion": "yes",
+      "position": {
+        "x": -772.3991873225503,
+        "y": 10.588724204166496
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-28T03:11:01.551Z",
+      "modified": "2026-01-28T03:11:01.551Z"
+    },
+    {
+      "id": "note-1769580000008-8",
+      "title": "Make completion-status bigger",
+      "content": "50% larger indicators\n#ui-ux-polish\n#impact-med\n#effort-low",
+      "hashtags": [
+        "#effort-low",
+        "#impact-med",
+        "#ui-ux-polish"
+      ],
+      "completion": "yes",
+      "position": {
+        "x": -772.3991873225503,
+        "y": 110.5887242041665
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-28T03:11:01.551Z",
+      "modified": "2026-01-28T03:11:01.551Z"
+    },
+    {
+      "id": "note-1769580000009-9",
+      "title": "Note editor saves by default",
+      "content": "Auto-save on ESC/Enter/click-away; Cancel reverts\n#editor\n#impact-high\n#effort-low",
+      "hashtags": [
+        "#editor",
+        "#effort-low",
+        "#impact-high"
+      ],
+      "completion": "yes",
+      "position": {
+        "x": -772.3991873225503,
+        "y": 210.5887242041665
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-28T03:11:01.551Z",
+      "modified": "2026-01-28T03:11:01.551Z"
+    },
+    {
+      "id": "note-1769580000010-10",
+      "title": "Accidentally closing note editor",
+      "content": "mousedown+click guard on backdrop\n#editor\n#impact-high\n#effort-low",
+      "hashtags": [
+        "#editor",
+        "#effort-low",
+        "#impact-high"
+      ],
+      "completion": "yes",
+      "position": {
+        "x": -772.3991873225503,
+        "y": 310.5887242041665
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-28T03:11:01.551Z",
+      "modified": "2026-01-28T03:11:01.551Z"
+    },
+    {
+      "id": "note-1769580000011-11",
+      "title": "Force note save on field change",
+      "content": "Covered by auto-save editor\n#editor\n#impact-low\n#effort-low",
+      "hashtags": [
+        "#editor",
+        "#effort-low",
+        "#impact-low"
+      ],
+      "completion": "yes",
+      "position": {
+        "x": -770.8660482532686,
+        "y": 410.5887242041665
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-28T03:11:01.551Z",
+      "modified": "2026-01-28T03:11:01.551Z"
+    },
+    {
+      "id": "note-1769580000012-12",
+      "title": "Set default completion per notebook",
+      "content": "Per-notebook settings toggle\n#structured-fields\n#impact-high\n#effort-low",
+      "hashtags": [
+        "#effort-low",
+        "#impact-high",
+        "#structured-fields"
+      ],
+      "completion": "yes",
+      "position": {
+        "x": -770.8660482532686,
+        "y": 510.5887242041663
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-28T03:11:01.551Z",
+      "modified": "2026-01-28T03:11:01.551Z"
+    },
+    {
+      "id": "note-1769580000013-13",
+      "title": "Improved tag suggestions",
+      "content": "If one tag remains, TAB should insert it even if not highlighted\n#search-and-filtering\n#impact-high\n#effort-low",
+      "hashtags": [
+        "#effort-low",
+        "#impact-high",
+        "#search-and-filtering"
+      ],
+      "completion": "no",
+      "position": {
+        "x": -400.3701067615659,
+        "y": 100.24911032028467
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-28T03:11:01.551Z",
+      "modified": "2026-01-28T03:11:01.551Z"
+    },
+    {
+      "id": "note-1769580000014-14",
+      "title": "Cut max zoom in half",
+      "content": "Reduce maximum zoom-in level\n#navigation\n#impact-med\n#effort-low",
+      "hashtags": [
+        "#effort-low",
+        "#impact-med",
+        "#navigation"
+      ],
+      "completion": "yes",
+      "position": {
+        "x": -402.55192494338405,
+        "y": 1506.7945648657392
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-28T03:11:01.551Z",
+      "modified": "2026-01-28T03:11:01.551Z"
+    },
+    {
+      "id": "note-1769580000015-15",
+      "title": "Ctrl+Drag only copies if selected",
+      "content": "Prevent accidental duplication on unselected nodes\n#canvas\n#impact-med\n#effort-low",
+      "hashtags": [
+        "#canvas",
+        "#effort-low",
+        "#impact-med"
+      ],
+      "completion": "yes",
+      "position": {
+        "x": -402.8545011337298,
+        "y": 798.3337771600593
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-28T03:11:01.551Z",
+      "modified": "2026-01-30T08:23:33.707Z"
+    },
+    {
+      "id": "note-1769580000016-16",
+      "title": "Visually turn off certain hashtags",
+      "content": "Hide specific tags from node display\n#search-and-filtering\n#impact-med\n#effort-low",
+      "hashtags": [
+        "#effort-low",
+        "#impact-med",
+        "#search-and-filtering"
+      ],
+      "completion": "no",
+      "position": {
+        "x": -393.6664407007772,
+        "y": 398.3337771600593
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-28T03:11:01.551Z",
+      "modified": "2026-01-28T03:11:01.551Z"
+    },
+    {
+      "id": "note-1769580000017-17",
+      "title": "Expand note to show full title",
+      "content": "On hover, expand node to reveal truncated title\n#ui-ux-polish\n#impact-med\n#effort-low",
+      "hashtags": [
+        "#effort-low",
+        "#impact-med",
+        "#ui-ux-polish"
+      ],
+      "completion": "yes",
+      "position": {
+        "x": -400.3701067615659,
+        "y": 907.5218375930119
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-28T03:11:01.551Z",
+      "modified": "2026-01-29T08:22:27.878Z"
+    },
+    {
+      "id": "note-1769580000018-18",
+      "title": "Zoom to fit only visible nodes",
+      "content": "Fit-to-view respects active filters\n#navigation\n#impact-med\n#effort-low",
+      "hashtags": [
+        "#effort-low",
+        "#impact-med",
+        "#navigation"
+      ],
+      "completion": "yes",
+      "position": {
+        "x": -396.7337431252022,
+        "y": 1198.4309285021027
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-28T03:11:01.551Z",
+      "modified": "2026-01-28T03:11:01.551Z"
+    },
+    {
+      "id": "note-1769580000019-19",
+      "title": "Export to Markdown/plain text",
+      "content": "Text export for portability\n#infrastructure\n#impact-low-med \n#effort-low",
+      "hashtags": [
+        "#effort-low",
+        "#impact-low-med",
+        "#infrastructure"
+      ],
+      "completion": "no",
+      "position": {
+        "x": -402.1882885797478,
+        "y": 298.2491103202848
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-28T03:11:01.551Z",
+      "modified": "2026-01-29T08:22:57.866Z"
+    },
+    {
+      "id": "note-1769580000020-20",
+      "title": "Better confirmation popups",
+      "content": "Replace browser confirm() with styled modals\n#ui-ux-polish\n#impact-low\n#effort-low",
+      "hashtags": [
+        "#effort-low",
+        "#impact-low",
+        "#ui-ux-polish"
+      ],
+      "completion": "yes",
+      "position": {
+        "x": -404.00647039792955,
+        "y": 1105.70365577483
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-28T03:11:01.551Z",
+      "modified": "2026-01-28T03:11:01.551Z"
+    },
+    {
+      "id": "note-1769580000021-21",
+      "title": "Favicon",
+      "content": "Add site icon\n#ui-ux-polish\n#impact-low\n#effort-low",
+      "hashtags": [
+        "#effort-low",
+        "#impact-low",
+        "#ui-ux-polish"
+      ],
+      "completion": "yes",
+      "position": {
+        "x": -404.3701067615659,
+        "y": 1012.2491103202848
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-28T03:11:01.551Z",
+      "modified": "2026-01-28T03:11:01.551Z"
+    },
+    {
+      "id": "note-1769580000022-22",
+      "title": "Change themes",
+      "content": "Rework Forest and Ember themes\n#ui-ux-polish\n#impact-low\n#effort-low",
+      "hashtags": [
+        "#effort-low",
+        "#impact-low",
+        "#ui-ux-polish"
+      ],
+      "completion": "yes",
+      "position": {
+        "x": -756.8537920538025,
+        "y": 1099.765425028048
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-28T03:11:01.551Z",
+      "modified": "2026-01-29T08:23:23.563Z"
+    },
+    {
+      "id": "note-1769580000023-23",
+      "title": "Tag drop-down completion polish",
+      "content": "TAB/Enter/ESC behavior not intuitive; hover vs select confusion\n#search-and-filtering\n#impact-high\n#effort-med",
+      "hashtags": [
+        "#effort-med",
+        "#impact-high",
+        "#search-and-filtering"
+      ],
+      "completion": "no",
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-28T03:11:01.551Z",
+      "modified": "2026-01-30T17:20:21.941Z"
+    },
+    {
+      "id": "note-1769580000024-24",
+      "title": "Sidebar editing (rename/delete tags)",
+      "content": "Rename or delete a hashtag across all notes\n#search-and-filtering\n#impact-high\n#effort-med",
+      "hashtags": [
+        "#effort-med",
+        "#impact-high",
+        "#search-and-filtering"
+      ],
+      "completion": "no",
+      "position": {
+        "x": 0,
+        "y": 100
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-28T03:11:01.551Z",
+      "modified": "2026-01-29T08:29:35.222Z"
+    },
+    {
+      "id": "note-1769580000025-25",
+      "title": "Drag box / lasso multi-select",
+      "content": "Prerequisite for batch features; conflicts with canvas drag\n#selection-and-batch-ops\n#impact-high\n#effort-med-hi",
+      "hashtags": [
+        "#effort-med-hi",
+        "#impact-high",
+        "#selection-and-batch-ops"
+      ],
+      "completion": "no",
+      "position": {
+        "x": 4.919349608701651,
+        "y": 203.68951220652625
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-28T03:11:01.551Z",
+      "modified": "2026-01-28T03:11:01.551Z"
+    },
+    {
+      "id": "note-1769580000026-26",
+      "title": "Batch edit notes",
+      "content": "Multi-select then edit tags, completion, delete, move, copy\n#selection-and-batch-ops\n#impact-high\n#effort-high",
+      "hashtags": [
+        "#effort-high",
+        "#impact-high",
+        "#selection-and-batch-ops"
+      ],
+      "completion": "no",
+      "position": {
+        "x": 0,
+        "y": 300
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-28T03:11:01.551Z",
+      "modified": "2026-01-28T03:11:01.551Z"
+    },
+    {
+      "id": "note-1769580000027-27",
+      "title": "Filter notes by completion status",
+      "content": "Filter by To do / Done / Partial / None\n#search-and-filtering\n#impact-med\n#effort-med",
+      "hashtags": [
+        "#effort-med",
+        "#impact-med",
+        "#search-and-filtering"
+      ],
+      "completion": "no",
+      "position": {
+        "x": 0,
+        "y": 400
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-28T03:11:01.551Z",
+      "modified": "2026-01-28T03:11:01.551Z"
+    },
+    {
+      "id": "note-1769580000028-28",
+      "title": "AND/OR logic for search filters",
+      "content": "Logical operators for hashtag and text search\n#search-and-filtering\n#impact-med\n#effort-med",
+      "hashtags": [
+        "#effort-med",
+        "#impact-med",
+        "#search-and-filtering"
+      ],
+      "completion": "no",
+      "position": {
+        "x": 0,
+        "y": 500
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-28T03:11:01.551Z",
+      "modified": "2026-01-28T03:11:01.551Z"
+    },
+    {
+      "id": "note-1769580000029-29",
+      "title": "Note templates",
+      "content": "Predefined content/field presets per use case\n#structured-fields\n#impact-med\n#effort-low",
+      "hashtags": [
+        "#effort-low",
+        "#impact-med",
+        "#structured-fields"
+      ],
+      "completion": "yes",
+      "position": {
+        "x": -406.36363636363626,
+        "y": 1310
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-28T03:11:01.551Z",
+      "modified": "2026-01-29T08:21:25.272Z"
+    },
+    {
+      "id": "note-1769580000031-31",
+      "title": "Drag nodes into another (reparent)",
+      "content": "Drag a node onto another to make it a child\n#canvas\n#impact-med\n#effort-med",
+      "hashtags": [
+        "#canvas",
+        "#effort-med",
+        "#impact-med"
+      ],
+      "completion": "no",
+      "position": {
+        "x": -2,
+        "y": 692
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-28T03:11:01.551Z",
+      "modified": "2026-01-28T03:11:01.551Z"
+    },
+    {
+      "id": "note-1769580000032-32",
+      "title": "Search across all nested content",
+      "content": "Search descendants, not just current level\n#search-and-filtering\n#impact-med\n#effort-med ",
+      "hashtags": [
+        "#effort-med",
+        "#impact-med",
+        "#search-and-filtering"
+      ],
+      "completion": "no",
+      "position": {
+        "x": 0,
+        "y": 600
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-28T03:11:01.551Z",
+      "modified": "2026-01-29T08:21:55.037Z"
+    },
+    {
+      "id": "note-1769580000033-33",
+      "title": "Snap grid for node alignment",
+      "content": "Optional grid snapping for tidy layouts\n#canvas\n#impact-low\n#effort-low",
+      "hashtags": [
+        "#canvas",
+        "#effort-low",
+        "#impact-low"
+      ],
+      "completion": "no",
+      "position": {
+        "x": -4,
+        "y": 787.9999999999999
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-28T03:11:01.551Z",
+      "modified": "2026-01-29T08:30:00.596Z"
+    },
+    {
+      "id": "note-1769580000034-34",
+      "title": "Hashtag search to match any part",
+      "content": "\"low\" matches #impact-low and #effort-low\n#search-and-filtering\n#impact-med\n#effort-high",
+      "hashtags": [
+        "#effort-high",
+        "#effort-low",
+        "#impact-low",
+        "#impact-med",
+        "#search-and-filtering"
+      ],
+      "completion": "no",
+      "position": {
+        "x": -4,
+        "y": 903.9999999999999
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-28T03:11:01.551Z",
+      "modified": "2026-01-29T08:30:03.214Z"
+    },
+    {
+      "id": "note-1769580000035-35",
+      "title": "Filter by connection status",
+      "content": "Show only connected or unconnected nodes\n#search-and-filtering\n#impact-low\n#effort-high",
+      "hashtags": [
+        "#effort-high",
+        "#impact-low",
+        "#search-and-filtering"
+      ],
+      "completion": "no",
+      "position": {
+        "x": -4.12415827459688,
+        "y": 1288.4637445560377
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-28T03:11:01.551Z",
+      "modified": "2026-01-28T03:11:01.551Z"
+    },
+    {
+      "id": "note-1769580000036-36",
+      "title": "JSON should only store hashtag colors currently in use",
+      "content": "Clean up partial hashtag color entries from autocomplete\n#infrastructure\n#impact-low\n#effort-med",
+      "hashtags": [
+        "#effort-med",
+        "#impact-low",
+        "#infrastructure"
+      ],
+      "completion": "no",
+      "position": {
+        "x": -2,
+        "y": 1106
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-28T03:11:01.551Z",
+      "modified": "2026-01-30T17:20:08.445Z"
+    },
+    {
+      "id": "note-1769580000037-37",
+      "title": "Notes too far away?",
+      "content": "Handle nodes stranded far from the main cluster\nTriangle/arrow indicator showing direction of notes?\n#navigation\n#impact-low\n#effort-med",
+      "hashtags": [
+        "#effort-med",
+        "#impact-low",
+        "#navigation"
+      ],
+      "completion": "no",
+      "position": {
+        "x": -4,
+        "y": 1008
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-28T03:11:01.551Z",
+      "modified": "2026-01-30T08:25:46.493Z"
+    },
+    {
+      "id": "note-1769580000038-38",
+      "title": "Revisit toolbar button symbols",
+      "content": "Reconsider icon choices\n#ui-ux-polish\n#impact-low\n#effort-low",
+      "hashtags": [
+        "#effort-low",
+        "#impact-low",
+        "#ui-ux-polish"
+      ],
+      "completion": "no",
+      "position": {
+        "x": -399.81818181818176,
+        "y": 192.3636363636362
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-28T03:11:01.551Z",
+      "modified": "2026-01-29T08:30:09.541Z"
+    },
+    {
+      "id": "note-1769580000039-39",
+      "title": "Generate nodes via text",
+      "content": "Mermaid-like syntax: \"N1 -> N2 -> N3\" creates nodes + edges\n#content-generation\n#impact-high\n#effort-high",
+      "hashtags": [
+        "#content-generation",
+        "#effort-high",
+        "#impact-high"
+      ],
+      "completion": "no",
+      "position": {
+        "x": 400,
+        "y": 0
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-28T03:11:01.551Z",
+      "modified": "2026-01-28T03:11:01.551Z"
+    },
+    {
+      "id": "note-1769580000040-40",
+      "title": "⭐Custom fields system",
+      "content": "User-defined fields on nodes; transforms app into flexible database\n#structured-fields\n#impact-high\n#effort-high",
+      "hashtags": [
+        "#effort-high",
+        "#impact-high",
+        "#structured-fields"
+      ],
+      "completion": "no",
+      "position": {
+        "x": 400,
+        "y": 102
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-28T03:11:01.551Z",
+      "modified": "2026-01-29T08:29:21.970Z"
+    },
+    {
+      "id": "note-1769580000041-41",
+      "title": "Auto-calculate completion",
+      "content": "(1) From child nodes all complete; (2) from preceding connected nodes\n#structured-fields\n#impact-high\n#effort-high",
+      "hashtags": [
+        "#effort-high",
+        "#impact-high",
+        "#structured-fields"
+      ],
+      "completion": "no",
+      "position": {
+        "x": 390,
+        "y": 290
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-28T03:11:01.551Z",
+      "modified": "2026-01-29T08:27:40.434Z"
+    },
+    {
+      "id": "note-1769580000042-42",
+      "title": "Advanced action bar items",
+      "content": "More actions in mobile action bar; needs careful UX design\n#selection-and-batch-ops\n#impact-med\n#effort-med",
+      "hashtags": [
+        "#effort-med",
+        "#impact-med",
+        "#selection-and-batch-ops"
+      ],
+      "completion": "no",
+      "position": {
+        "x": 388,
+        "y": 492
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-28T03:11:01.551Z",
+      "modified": "2026-01-29T08:25:22.379Z"
+    },
+    {
+      "id": "note-1769580000043-43",
+      "title": "Adding directionality for edges",
+      "content": "Changes data model; arrows on edges\n#architecture\n#impact-med\n#effort-med",
+      "hashtags": [
+        "#architecture",
+        "#effort-med",
+        "#impact-med"
+      ],
+      "completion": "no",
+      "position": {
+        "x": 392,
+        "y": 198
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-28T03:11:01.551Z",
+      "modified": "2026-01-28T03:11:01.551Z"
+    },
+    {
+      "id": "note-1769580000044-44",
+      "title": "Move to GitHub Pages",
+      "content": "Host app publicly\n#infrastructure\n#impact-high\n#effort-high",
+      "hashtags": [
+        "#effort-high",
+        "#impact-high",
+        "#infrastructure"
+      ],
+      "completion": "yes",
+      "position": {
+        "x": 392,
+        "y": 788
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-28T03:11:01.551Z",
+      "modified": "2026-01-29T07:58:03.135Z"
+    },
+    {
+      "id": "note-1769580000045-45",
+      "title": "Integrate with Notion",
+      "content": "External integration\n#integration\n#impact-med\n#effort-high",
+      "hashtags": [
+        "#effort-high",
+        "#impact-med",
+        "#integration"
+      ],
+      "completion": "no",
+      "position": {
+        "x": 392,
+        "y": 688
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-28T03:11:01.551Z",
+      "modified": "2026-01-28T03:11:01.551Z"
+    },
+    {
+      "id": "note-1769580000046-46",
+      "title": "Service Workers / PWA",
+      "content": "Install as app on mobile, offline support\n#infrastructure\n#impact-med\n#effort-med",
+      "hashtags": [
+        "#effort-med",
+        "#impact-med",
+        "#infrastructure"
+      ],
+      "completion": "no",
+      "position": {
+        "x": 392,
+        "y": 594
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-28T03:11:01.551Z",
+      "modified": "2026-01-29T07:14:34.764Z"
+    },
+    {
+      "id": "note-1769580000047-47",
+      "title": "⭐Persistent search zones",
+      "content": "Draw boxes as saved filters; Venn diagram display; unique differentiator\n#spatial-organization\n#impact-high\n#effort-high",
+      "hashtags": [
+        "#effort-high",
+        "#impact-high",
+        "#spatial-organization"
+      ],
+      "completion": "no",
+      "position": {
+        "x": 800,
+        "y": -2
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-28T03:11:01.551Z",
+      "modified": "2026-01-29T08:29:15.900Z"
+    },
+    {
+      "id": "note-1769580000048-48",
+      "title": "Nested vs. collapsible nodes",
+      "content": "Architectural pivot; resolve before investing in hierarchy features\n#architecture\n#impact-high\n#effort-high",
+      "hashtags": [
+        "#architecture",
+        "#effort-high",
+        "#impact-high"
+      ],
+      "completion": "no",
+      "position": {
+        "x": 800,
+        "y": 100
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-28T03:11:01.551Z",
+      "modified": "2026-01-28T03:11:01.551Z"
+    },
+    {
+      "id": "note-1769580000050-50",
+      "title": "Force-directed graph layout",
+      "content": "Complex algorithm, niche use case\n#canvas\n#impact-med\n#effort-high",
+      "hashtags": [
+        "#canvas",
+        "#effort-high",
+        "#impact-med"
+      ],
+      "completion": "no",
+      "position": {
+        "x": 800,
+        "y": 300
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-28T03:11:01.551Z",
+      "modified": "2026-01-28T03:11:01.551Z"
+    },
+    {
+      "id": "note-1769580000051-51",
+      "title": "Performance optimization",
+      "content": "Only if 500+ notes causes lag\n#infrastructure\n#impact-high\n#effort-high",
+      "hashtags": [
+        "#effort-high",
+        "#impact-high",
+        "#infrastructure"
+      ],
+      "completion": "no",
+      "position": {
+        "x": 800,
+        "y": 400
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-28T03:11:01.551Z",
+      "modified": "2026-01-28T03:11:01.551Z"
+    },
+    {
+      "id": "note-1769580000052-52",
+      "title": "ES modules",
+      "content": "Only if app.js exceeds ~4000 lines\n#infrastructure\n#impact-low\n#effort-med",
+      "hashtags": [
+        "#effort-med",
+        "#impact-low",
+        "#infrastructure"
+      ],
+      "completion": "no",
+      "position": {
+        "x": 800,
+        "y": 500
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-28T03:11:01.551Z",
+      "modified": "2026-01-28T03:11:01.551Z"
+    },
+    {
+      "id": "note-1769580000053-53",
+      "title": "Import from other note apps",
+      "content": "Needs format definition\n#infrastructure\n#impact-med\n#effort-high",
+      "hashtags": [
+        "#effort-high",
+        "#impact-med",
+        "#infrastructure"
+      ],
+      "completion": "no",
+      "position": {
+        "x": 800,
+        "y": 600
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-28T03:11:01.551Z",
+      "modified": "2026-01-29T08:02:39.765Z"
+    },
+    {
+      "id": "note-1769580000054-54",
+      "title": "Dimensionality for notes",
+      "content": "Spatial, temporal, narrative ordering; needs definition\n#architecture\n#impact-med\n#effort-high",
+      "hashtags": [
+        "#architecture",
+        "#effort-high",
+        "#impact-med"
+      ],
+      "completion": "no",
+      "position": {
+        "x": 804,
+        "y": 202
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-28T03:11:01.551Z",
+      "modified": "2026-01-29T08:02:42.080Z"
+    },
+    {
+      "id": "note-1769663937376-1",
+      "title": "Change name -> Knotebook",
+      "content": "#ui-ux-polish\n#impact-low\n#effort-low",
+      "hashtags": [
+        "#effort-low",
+        "#impact-low",
+        "#ui-ux-polish"
+      ],
+      "completion": "yes",
+      "position": {
+        "x": -764.8537920538025,
+        "y": 1194.1454661330392
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-29T05:18:57.376Z",
+      "modified": "2026-01-29T08:23:29.974Z"
+    },
+    {
+      "id": "note-1769664166012-2",
+      "title": "Add undo feature (Ctrl+Z)",
+      "content": "#infrastructure\n#impact-high\n#effort-high",
+      "hashtags": [
+        "#effort-high",
+        "#impact-high",
+        "#infrastructure"
+      ],
+      "completion": "no",
+      "position": {
+        "x": 95.18118421988086,
+        "y": -246.80780539973685
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-29T05:22:46.012Z",
+      "modified": "2026-01-29T05:23:26.236Z"
+    },
+    {
+      "id": "note-1769664247170-3",
+      "title": "Find way to pan without losing group selection",
+      "content": "#canvas\n#impact-med\n#effort-med",
+      "hashtags": [
+        "#canvas",
+        "#effort-med",
+        "#impact-med"
+      ],
+      "completion": "no",
+      "position": {
+        "x": 99.05973386933718,
+        "y": -157.60116346224098
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-29T05:24:07.170Z",
+      "modified": "2026-01-30T17:19:23.513Z"
+    },
+    {
+      "id": "note-1769664333927-4",
+      "title": "drop shadow on notes?",
+      "content": "#ui-ux-polish\n#impact-low\n#effort-low",
+      "hashtags": [
+        "#effort-low",
+        "#impact-low",
+        "#ui-ux-polish"
+      ],
+      "completion": "no",
+      "position": {
+        "x": -159.3925576408055,
+        "y": -159.10379306404414
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-29T05:25:33.927Z",
+      "modified": "2026-01-30T17:19:34.928Z"
+    },
+    {
+      "id": "note-1769664349638-5",
+      "title": "move Cancel button to top, just X",
+      "content": "#ui-ux-polish ",
+      "hashtags": [
+        "#ui-ux-polish"
+      ],
+      "completion": "yes",
+      "position": {
+        "x": -395.8042781516993,
+        "y": 1400.995380489675
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-29T05:25:49.638Z",
+      "modified": "2026-01-29T05:26:07.895Z"
+    },
+    {
+      "id": "note-1769664387979-6",
+      "title": "create skill to export & import (and sort) notes as tasks",
+      "content": "#infrastructure\n#impact-med\n#effort-med",
+      "hashtags": [
+        "#effort-med",
+        "#impact-med",
+        "#infrastructure"
+      ],
+      "completion": "no",
+      "position": {
+        "x": -144.24529993982856,
+        "y": -266.699585701159
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-29T05:26:27.980Z",
+      "modified": "2026-01-30T08:22:19.558Z"
+    },
+    {
+      "id": "note-1769666058662-2",
+      "title": "create a knot icon",
+      "content": "#impact-low\n#effort-med \n#ui-ux-polish ",
+      "hashtags": [
+        "#effort-med",
+        "#impact-low",
+        "#ui-ux-polish"
+      ],
+      "completion": "no",
+      "position": {
+        "x": -3.6998453943740515,
+        "y": 1188.8458688442956
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-29T05:54:18.662Z",
+      "modified": "2026-01-29T08:22:12.169Z"
+    },
+    {
+      "id": "note-1769674544668-1",
+      "title": "Move python script, batch, etc to global skills",
+      "content": "#infrastructure\n#impact-low\n#effort-low",
+      "hashtags": [
+        "#effort-low",
+        "#impact-low",
+        "#infrastructure"
+      ],
+      "completion": "no",
+      "position": {
+        "x": 84.76644866521397,
+        "y": -352.27600101353704
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-29T08:15:44.668Z",
+      "modified": "2026-01-29T08:32:25.145Z"
+    },
+    {
+      "id": "note-1769674805357-1",
+      "title": "move themes into its own CSS?",
+      "content": "#infrastructure\n#impact-low\n#effort-low",
+      "hashtags": [
+        "#effort-low",
+        "#impact-low",
+        "#infrastructure"
+      ],
+      "completion": "no",
+      "position": {
+        "x": -400.36067970338536,
+        "y": 505.53678263535
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-29T08:20:05.357Z",
+      "modified": "2026-01-31T00:51:44.430Z"
+    },
+    {
+      "id": "note-1769675262915-2",
+      "title": "% completion",
+      "content": "of child nodes\n#structured-fields\n#impact-high\n#effort-high",
+      "hashtags": [
+        "#effort-high",
+        "#impact-high",
+        "#structured-fields"
+      ],
+      "completion": "no",
+      "position": {
+        "x": 390,
+        "y": 386
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-29T08:27:42.915Z",
+      "modified": "2026-01-29T08:28:09.383Z"
+    },
+    {
+      "id": "note-1769761269309-10",
+      "title": "add a recycle bin for notebooks?",
+      "content": "add a back page that collects the last 3-5 deleted notebooks?",
+      "hashtags": [],
+      "completion": "no",
+      "position": {
+        "x": 353.2450781000991,
+        "y": -354.8802468570377
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-30T08:21:09.309Z",
+      "modified": "2026-01-30T17:16:01.198Z"
+    },
+    {
+      "id": "note-1769761652083-13",
+      "title": "Propose some subtle design changes that will really stretch your comfort zone.",
+      "content": "Experiment with different fonts, text alignments, and other visual indicators like dog-ears, nested note indicator, pill button shapes, note corner radius, etc\n#selection-and-batch-ops\n#impact-low\n#effort-high ",
+      "hashtags": [
+        "#effort-high",
+        "#impact-low",
+        "#selection-and-batch-ops"
+      ],
+      "completion": "no",
+      "position": {
+        "x": 802.6804170076838,
+        "y": -232.03163479778306
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-30T08:27:32.083Z",
+      "modified": "2026-01-31T00:52:20.986Z"
+    },
+    {
+      "id": "note-1769761749048-14",
+      "title": "text search should show indicator if it is filtering",
+      "content": "",
+      "hashtags": [],
+      "completion": "no",
+      "position": {
+        "x": 367.67181302230455,
+        "y": -238.83274342468673
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-30T08:29:09.048Z",
+      "modified": "2026-01-30T17:19:26.512Z"
+    },
+    {
+      "id": "note-1769793390785-4",
+      "title": "visual indicator of the current theme",
+      "content": "#ui-ux-polish ",
+      "hashtags": [
+        "#ui-ux-polish"
+      ],
+      "completion": "no",
+      "position": {
+        "x": -402.28755896986877,
+        "y": 604.0164400075005
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-30T17:16:30.785Z",
+      "modified": "2026-01-31T00:51:48.436Z"
+    },
+    {
+      "id": "note-1769793419053-5",
+      "title": "remove background color from theme selector",
+      "content": "#ui-ux-polish ",
+      "hashtags": [
+        "#ui-ux-polish"
+      ],
+      "completion": "no",
+      "position": {
+        "x": -397.85132406290563,
+        "y": 685.6761046532258
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-30T17:16:59.053Z",
+      "modified": "2026-01-31T00:51:42.683Z"
+    },
+    {
+      "id": "note-1769793520606-8",
+      "title": "gray (completed and canceled notes should still light up the border when selected",
+      "content": "",
+      "hashtags": [],
+      "completion": "no",
+      "position": {
+        "x": -157.20303893790143,
+        "y": -367.31963314195514
+      },
+      "children": [],
+      "childEdges": [],
+      "created": "2026-01-30T17:18:40.606Z",
+      "modified": "2026-01-30T17:19:08.965Z"
+    }
+  ],
+  "edges": [
+    [
+      "note-1769580000046-46",
+      "note-1769580000052-52"
+    ],
+    [
+      "note-1769580000051-51",
+      "note-1769580000052-52"
+    ],
+    [
+      "note-1769580000043-43",
+      "note-1769580000041-41"
+    ],
+    [
+      "note-1769580000040-40",
+      "note-1769580000054-54"
+    ],
+    [
+      "note-1769675262915-2",
+      "note-1769580000041-41"
+    ],
+    [
+      "note-1769793390785-4",
+      "note-1769793419053-5"
+    ],
+    [
+      "note-1769674805357-1",
+      "note-1769793390785-4"
+    ]
+  ],
+  "hashtagColors": {
+    "#search-and-filtering": "#3b82f6",
+    "#ui-ux-polish": "#8b5cf6",
+    "#editor": "#a855f7",
+    "#structured-fields": "#22c55e",
+    "#navigation": "#06b6d4",
+    "#canvas": "#64748b",
+    "#selection-and-batch-ops": "#f97316",
+    "#content-generation": "#ec4899",
+    "#infrastructure": "#14b8a6",
+    "#architecture": "#ef4444",
+    "#spatial-organization": "#eab308",
+    "#integration": "#6366f1",
+    "#impact-high": "#22c55e",
+    "#impact-med": "#eab308",
+    "#impact-low": "#64748b",
+    "#impact-low-med": "#14b8a6",
+    "#effort-high": "#ef4444",
+    "#effort-med": "#f97316",
+    "#effort-low": "#06b6d4",
+    "#effort-low-med": "#3b82f6",
+    "#effort-med-hi": "#ec4899",
+    "#h": "#14b8a6",
+    "#hi": "#f97316",
+    "#hig": "#64748b",
+    "#high": "#14b8a6",
+    "#e": "#f97316",
+    "#ef": "#a855f7",
+    "#eff": "#f97316",
+    "#effo": "#14b8a6",
+    "#effor": "#8b5cf6",
+    "#effort-": "#22c55e",
+    "#u": "#06b6d4",
+    "#ui": "#eab308",
+    "#ux": "#06b6d4",
+    "#i": "#06b6d4",
+    "#im": "#3b82f6",
+    "#imp": "#8b5cf6",
+    "#impa": "#ec4899",
+    "#impac": "#eab308",
+    "#impac-": "#ec4899",
+    "#impac-l": "#ec4899",
+    "#impac-lo": "#eab308",
+    "#impac-low": "#f97316",
+    "#impact": "#8b5cf6",
+    "#impact-": "#a855f7",
+    "#impact-l": "#a855f7",
+    "#impact-lo": "#8b5cf6",
+    "#effort": "#3b82f6",
+    "#effort-l": "#22c55e",
+    "#effort-lo": "#3b82f6",
+    "#ui-": "#ec4899",
+    "#effort-lmed": "#f97316",
+    "#effort-m": "#14b8a6",
+    "#effort-me": "#6366f1",
+    "#impact-hig": "#a855f7",
+    "#impact-hi": "#ef4444",
+    "#impact-h": "#22c55e",
+    "#n": "#8b5cf6",
+    "#no": "#f97316",
+    "#not": "#6366f1",
+    "#note": "#eab308"
+  },
+  "settings": {
+    "defaultCompletion": "no"
+  }
+}
