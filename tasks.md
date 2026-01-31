@@ -8,9 +8,9 @@ Features have been reorganized into 5 tiers based on impact and effort. Within e
 - **Done** items last
 
 ### Tier Distribution:
-- **Tier 1:** 7 items (Quick Wins - High Impact, Low Effort)
-- **Tier 2:** 16 items (Important Features - Med Impact Low Effort OR High Impact Med Effort)
-- **Tier 3:** 20 items (Major Investments - High Impact High Effort OR Med Impact Med Effort)
+- **Tier 1:** 7 items - **COMPLETE** ✓ (Quick Wins - High Impact, Low Effort)
+- **Tier 2:** 16 items - **COMPLETE** ✓ (Important Features - Med Impact Low Effort OR High Impact Med Effort)
+- **Tier 3:** 21 items (Major Investments - High Impact High Effort OR Med Impact Med Effort)
 - **Tier 4:** 14 items (Polish & Refinements - Low Impact, Low Effort)
 - **Tier 5:** 11 items (Future/Deferred - Low Impact High Effort, etc.)
 
@@ -36,14 +36,16 @@ Features have been reorganized into 5 tiers based on impact and effort. Within e
 ## TIER 2: Important Features
 **Y-Range: 0 to 500**
 
-### To Do (2 items):
-1. Sidebar editing (rename/delete tags) (High Impact, Med Effort)
-2. text search should show indicator if it is filtering (Med Impact, Low Effort)
+### To Do (0 items):
+(none)
 
-### Partial (1 item):
-3. Move action bar above note (Low-Med Impact, Low Effort)
+### Partial (0 items):
+(none)
 
-### Done (12 items):
+### Done (15 items):
+1. Move action bar above note
+2. Sidebar editing (rename/delete tags)
+3. Text search indicator
 4. Ctrl+Drag only copies if selected
 5. Cut max zoom in half
 6. Expand note to show full title
