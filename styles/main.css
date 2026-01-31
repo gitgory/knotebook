@@ -1484,7 +1484,7 @@ body {
     position: absolute;
     top: 60px; /* Start below toolbar (matches mobile) */
     right: 0;
-    width: 275px; /* 25% wider for desktop */
+    width: 344px; /* 56% wider than original 220px (275px + 25%) */
     height: calc(100% - 60px); /* Account for toolbar height */
     background: var(--bg-secondary);
     border-left: 1px solid var(--surface);
