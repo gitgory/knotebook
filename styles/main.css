@@ -1482,10 +1482,10 @@ body {
 
 #hashtag-sidebar {
     position: absolute;
-    top: 0;
+    top: 60px; /* Start below toolbar (matches mobile) */
     right: 0;
     width: 275px; /* 25% wider for desktop */
-    height: 100%;
+    height: calc(100% - 60px); /* Account for toolbar height */
     background: var(--bg-secondary);
     border-left: 1px solid var(--surface);
     display: flex;
@@ -1703,9 +1703,7 @@ body {
 /* Mobile sidebar positioning */
 @media (max-width: 600px) {
     #hashtag-sidebar {
-        top: 60px;
-        height: calc(100% - 60px);
-        width: 220px; /* Revert to original mobile width */
+        width: 220px; /* Narrower on mobile */
     }
 
     #sidebar-content {
