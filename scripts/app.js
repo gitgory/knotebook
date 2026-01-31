@@ -768,11 +768,9 @@ function populateSidebar() {
     const activeFilters = state.filterHashtags.map(t => t.toLowerCase());
     const hiddenTags = state.hiddenHashtags.map(t => t.toLowerCase());
 
-    // Add "Show All Tags" button if there are hidden hashtags
-    let headerHtml = '';
-    if (state.hiddenHashtags.length > 0) {
-        headerHtml = '<button class="show-all-tags-btn" id="show-all-tags-btn">Show All Tags</button>';
-    }
+    // Add "Show All Tags" button (always visible, grayed out when not needed)
+    const hasHiddenTags = state.hiddenHashtags.length > 0;
+    const headerHtml = `<button class="show-all-tags-btn${hasHiddenTags ? '' : ' disabled'}" id="show-all-tags-btn"${hasHiddenTags ? '' : ' disabled'}>Show All Tags</button>`;
 
     list.innerHTML = headerHtml + hashtags.map(tag => {
         const color = getHashtagColor(tag);
@@ -2199,7 +2197,8 @@ async function exportToFile() {
         nodes: state.currentPath.length === 0 ? state.nodes : rootNodes,
         edges: state.currentPath.length === 0 ? state.edges : rootEdges,
         hashtagColors: hashtagColors,
-        settings: projectSettings
+        settings: projectSettings,
+        hiddenHashtags: state.hiddenHashtags
     };
 
     // Try File System Access API first, fall back to data URL download
@@ -2250,7 +2249,8 @@ async function exportProjectToFile(projectId) {
         nodes: data.nodes || [],
         edges: data.edges || [],
         hashtagColors: data.hashtagColors || {},
-        settings: data.settings || {}
+        settings: data.settings || {},
+        hiddenHashtags: data.hiddenHashtags || []
     };
 
     // Try File System Access API first, fall back to data URL download
@@ -2371,7 +2371,8 @@ function handleImportAsNew() {
         nodes: pendingImportData.nodes || [],
         edges: pendingImportData.edges || [],
         hashtagColors: pendingImportData.hashtagColors || {},
-        settings: pendingImportData.settings || { defaultCompletion: null }
+        settings: pendingImportData.settings || { defaultCompletion: null },
+        hiddenHashtags: pendingImportData.hiddenHashtags || []
     };
     localStorage.setItem(STORAGE_KEY_PREFIX + projectId, JSON.stringify(projectData));
 
@@ -2420,7 +2421,8 @@ async function handleImportOverwrite() {
         nodes: pendingImportData.nodes || [],
         edges: pendingImportData.edges || [],
         hashtagColors: pendingImportData.hashtagColors || {},
-        settings: pendingImportData.settings || { defaultCompletion: null }
+        settings: pendingImportData.settings || { defaultCompletion: null },
+        hiddenHashtags: pendingImportData.hiddenHashtags || []
     };
     localStorage.setItem(STORAGE_KEY_PREFIX + targetProject.id, JSON.stringify(projectData));
 
