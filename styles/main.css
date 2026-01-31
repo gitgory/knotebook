@@ -1556,6 +1556,64 @@ body {
     box-shadow: inset 2px 0 0 var(--highlight);
 }
 
+.sidebar-hashtag.hidden {
+    opacity: 0.6;
+}
+
+.sidebar-hashtag.hidden .hashtag-pill {
+    opacity: 0.8;
+}
+
+.hashtag-hide-btn {
+    padding: 0;
+    width: 18px;
+    height: 18px;
+    border: none;
+    border-radius: 4px;
+    background: var(--surface);
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, color 0.2s;
+}
+
+.hashtag-hide-btn:hover {
+    background: var(--surface-hover);
+    color: var(--text-primary);
+}
+
+.sidebar-hashtag.hidden .hashtag-hide-btn {
+    background: var(--accent);
+    color: #fff;
+}
+
+.sidebar-hashtag.hidden .hashtag-hide-btn:hover {
+    background: var(--highlight);
+}
+
+.show-all-tags-btn {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    border: none;
+    border-radius: 6px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 13px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.show-all-tags-btn:hover {
+    background: var(--highlight);
+}
+
 .hashtag-pill {
     flex: 1;
     padding: 4px 10px;

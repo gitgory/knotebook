@@ -34,7 +34,8 @@ const state = {
     panStart: { x: 0, y: 0 },  // Mouse position when pan started
     // Hashtag filter state
     filterHashtags: [],  // Active hashtag filters (OR logic)
-    filterText: ''       // Text search filter (matches title and content)
+    filterText: '',      // Text search filter (matches title and content)
+    hiddenHashtags: []   // Hashtags hidden from node display (but still in data)
 };
 
 // Node dimensions
@@ -184,7 +185,8 @@ function saveProjectToStorage() {
         nodes: state.currentPath.length === 0 ? state.nodes : rootNodes,
         edges: state.currentPath.length === 0 ? state.edges : rootEdges,
         hashtagColors: hashtagColors,
-        settings: projectSettings
+        settings: projectSettings,
+        hiddenHashtags: state.hiddenHashtags
     };
 
     localStorage.setItem(STORAGE_KEY_PREFIX + currentProjectId, JSON.stringify(projectData));
@@ -227,7 +229,8 @@ function createProject(name) {
         nodes: [],
         edges: [],
         hashtagColors: {},
-        settings: { defaultCompletion: null }
+        settings: { defaultCompletion: null },
+        hiddenHashtags: []
     };
     localStorage.setItem(STORAGE_KEY_PREFIX + projectId, JSON.stringify(projectData));
 
@@ -272,6 +275,7 @@ function openProject(projectId) {
     rootEdges = state.edges;
     hashtagColors = data.hashtagColors || {};
     projectSettings = data.settings || { defaultCompletion: null };
+    state.hiddenHashtags = data.hiddenHashtags || [];
 
     // Clear selection and filter
     state.selectedNodes = [];
@@ -669,6 +673,28 @@ function toggleFilterHashtag(hashtag) {
     updateFilter(input.value);
 }
 
+// Toggle a hashtag's visibility on nodes
+function toggleHiddenHashtag(hashtag) {
+    const tagLower = hashtag.toLowerCase();
+    const index = state.hiddenHashtags.findIndex(t => t.toLowerCase() === tagLower);
+
+    if (index >= 0) {
+        // Unhide it
+        state.hiddenHashtags.splice(index, 1);
+    } else {
+        // Hide it
+        state.hiddenHashtags.push(hashtag);
+    }
+
+    render();
+}
+
+// Show all hidden hashtags (unhide everything)
+function showAllHashtags() {
+    state.hiddenHashtags = [];
+    render();
+}
+
 // ============================================================================
 // HASHTAG SIDEBAR
 // ============================================================================
@@ -738,15 +764,24 @@ function populateSidebar() {
         return;
     }
 
-    // Check which hashtags are currently active in the filter
+    // Check which hashtags are currently active in the filter and which are hidden
     const activeFilters = state.filterHashtags.map(t => t.toLowerCase());
+    const hiddenTags = state.hiddenHashtags.map(t => t.toLowerCase());
 
-    list.innerHTML = hashtags.map(tag => {
+    // Add "Show All Tags" button if there are hidden hashtags
+    let headerHtml = '';
+    if (state.hiddenHashtags.length > 0) {
+        headerHtml = '<button class="show-all-tags-btn" id="show-all-tags-btn">Show All Tags</button>';
+    }
+
+    list.innerHTML = headerHtml + hashtags.map(tag => {
         const color = getHashtagColor(tag);
         const isActive = activeFilters.includes(tag.toLowerCase());
+        const isHidden = hiddenTags.includes(tag.toLowerCase());
         return `
-            <div class="sidebar-hashtag${isActive ? ' active' : ''}" data-tag="${tag}">
-                <span class="hashtag-pill" style="background: ${color}">${tag}</span>
+            <div class="sidebar-hashtag${isActive ? ' active' : ''}${isHidden ? ' hidden' : ''}" data-tag="${tag}">
+                <button class="hashtag-hide-btn" data-tag="${tag}" title="${isHidden ? 'Show tag' : 'Hide tag'}">\u00d7</button>
+                <span class="hashtag-pill" style="background: ${isHidden ? `linear-gradient(to right, #6b7280 0%, ${color} 100%)` : color}">${tag}</span>
                 <span class="hashtag-count">(${counts[tag]})</span>
                 <button class="hashtag-color-btn" style="background: ${color}" data-tag="${tag}" title="Change color"></button>
                 <div class="color-picker-dropdown hidden" data-tag="${tag}">
@@ -760,12 +795,31 @@ function populateSidebar() {
         `;
     }).join('');
 
+    // Show all tags button handler
+    const showAllBtn = document.getElementById('show-all-tags-btn');
+    if (showAllBtn) {
+        showAllBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            showAllHashtags();
+        });
+    }
+
+    // Hide button handlers
+    list.querySelectorAll('.hashtag-hide-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleHiddenHashtag(btn.dataset.tag);
+        });
+    });
+
     // Add click handlers
     list.querySelectorAll('.sidebar-hashtag').forEach(el => {
         // Click on hashtag row to toggle filter
         el.addEventListener('click', (e) => {
-            if (e.target.closest('.hashtag-color-btn') || e.target.closest('.color-picker-dropdown')) {
-                return; // Don't filter when clicking color controls
+            if (e.target.closest('.hashtag-hide-btn') ||
+                e.target.closest('.hashtag-color-btn') ||
+                e.target.closest('.color-picker-dropdown')) {
+                return; // Don't filter when clicking hide or color controls
             }
             toggleFilterHashtag(el.dataset.tag);
         });
@@ -881,6 +935,7 @@ function goHome() {
     state.currentPath = [];
     state.filterHashtags = [];
     state.filterText = '';
+    state.hiddenHashtags = [];
     rootNodes = [];
     rootEdges = [];
     hashtagColors = {};
@@ -1074,7 +1129,11 @@ function renderNodes() {
             const y = 44;
             const maxWidth = NODE_WIDTH - 16;
 
-            for (const tag of node.hashtags) {
+            // Filter out hidden hashtags
+            const hiddenTagsLower = state.hiddenHashtags.map(t => t.toLowerCase());
+            const visibleTags = node.hashtags.filter(tag => !hiddenTagsLower.includes(tag.toLowerCase()));
+
+            for (const tag of visibleTags) {
                 const color = getHashtagColor(tag);
                 const displayTag = tag.length > 10 ? tag.substring(0, 9) + '…' : tag;
                 const pillWidth = displayTag.length * 6.5 + 12;
