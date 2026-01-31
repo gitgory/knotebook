@@ -710,9 +710,17 @@ function renameHashtag(oldTag, newTag) {
 
     // Rename in all nodes at current level
     state.nodes.forEach(node => {
+        // Update hashtags array
         const index = node.hashtags.findIndex(t => t.toLowerCase() === oldTag.toLowerCase());
         if (index !== -1) {
             node.hashtags[index] = newTag;
+
+            // Update content text (case-insensitive replacement)
+            const regex = new RegExp('\\b' + oldTag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'gi');
+            node.content = node.content.replace(regex, newTag);
+
+            // Re-parse hashtags from updated content
+            node.hashtags = parseHashtags(node.content);
         }
     });
 
@@ -747,7 +755,15 @@ function renameHashtag(oldTag, newTag) {
 function deleteHashtag(tag) {
     // Remove from all nodes at current level
     state.nodes.forEach(node => {
+        // Remove from hashtags array
         node.hashtags = node.hashtags.filter(t => t.toLowerCase() !== tag.toLowerCase());
+
+        // Remove from content text (case-insensitive)
+        const regex = new RegExp('\\s*' + tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'gi');
+        node.content = node.content.replace(regex, '').trim();
+
+        // Re-parse hashtags from updated content
+        node.hashtags = parseHashtags(node.content);
     });
 
     // Clear from filter if active
