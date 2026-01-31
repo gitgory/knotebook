@@ -83,10 +83,11 @@ Deep dive into custom fields feature design. Created comprehensive 1,364-line de
 6. **List View** (10-14 hours) - Fields as columns, sorting
 
 ### Next Steps
-- [ ] Decide on open questions (priority indicator, icons, formats)
+- [ ] **PRIORITY: Test batch edit feature** using TEST_BATCH_EDIT.md (29 tests)
+- [ ] Test sidebar improvements if not done (TEST_SIDEBAR_IMPROVEMENTS.md)
+- [ ] Test autocomplete TAB if not done (TEST_AUTOCOMPLETE_TAB.md)
+- [ ] Decide on custom fields open questions (priority indicator, icons, formats)
 - [ ] Add custom fields to roadmap (Tier 2 or Tier 3)
-- [ ] Consider starting Phase 1 (Priority Field) as proof-of-concept
-- [ ] OR continue with other Tier 1/2 features
 
 ---
 
