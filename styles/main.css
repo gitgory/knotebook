@@ -1484,7 +1484,7 @@ body {
     position: absolute;
     top: 0;
     right: 0;
-    width: 220px;
+    width: 275px; /* 25% wider for desktop */
     height: 100%;
     background: var(--bg-secondary);
     border-left: 1px solid var(--surface);
@@ -1705,7 +1705,11 @@ body {
     #hashtag-sidebar {
         top: 60px;
         height: calc(100% - 60px);
-        width: 275px; /* 25% wider than desktop (220px → 275px) */
+        width: 220px; /* Revert to original mobile width */
+    }
+
+    #sidebar-content {
+        padding-bottom: 125px; /* 2.5 row heights for mobile scrolling */
     }
 
     /* Position color picker in center of screen on mobile */
