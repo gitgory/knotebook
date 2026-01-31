@@ -2056,12 +2056,19 @@ function handleAutocompleteKeydown(e) {
         return true;
     }
     if (e.key === 'Enter' || e.key === 'Tab') {
+        // If an item is highlighted, insert it
         if (autocomplete.selectedIndex >= 0) {
             e.preventDefault();
             selectAutocompleteItem(autocomplete.selectedIndex);
             return true;
         }
-        // If nothing is selected, let Enter/Tab pass through
+        // If only one suggestion remains, insert it automatically
+        if (autocomplete.items.length === 1) {
+            e.preventDefault();
+            selectAutocompleteItem(0);
+            return true;
+        }
+        // Otherwise, let Enter/Tab pass through
         hideAutocomplete();
         return false;
     }
