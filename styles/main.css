@@ -653,15 +653,21 @@ body {
     padding: 4px 8px;
     border: none;
     border-radius: 2px;
-    background: transparent;
+    background: transparent !important;
     color: var(--text-secondary);
     cursor: pointer;
     font-size: 18px;
     line-height: 1;
+    outline: none;
 }
 
 #text-search-clear:hover {
+    background: transparent !important;
     color: var(--text-primary);
+}
+
+#text-search-clear:active {
+    background: transparent !important;
 }
 
 #text-search-clear.hidden {
