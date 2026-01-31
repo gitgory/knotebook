@@ -1,0 +1,599 @@
+/**
+ * Graph Notes - Main Application
+ * A visual note-taking app with graph structure
+ */
+// ============================================================================
+// DATA STRUCTURES (line 6)
+// ============================================================================
+    // Application state
+    // Viewport state for pan/zoom
+    // Hashtag filter state
+    // Node dimensions
+    // Drag threshold for Ctrl+Drag (prevents accidental duplication on multi-select clicks)
+    // Preset color palette for hashtags (works across all dark themes)
+    // Hashtag color assignments (hashtag -> color)
+    // Per-notebook settings
+    // Autocomplete state
+    // Editor snapshot for cancel/revert
+    // Track removed tags during edit session (for outlined pill state)
+    // Title expansion hover timeout
+    // Current project info
+// ============================================================================
+// THEME (line 97)
+// ============================================================================
+function setTheme(themeName)  // line 101
+    // Remove theme from root if it's 'midnight' (default), otherwise set it
+    // Update active option state
+    // Save to localStorage
+function loadSavedTheme()  // line 118
+function initThemeSelector()  // line 123
+    // Toggle dropdown
+    // Select theme option
+    // Close dropdown when clicking elsewhere
+// ============================================================================
+// PROJECT STORAGE (localStorage) (line 147)
+// ============================================================================
+    // Get list of all saved projects (metadata only)
+function getProjectsList()  // line 152
+    // Save projects index
+function saveProjectsIndex(projects)  // line 158
+    // Generate unique project ID
+function generateProjectId()  // line 163
+    // Count all notes in a project (including nested)
+function countNotes(nodes)  // line 168
+    // Save current project to localStorage
+function saveProjectToStorage()  // line 180
+    // Ensure root state is captured
+    // Update project metadata in index
+    // Load project from localStorage
+function loadProjectFromStorage(projectId)  // line 208
+    // Create a new project
+function createProject(name)  // line 215
+    // Save empty project data
+    // Rename a project
+function renameProject(projectId, newName)  // line 244
+    // Delete a project
+function deleteProject(projectId)  // line 254
+    // Open a project
+function openProject(projectId)  // line 262
+    // Reset navigation
+    // Load data
+    // Clear selection and filter
+    // Update sidebar button state
+    // Close sidebar
+    // Schedule auto-save (debounced)
+function scheduleAutoSave()  // line 323
+// ============================================================================
+// PROJECT LIST UI (line 333)
+// ============================================================================
+function populateProjectsList()  // line 339
+    // Click on project to open
+    // Click on menu button
+function escapeHtml(text)  // line 375
+function showProjectMenu(projectId, x, y)  // line 381
+    // Position menu
+    // Adjust if menu goes off screen
+function hideProjectMenu()  // line 400
+function showNewProjectModal()  // line 405
+function hideNewProjectModal()  // line 413
+    // Show confirmation modal and return a promise
+function showConfirmation(message)  // line 418
+        // Focus Yes button by default
+        // Handle Yes
+        // Handle No/Cancel
+        // Handle keyboard
+        // Cleanup function
+        // Attach listeners
+function handleCreateProject()  // line 469
+function handleRenameProject(projectId)  // line 483
+// ============================================================================
+// UTILITY FUNCTIONS (line 507)
+// ============================================================================
+function generateId()  // line 511
+function parseHashtags(text)  // line 515
+function truncateText(text, maxLength)  // line 521
+function getNodeCenter(node)  // line 527
+    // Check if a node has body text beyond just hashtags
+function hasBodyText(node)  // line 535
+    // Cycle completion state: null → no → yes → partial → no → ...
+function cycleCompletion(current)  // line 542
+    // Check if a node matches the current filter (OR logic for hashtags, AND with text search)
+function nodeMatchesFilter(node)  // line 550
+    // Text search filter
+    // Hashtag filter (OR logic)
+    // Get IDs of all visible nodes (matching filter)
+function getVisibleNodeIds()  // line 568
+    // Update sidebar button to show active state when filters are applied
+function updateSidebarButtonState()  // line 573
+    // Update filter from input
+function updateFilter(inputValue)  // line 583
+    // Update visual state
+    // Clear the filter
+function clearFilter()  // line 604
+    // Also clear text search
+    // Set filter to a specific hashtag (used when clicking hashtag in editor)
+function setFilterHashtag(hashtag)  // line 625
+    // Update text search filter
+function updateTextFilter(text)  // line 632
+    // Clear text search filter
+function clearTextFilter()  // line 650
+    // Toggle a hashtag in the filter (used by sidebar)
+function toggleFilterHashtag(hashtag)  // line 660
+        // Remove it
+        // Add it
+    // Toggle a hashtag's visibility on nodes
+function toggleHiddenHashtag(hashtag)  // line 680
+        // Unhide it
+        // Hide it
+    // Show all hidden hashtags (unhide everything)
+function showAllHashtags()  // line 696
+    // Rename a hashtag across all nodes
+function renameHashtag(oldTag, newTag)  // line 702
+    // Validate new tag format
+    // Don't rename if it's the same
+    // Rename in all nodes at current level
+        // Check if this node has the tag in its content (match whole hashtag)
+        // Update content text (case-insensitive replacement)
+        // Re-parse hashtags from updated content
+    // Update filter if this tag was being filtered
+        // Update the filter input to show the new tag
+    // Update hidden tags if this tag was hidden
+    // Transfer color to new tag name
+    // Delete a hashtag from all nodes
+function deleteHashtag(tag)  // line 756
+    // Remove from all nodes at current level
+        // Remove from content text (case-insensitive, match whole hashtag)
+        // Re-parse hashtags from updated content
+    // Clear from filter if active
+    // Clear from hidden tags
+    // Remove color assignment
+    // Show hashtag context menu
+function showHashtagContextMenu(tag, x, y)  // line 781
+    // Remove existing menu if any
+    // Adjust position if menu goes off screen
+    // Handle menu actions
+            // Open color picker
+    // Hide hashtag context menu
+function hideHashtagContextMenu()  // line 838
+// ============================================================================
+// HASHTAG SIDEBAR (line 845)
+// ============================================================================
+function toggleSidebar()  // line 849
+function showSidebar()  // line 857
+function hideSidebar()  // line 863
+function closeAllColorPickers()  // line 868
+    // Get all unique hashtags with counts from current level
+function getHashtagCounts()  // line 875
+    // Get color for a hashtag (assigns default if not set)
+function getHashtagColor(hashtag)  // line 888
+        // Assign a color based on hash of the hashtag name
+    // Set color for a hashtag
+function setHashtagColor(hashtag, color)  // line 898
+function populateSidebar()  // line 904
+    // Check which hashtags are currently active in the filter and which are hidden
+    // Add "Show All Tags" button (always visible, grayed out when not needed)
+    // Show all tags button handler
+    // Hide button handlers
+    // Add click handlers for filter (pill + count only)
+    // Color button handlers
+        // Close other dropdowns
+    // Color swatch handlers
+    // Context menu handlers (right-click on hashtag row)
+        // Desktop: right-click
+        // Mobile: long-press (500ms)
+    // Convert screen coordinates to canvas coordinates
+function screenToCanvas(screenX, screenY)  // line 1034
+    // Convert canvas coordinates to screen coordinates (inverse of screenToCanvas)
+function canvasToScreen(canvasX, canvasY)  // line 1044
+    // Get the bounding box of all nodes (optionally filtered to visible nodes only)
+function getGraphBounds(visibleOnly = false)  // line 1054
+    // If visibleOnly is true, only include nodes that pass the current filters
+// ============================================================================
+// VIEW SWITCHING (line 1077)
+// ============================================================================
+function showLandingPage()  // line 1081
+function showGraphView()  // line 1088
+function newProject()  // line 1094
+    // Show the new project modal instead of directly creating
+function goHome()  // line 1099
+    // Save current project before leaving
+    // Reset state
+// ============================================================================
+// VIEWPORT (PAN/ZOOM) (line 1122)
+// ============================================================================
+function updateViewport()  // line 1126
+    // Calculate viewBox based on viewport state
+function zoomAtPoint(delta, screenX, screenY)  // line 1140
+    // Get canvas coordinates before zoom
+    // Apply zoom
+    // Get canvas coordinates after zoom
+    // Adjust pan to keep the point under cursor stationary
+function fitToView()  // line 1164
+    // Use visible nodes only when filters are active
+        // No nodes, reset to default view
+    // Add padding around the graph
+    // Calculate zoom to fit
+    // Center the graph
+function resetViewport()  // line 1204
+// ============================================================================
+// RENDERING (line 1211)
+// ============================================================================
+function render()  // line 1215
+    // Refresh sidebar if open
+    // Auto-save if we have a current project
+function renderNodes()  // line 1233
+        // Skip nodes that don't match filter
+        // Stacked rectangles for children (rendered first so they appear behind)
+            // Second stack layer for 3+ children
+        // First stack layer
+        // Node body (rectangle)
+        // Dog-ear fold for body text indicator (top-left corner)
+        // Node title
+        // Store full title for hover expansion
+        // Hashtags as colored pills
+        // Filter out hidden hashtags
+            // Stop if we'd overflow the node
+            // Add ellipsis indicator
+            // Pill background
+            // Pill text
+        // Completion indicator (clickable status icon)
+        // Background circle for click target
+function renderEdges()  // line 1399
+    // Get visible node IDs for filtering edges
+        // Skip edges where either node is hidden by filter
+        // Create a group to hold hitbox and visible line
+        // Invisible wider hitbox for easier clicking
+        // Visible edge line
+function renderEdgePreview(x, y)  // line 1446
+    // Remove existing preview
+function clearEdgePreview()  // line 1469
+function updateBreadcrumbs()  // line 1474
+// ============================================================================
+// NODE OPERATIONS (line 1486)
+// ============================================================================
+function createNode(x, y)  // line 1490
+function deepCopyNode(node, offsetX = 0, offsetY = 0)  // line 1508
+    // Deep copy children recursively
+    // Copy child edges (they reference child IDs which are now different,
+    // so we skip them - edges are ignored per requirements)
+function deleteNode(nodeId)  // line 1536
+    // Find the node being deleted
+    // Promote children to current level before deleting
+        // Offset children positions relative to parent's position
+        // Adjust position so children appear near where parent was
+        // Promote child edges to current level
+    // Remove edges connected to this node
+    // Remove the node
+    // Remove from selection
+function selectNode(nodeId, addToSelection = false)  // line 1571
+        // Toggle: add if not selected, remove if already selected
+        // Replace selection with single node
+function clearSelection()  // line 1588
+function updateSelectionVisuals()  // line 1596
+    // Update node selection visuals without full re-render
+    // Update edge selection visuals
+    // Update selection action bar
+function updateSelectionActionBar()  // line 1621
+        // Node(s) selected - configure buttons based on selection count
+        // Edit and Connect only work with single selection
+        // Action bar is only shown on mobile via long-press
+        // Edge selected - show only delete
+        // On mobile, show action bar for edge deletion (hard to long-press edges)
+        // Nothing selected
+function positionActionBar()  // line 1659
+    // Only reposition on touch devices; desktop keeps default CSS positioning
+        // Single node: anchor above/below the node
+        // Multi-select: anchor above/below the bounding box of all selected nodes
+        // Edge: anchor at midpoint between the two connected nodes
+    // Measure the bar
+    // Default: position above the anchor
+    // Flip below if it would go above the viewport
+    // Center horizontally on the anchor, clamped within viewport
+    // Apply positioning via inline styles
+function showActionBar()  // line 1741
+    // Position above the selected node on mobile before animation
+    // Trigger reflow for animation
+function hideActionBar()  // line 1753
+    // Hide after animation completes
+        // Clear inline positioning styles so stale positions don't persist
+// ============================================================================
+// EDGE OPERATIONS (line 1773)
+// ============================================================================
+function startEdgeCreation(nodeId)  // line 1777
+function completeEdgeCreation(targetNodeId)  // line 1781
+    // Toggle edge: remove if exists, create if not
+function selectEdge(index)  // line 1805
+function deleteSelectedEdge()  // line 1811
+// ============================================================================
+// NAVIGATION (NESTING) (line 1819)
+// ============================================================================
+function enterNode(nodeId)  // line 1823
+    // Save current state to the node we're leaving
+    // Push current node to path
+    // Load children
+    // Clear filter when navigating
+    // Reset viewport for the new level
+function goBack()  // line 1853
+    // Save current state
+    // Go to parent level
+        // Back to root - need to restore root state
+    // Clear filter when navigating
+    // Reset viewport for the new level
+    // Root state storage (saved when entering first node)
+function getRootNodes()  // line 1887
+function getRootEdges()  // line 1891
+function saveRootState()  // line 1895
+// ============================================================================
+// EDITOR (line 1902)
+// ============================================================================
+function openEditor(nodeId)  // line 1906
+    // Check if we're in batch edit mode (multiple nodes selected)
+    // Clear removed tags from previous session
+        // Batch edit mode
+        // Snapshot all nodes for cancel/revert
+        // Disable title field only
+        // Enable textarea for adding tags
+        // Disable enter button
+        // Collect all unique tags across selected nodes with counts
+        // Sort by frequency (most common first), then alphabetically
+        // Check completion status - if all same, show it; otherwise show mixed
+        // Focus on textarea for tag entry
+        // Single node edit mode
+        // Snapshot current state for cancel/revert
+        // Enable all fields
+        // Update enter button based on whether node has children
+function closeEditor()  // line 2027
+function cancelEditor()  // line 2036
+        // Batch mode: restore all nodes from snapshot
+        // Single node mode
+        // Restore node from snapshot
+        // Delete empty nodes (new node that was never filled in)
+function saveEditor()  // line 2072
+        // Batch mode: apply changes to all selected nodes
+        // Parse hashtags from textarea (these are tags to add)
+        // Get completion state
+        // Add new tags to each node (avoid duplicates)
+            // Update content to include new tags
+        // Set completion state (unless it's 'mixed' which means no change)
+        // Single node mode
+        // Save completion state
+        // Delete empty nodes (created but never filled in)
+function updateHashtagDisplay(hashtags, isBatchMode = false, totalNodes = 1, tagCounts = {})  // line 2141
+        // Solid pill: background color, white text
+        // Outlined pill: transparent background, colored border, white text
+    // Add click handlers to remove/re-add tags
+            // Re-add tag: append to content
+            // Trigger input event to re-parse and update display
+            // Remove tag: delete from content and mark as removed
+            // Trigger input event to re-parse and update display
+    // Helper function to remove a tag from content textarea
+function removeTagFromContent(tag)  // line 2190
+    // Remove tag and clean up extra spaces
+    // Clean up multiple spaces
+function updateCompletionButtons(value)  // line 2202
+        // In batch mode with mixed completion states, show all buttons as inactive
+// ============================================================================
+// HASHTAG AUTOCOMPLETE (line 2215)
+// ============================================================================
+function getAutocompleteSuggestions(query)  // line 2219
+function showAutocomplete(inputElement)  // line 2237
+function positionAutocomplete(inputElement)  // line 2270
+        // Filter input: position below the input
+        // Textarea: position near caret
+        // Viewport clamping
+function getTextareaCaretCoords(textarea, position)  // line 2300
+function hideAutocomplete()  // line 2331
+function selectAutocompleteItem(index)  // line 2342
+    // Scan forward from cursor to skip any remaining word characters
+    // Set cursor after inserted text
+    // Dispatch input event to trigger existing handlers
+function updateAutocompleteFromInput(inputElement)  // line 2374
+    // Scan backwards from cursor to find '#'
+    // Check if we found a '#' at a word boundary
+        // Word boundary check: '#' must be at position 0 or preceded by whitespace
+    // No valid '#' found — hide
+function handleAutocompleteKeydown(e)  // line 2402
+        // If an item is highlighted, insert it
+        // If only one suggestion remains, insert it automatically
+        // Otherwise, let Enter/Tab pass through
+function highlightAutocompleteItem(index)  // line 2446
+    // Scroll into view
+// ============================================================================
+// HELP MODAL (line 2459)
+// ============================================================================
+function showHelp()  // line 2463
+function hideHelp()  // line 2467
+// ============================================================================
+// SETTINGS MODAL (line 2471)
+// ============================================================================
+function showSettings(projectId)  // line 2475
+        // Opened from context menu for a non-open project
+        // Opened from toolbar for the current project
+function hideSettings()  // line 2494
+function updateSettingsToggle(toggle, isOn)  // line 2500
+function toggleSettingsTask()  // line 2505
+        // Update in-memory settings for the currently open project
+        // Update localStorage directly for a non-open project
+// ============================================================================
+// FILE OPERATIONS (line 2529)
+// ============================================================================
+    // Fallback download using data URL (for mobile/unsupported browsers)
+function downloadAsFile(filename, data)  // line 2534
+    // Export current project to file
+    // Ensure root state is captured
+    // Get project name for filename
+    // Try File System Access API first, fall back to data URL download
+        // Fallback for mobile/unsupported browsers
+    // Export a specific project (from project menu)
+    // Try File System Access API first, fall back to data URL download
+        // Fallback for mobile/unsupported browsers
+    // Imported file data (temporary storage during import flow)
+    // Import from file (landing page)
+    // Try File System Access API first, fall back to file input
+        // Store for import flow
+        // Show import modal
+        // Fallback for mobile/unsupported browsers
+    // Fallback import using hidden file input
+function importFromFileFallback()  // line 2696
+        // Store for import flow
+        // Show import modal
+function hideImportModal()  // line 2727
+function handleImportAsNew()  // line 2732
+    // Save imported data to the new project
+    // Update note count
+    // Show a simple selection
+    // Save imported data to the existing project
+    // Update note count
+// ============================================================================
+// EVENT HANDLERS (line 2808)
+// ============================================================================
+function initEventListeners()  // line 2812
+    // Mouse down on canvas
+        // Click on children indicator - enter the node
+        // Click on completion indicator - cycle state
+            // Shift+click: start/complete edge creation
+            // Regular click or Ctrl+click for multi-select/duplicate
+            // Store ctrl state and drag start position
+            // Ctrl+click on unselected node: add to selection
+            // Ctrl+click on already-selected: mark for potential deselection on mouseup
+            // Click on unselected node: replace selection
+            // Click on already-selected node without Ctrl: keep selection
+            // Don't change selection
+            // Set up dragging state
+        // Click on empty space - start panning
+            // Cancel edge creation
+            // Start panning
+    // Mouse move
+        // Pan the canvas
+        // Check if we've exceeded the drag threshold (only for Ctrl+Drag)
+            // Threshold met - trigger duplication
+            // Create deep copies of all selected nodes
+                // Use the same offsets for the copies
+            // Copy edges where both endpoints are in the selection
+            // Select the new copies
+        // Move all selected nodes together (whether originals or duplicates)
+        // Title expansion on hover (only when not dragging/panning)
+        // Clear any pending hover timeout
+        // Collapse all previously expanded titles
+        // Expand title after delay if hovering over node body or title
+    // Mouse up
+        // Check if releasing over a node while in edge creation mode
+        // Handle Ctrl+Click deselection (if no drag occurred)
+        // Deselect the node that was Ctrl+clicked (it was already selected)
+    // Mouse leave - stop panning if mouse leaves canvas
+    // Mouse wheel for zooming
+    // Touch state for mobile
+    // Helper to get distance between two touches
+function getTouchDistance(touches)  // line 3076
+    // Helper to get center point between two touches
+function getTouchCenter(touches)  // line 3083
+    // Touch start (for mobile drag and pan)
+        // Close hashtag sidebar on touch (mobile UX)
+        // Handle pinch zoom (2 fingers)
+        // Cancel any single-touch operations
+        // Touch on children indicator - enter the node immediately
+        // Touch on completion indicator - cycle state
+        // Touch on node - remember it, but don't drag yet
+        // Start long-press timer for multi-select toggle
+            // Long press detected - toggle node in/out of selection
+            // Vibrate if available for feedback
+        // Touch on edge - select it and show action bar
+        // Touch on empty space - start panning or cancel edge mode
+            // Cancel edge creation
+    // Touch move (for mobile drag and pan)
+        // Handle pinch zoom
+        // Zoom toward center of pinch
+        // Cancel long-press if moved
+        // Check if we've moved enough to count as a drag (5px threshold)
+            // If we started on a node, begin dragging it now
+                // If the node isn't already selected, select only it
+                // Store drag offsets for ALL selected nodes (for multi-drag)
+        // Move all selected nodes together
+            // Update just the node's transform without full re-render
+        // Update connected edges
+    // Touch end
+        // Clear long-press timer
+        // Reset pinch state
+        // If there are still touches, don't reset everything
+        // If we didn't move, treat as a tap
+            // Double-tap on node - open editor
+            // Complete edge creation
+            // Single tap
+            // Tap on already-selected node - show action bar
+            // Tap on unselected node - select it (replaces selection)
+        // Tap on empty space - deselect
+        // Full render after drag to sync everything
+        // Reset touch state
+    // Double click to edit
+    // Keyboard shortcuts
+        // Don't handle shortcuts when editing text
+        // Don't handle shortcuts when a modal is open
+        // Only handle shortcuts when in graph view
+        // Ctrl+S - Export to file
+        // N - New note
+        // Enter - Edit selected node (only if single selection)
+        // F - Fit to view
+        // - - Zoom out
+        // 0 - Reset zoom to 100%
+        // C - Start connect/edge mode (from selected node, only if single selection)
+            // Already in edge mode, cancel
+            // Start edge creation from selected node
+        // ? - Show help
+        // S - Focus text search
+        // / - Open sidebar and focus hashtag filter
+        // H - Toggle hashtag sidebar
+        // Delete or Backspace - Delete selected
+                // Delete all selected nodes (copy array since deleteNode modifies it)
+        // Escape - Save editor or clear selection (also closes modals)
+        // Alt+Up Arrow - Go back in navigation
+    // Toolbar buttons
+        // Create node in center of visible viewport
+    // Close help modal when clicking outside
+    // Settings modal
+    // Import modal buttons
+    // Landing page buttons
+    // New project modal
+    // Project menu actions
+    // Close project menu when clicking outside
+    // Close hashtag context menu when clicking anywhere
+    // Editor buttons — Cancel (X) reverts changes, Save closes (mobile only)
+    // Click outside editor content to save (only if mousedown also started on backdrop,
+    // so dragging a text selection out of the editor doesn't accidentally close it)
+    // Editor enter button (save then view nested notes)
+        // Sync editor fields to node before navigating
+    // Enter in title field saves, Escape saves
+    // Textarea: autocomplete gets first chance, then Enter saves on desktop, Escape saves
+        // On desktop: Enter saves (unless Shift). On mobile: Enter always inserts newline
+    // Update hashtags as user types + autocomplete
+        // In batch mode, show all unique tags across selected nodes
+        // Count existing tags in nodes
+        // Add newly typed tags (they have count 0 until saved)
+        // Combine all tags
+        // Sort by frequency
+        // Single edit mode: show tags from content
+    // Completion buttons in editor
+    // Breadcrumbs click to go back
+    // Hashtag sidebar toggle
+    // Close color pickers when clicking outside
+    // Hashtag search input + autocomplete
+    // Hashtag clear button
+    // Allow Escape to blur the search input and clear filter (autocomplete gets first chance)
+    // Click-outside to dismiss autocomplete
+    // Blur handlers for autocomplete inputs (delayed to allow mousedown on dropdown)
+    // Text search input
+    // Text search clear button
+    // Allow Escape to blur and clear text search
+    // Selection action bar buttons
+            // Cancel if already in edge mode
+        // Create deep copies of all selected nodes
+        // Copy edges where both endpoints are in the selection
+        // Select the new copies
+            // Delete all selected nodes (copy array since deleteNode modifies it)
+    // Close sidebar when tapping canvas on mobile
+// ============================================================================
+// INITIALIZATION (line 3887)
+// ============================================================================
+function init()  // line 3891
+    // Start the app when DOM is ready
+    // Warn before closing if there are pending unsaved changes
+        // There's a pending auto-save, warn the user

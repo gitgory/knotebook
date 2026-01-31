@@ -4,6 +4,95 @@ This file tracks work across Claude Code sessions for continuity.
 
 ---
 
+## Session 2026-01-30 - Night Part 5 (Batch Edit Implementation)
+
+### Summary
+Implemented complete batch edit feature (Tier 3) with redesigned tag interaction. Users can now select multiple notes and edit tags/completion status in one operation. Introduced clickable tag pills with remove/re-add functionality that works in both single and batch modes. Created comprehensive 29-test plan.
+
+### Files Changed
+- `scripts/app.js` - Added batch edit mode to openEditor(), closeEditor(), cancelEditor(), saveEditor(); added removedTagsInSession tracking; completely rewrote updateHashtagDisplay() with clickable pills and remove/re-add logic; added removeTagFromContent() helper; updated textarea input listener for batch mode tag counting; bumped v56→v60
+- `styles/main.css` - Added :disabled styles for editor inputs; added .editor-hashtag styles with hover/active states; bumped v57→v60
+- `index.html` - Bumped cache versions v56→v60
+- `tasks.md` - Marked Tier 2 complete (15/15 done, 100%)
+- `TEST_BATCH_EDIT.md` - NEW: 29-test comprehensive plan for batch edit feature
+- `SESSION_NOTES.md` - Updated priorities and added session summaries
+
+### Tasks Completed
+- [x] Discussed batch edit UI/UX options (A: extend editor, B: split context+editor, C: pure context menu)
+- [x] Implemented Option A: extend current editor for batch mode
+- [x] Fixed textarea disabled bug (v58→v59)
+- [x] Discussed generalization approach and tag management UX
+- [x] Redesigned tag interaction: clickable pills with remove/re-add
+- [x] Implemented removedTagsInSession tracking for outlined pill state
+- [x] Updated badge counts display (e.g., "#urgent (2/3)")
+- [x] Sorted tags by frequency (most common first)
+- [x] Added removeTagFromContent() with space cleanup
+- [x] Synchronized tag pills with content text changes
+- [x] Created comprehensive 29-test plan
+- [x] Marked Tier 2 complete milestone
+- [x] Regenerated table of contents (599 lines)
+
+### Decisions Made
+- **Batch edit approach**: Option A (extend editor) chosen over context menu for better UX and visibility
+- **Tag interaction redesign**: Click pill to remove (outlined), click again to re-add (solid) - applies to ALL editor modes
+- **Visual states**: Solid pill = tag present, outlined pill (transparent bg + colored border) = tag removed in session
+- **Batch mode display**: Show ALL unique tags (union not intersection) with frequency badges
+- **Tag sorting**: Most common first, then alphabetically
+- **Re-add behavior**: Appends to end of content (accepted trade-off, position not preserved)
+- **Removed state**: Session-only, cleared on save/close (not persistent)
+- **Content sync**: Parse tags on every input change, keep pills and text synchronized
+- **Space cleanup**: Remove extra spaces when deleting tags
+- **Generalization**: Keep simple for now, refactor when adding custom fields (YAGNI principle)
+- **Context menu deferred**: Marked Option C for Future/Maybe (Tier 5)
+
+### Implementation Highlights
+
+**Batch Mode Features:**
+- Multi-select nodes (Ctrl+Click) → Open editor → Batch mode activates
+- Title/content disabled with "Editing N notes" placeholder
+- Shows all unique tags across selection with counts
+- Add tags: Type in textarea, applies to all on save
+- Remove tags: Click pill → outlined, removes from notes that have it
+- Re-add tags: Click outlined pill → adds to ALL selected notes
+- Set completion: Apply to all selected notes
+- Cancel: Reverts all changes
+
+**Tag Pill Interaction (Single + Batch):**
+- Click solid pill → Removes tag, becomes outlined, deletes from content
+- Click outlined pill → Re-adds tag, becomes solid, appends to content
+- Hover: Opacity + scale animation
+- Visual feedback: Solid (present) vs Outlined (removed)
+
+**Technical Details:**
+- `removedTagsInSession` Set tracks removed tags during edit session
+- `updateHashtagDisplay()` handles both modes, renders pills with click handlers
+- `removeTagFromContent()` uses regex to cleanly remove tags and spaces
+- Textarea input listener re-parses tags and updates display in real-time
+- Badge counts recalculated on content changes in batch mode
+
+### Next Steps
+- [ ] **PRIORITY: Test batch edit feature** using TEST_BATCH_EDIT.md (29 tests)
+- [ ] Test sidebar improvements if not done (TEST_SIDEBAR_IMPROVEMENTS.md)
+- [ ] Test autocomplete TAB if not done (TEST_AUTOCOMPLETE_TAB.md)
+- [ ] Decide on custom fields open questions (priority indicator, icons, formats)
+- [ ] Add custom fields to roadmap (Tier 2 or Tier 3)
+
+### Notes
+- 4 commits this session (5f3de6b, ae2026a, 2acfd60, 91fec35)
+- Versions: v58 (initial), v59 (textarea fix), v60 (clickable pills), cache v57→v60
+- Tier 2 milestone: 100% complete (15/15 items done)
+- Tier 3: 1st feature implemented (Batch edit notes)
+- Major UX improvement: tag management now intuitive and powerful
+- Clickable pills work in both single and batch modes (consistency)
+- Session-only removed state prevents confusion on reopen
+- Test plan covers single mode, batch mode, edge cases, regression
+- TOC regenerated: 599 lines (app.js structure updated)
+- Context usage: 77% (154k/200k tokens)
+- Deferred Option C (context menu batch ops) to Future/Maybe
+- Ready for comprehensive testing next session
+
+---
+
 ## Session 2026-01-30 - Night (Custom Fields Design)
 
 ### Summary
