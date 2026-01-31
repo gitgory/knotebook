@@ -80,6 +80,9 @@ const autocomplete = {
 // Editor snapshot for cancel/revert
 let editorSnapshot = null;
 
+// Track removed tags during edit session (for outlined pill state)
+let removedTagsInSession = new Set();
+
 // Title expansion hover timeout
 let hoverTimeout = null;
 const HOVER_DELAY = 500; // milliseconds before expanding title on hover
@@ -1904,6 +1907,9 @@ function openEditor(nodeId) {
     // Check if we're in batch edit mode (multiple nodes selected)
     const isBatchMode = state.selectedNodes.length > 1;
 
+    // Clear removed tags from previous session
+    removedTagsInSession.clear();
+
     if (isBatchMode) {
         // Batch edit mode
         const nodes = state.selectedNodes.map(id => state.nodes.find(n => n.id === id)).filter(Boolean);
@@ -1940,14 +1946,23 @@ function openEditor(nodeId) {
         enterBtn.textContent = 'Step into note';
         enterBtn.classList.remove('has-children');
 
-        // Find common hashtags (tags present in ALL selected nodes)
-        const commonHashtags = nodes.length > 0
-            ? nodes[0].hashtags.filter(tag =>
-                nodes.every(node => node.hashtags && node.hashtags.includes(tag))
-            )
-            : [];
+        // Collect all unique tags across selected nodes with counts
+        const tagCounts = {};
+        nodes.forEach(node => {
+            (node.hashtags || []).forEach(tag => {
+                tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+            });
+        });
 
-        updateHashtagDisplay(commonHashtags);
+        // Sort by frequency (most common first), then alphabetically
+        const allTags = Object.keys(tagCounts).sort((a, b) => {
+            if (tagCounts[b] !== tagCounts[a]) {
+                return tagCounts[b] - tagCounts[a]; // Descending by count
+            }
+            return a.localeCompare(b); // Alphabetically if same count
+        });
+
+        updateHashtagDisplay(allTags, true, nodes.length, tagCounts);
 
         // Check completion status - if all same, show it; otherwise show mixed
         const completions = nodes.map(n => n.completion || null);
@@ -1988,7 +2003,7 @@ function openEditor(nodeId) {
         titleInput.placeholder = '';
         textarea.value = node.content || '';
         textarea.placeholder = '';
-        updateHashtagDisplay(node.hashtags || []);
+        updateHashtagDisplay(node.hashtags || [], false, 1, {});
         updateCompletionButtons(node.completion || '');
 
         // Update enter button based on whether node has children
@@ -2015,6 +2030,7 @@ function closeEditor() {
     modal.classList.add('hidden');
     delete modal.dataset.nodeId;
     delete modal.dataset.batchMode;
+    removedTagsInSession.clear();
 }
 
 function cancelEditor() {
@@ -2122,23 +2138,65 @@ function saveEditor() {
     render();
 }
 
-function updateHashtagDisplay(hashtags) {
+function updateHashtagDisplay(hashtags, isBatchMode = false, totalNodes = 1, tagCounts = {}) {
     const display = document.getElementById('hashtag-display');
+    const modal = document.getElementById('editor-modal');
+    const textarea = document.getElementById('note-text');
+
     display.innerHTML = hashtags
         .map(tag => {
             const color = getHashtagColor(tag);
-            return `<span class="hashtag clickable" data-tag="${tag}" style="background: ${color}; color: #fff;">${tag}</span>`;
+            const isRemoved = removedTagsInSession.has(tag);
+            const count = tagCounts[tag] || 0;
+            const badge = isBatchMode ? ` (${count}/${totalNodes})` : '';
+
+            // Solid pill: background color, white text
+            // Outlined pill: transparent background, colored border, white text
+            const style = isRemoved
+                ? `background: transparent; border: 2px solid ${color}; color: #fff;`
+                : `background: ${color}; color: #fff;`;
+
+            return `<span class="hashtag editor-hashtag" data-tag="${tag}" style="${style}">${tag}${badge}</span>`;
         })
         .join('');
 
-    // Add click handlers to hashtags
-    display.querySelectorAll('.hashtag').forEach(el => {
+    // Add click handlers to remove/re-add tags
+    display.querySelectorAll('.editor-hashtag').forEach(el => {
         el.addEventListener('click', () => {
             const tag = el.dataset.tag;
-            saveEditor();
-            setFilterHashtag(tag);
+            const isRemoved = removedTagsInSession.has(tag);
+
+            if (isRemoved) {
+                // Re-add tag: append to content
+                removedTagsInSession.delete(tag);
+                const currentContent = textarea.value.trim();
+                textarea.value = currentContent + (currentContent ? ' ' : '') + tag;
+
+                // Trigger input event to re-parse and update display
+                textarea.dispatchEvent(new Event('input'));
+            } else {
+                // Remove tag: delete from content and mark as removed
+                removedTagsInSession.add(tag);
+                removeTagFromContent(tag);
+
+                // Trigger input event to re-parse and update display
+                textarea.dispatchEvent(new Event('input'));
+            }
         });
     });
+}
+
+// Helper function to remove a tag from content textarea
+function removeTagFromContent(tag) {
+    const textarea = document.getElementById('note-text');
+    const escapedTag = tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+    // Remove tag and clean up extra spaces
+    const regex = new RegExp('\\s*' + escapedTag + '(?=\\s|$)', 'gi');
+    textarea.value = textarea.value.replace(regex, '').trim();
+
+    // Clean up multiple spaces
+    textarea.value = textarea.value.replace(/\s+/g, ' ');
 }
 
 function updateCompletionButtons(value) {
@@ -3611,8 +3669,46 @@ function initEventListeners() {
 
     // Update hashtags as user types + autocomplete
     document.getElementById('note-text').addEventListener('input', (e) => {
+        const modal = document.getElementById('editor-modal');
+        const isBatchMode = modal.dataset.batchMode === 'true';
         const hashtags = parseHashtags(e.target.value);
-        updateHashtagDisplay(hashtags);
+
+        if (isBatchMode) {
+            // In batch mode, show all unique tags across selected nodes
+            const nodes = state.selectedNodes.map(id => state.nodes.find(n => n.id === id)).filter(Boolean);
+            const tagCounts = {};
+
+            // Count existing tags in nodes
+            nodes.forEach(node => {
+                (node.hashtags || []).forEach(tag => {
+                    tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+                });
+            });
+
+            // Add newly typed tags (they have count 0 until saved)
+            hashtags.forEach(tag => {
+                if (!tagCounts[tag]) {
+                    tagCounts[tag] = 0;
+                }
+            });
+
+            // Combine all tags
+            const allTags = [...new Set([...Object.keys(tagCounts), ...hashtags])];
+
+            // Sort by frequency
+            allTags.sort((a, b) => {
+                if (tagCounts[b] !== tagCounts[a]) {
+                    return tagCounts[b] - tagCounts[a];
+                }
+                return a.localeCompare(b);
+            });
+
+            updateHashtagDisplay(allTags, true, nodes.length, tagCounts);
+        } else {
+            // Single edit mode: show tags from content
+            updateHashtagDisplay(hashtags, false, 1, {});
+        }
+
         updateAutocompleteFromInput(e.target);
     });
 

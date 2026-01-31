@@ -1052,6 +1052,24 @@ body {
     margin-bottom: 5px;
 }
 
+/* Editor hashtag pills - clickable to remove/re-add */
+.editor-hashtag {
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+    padding: 4px 10px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.editor-hashtag:hover {
+    opacity: 0.8;
+    transform: scale(1.05);
+}
+
+.editor-hashtag:active {
+    transform: scale(0.95);
+}
+
 .hashtag.clickable {
     cursor: pointer;
     transition: background 0.2s;
