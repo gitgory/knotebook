@@ -710,13 +710,10 @@ function renameHashtag(oldTag, newTag) {
 
     // Rename in all nodes at current level
     state.nodes.forEach(node => {
-        // Update hashtags array
-        const index = node.hashtags.findIndex(t => t.toLowerCase() === oldTag.toLowerCase());
-        if (index !== -1) {
-            node.hashtags[index] = newTag;
-
+        // Check if this node has the tag in its content
+        const regex = new RegExp('\\b' + oldTag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'gi');
+        if (regex.test(node.content)) {
             // Update content text (case-insensitive replacement)
-            const regex = new RegExp('\\b' + oldTag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'gi');
             node.content = node.content.replace(regex, newTag);
 
             // Re-parse hashtags from updated content
