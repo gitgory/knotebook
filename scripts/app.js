@@ -1925,14 +1925,15 @@ function openEditor(nodeId) {
         const textarea = document.getElementById('note-text');
         const enterBtn = document.getElementById('editor-enter');
 
-        // Disable title and content fields
+        // Disable title field only
         titleInput.disabled = true;
         titleInput.value = '';
         titleInput.placeholder = `Editing ${nodes.length} notes`;
 
-        textarea.disabled = true;
+        // Enable textarea for adding tags
+        textarea.disabled = false;
         textarea.value = '';
-        textarea.placeholder = `Editing ${nodes.length} notes`;
+        textarea.placeholder = 'Type tags to add (e.g., #urgent #review)';
 
         // Disable enter button
         enterBtn.disabled = true;
