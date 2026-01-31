@@ -710,8 +710,9 @@ function renameHashtag(oldTag, newTag) {
 
     // Rename in all nodes at current level
     state.nodes.forEach(node => {
-        // Check if this node has the tag in its content
-        const regex = new RegExp('\\b' + oldTag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'gi');
+        // Check if this node has the tag in its content (match whole hashtag)
+        const escapedTag = oldTag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(escapedTag + '(?=\\s|$)', 'gi');
         if (regex.test(node.content)) {
             // Update content text (case-insensitive replacement)
             node.content = node.content.replace(regex, newTag);
@@ -752,11 +753,9 @@ function renameHashtag(oldTag, newTag) {
 function deleteHashtag(tag) {
     // Remove from all nodes at current level
     state.nodes.forEach(node => {
-        // Remove from hashtags array
-        node.hashtags = node.hashtags.filter(t => t.toLowerCase() !== tag.toLowerCase());
-
-        // Remove from content text (case-insensitive)
-        const regex = new RegExp('\\s*' + tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'gi');
+        // Remove from content text (case-insensitive, match whole hashtag)
+        const escapedTag = tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp('\\s*' + escapedTag + '(?=\\s|$)', 'gi');
         node.content = node.content.replace(regex, '').trim();
 
         // Re-parse hashtags from updated content
