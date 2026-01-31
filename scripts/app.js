@@ -3405,9 +3405,10 @@ function initEventListeners() {
         }
     });
 
-    // Close hashtag context menu when clicking outside
-    document.addEventListener('click', (e) => {
-        if (!e.target.closest('#hashtag-context-menu')) {
+    // Close hashtag context menu when clicking anywhere
+    document.addEventListener('mousedown', (e) => {
+        const menu = document.getElementById('hashtag-context-menu');
+        if (menu && !e.target.closest('#hashtag-context-menu')) {
             hideHashtagContextMenu();
         }
     });
