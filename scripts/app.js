@@ -3407,7 +3407,7 @@ function initEventListeners() {
 
     // Close hashtag context menu when clicking outside
     document.addEventListener('click', (e) => {
-        if (!e.target.closest('#hashtag-context-menu') && !e.target.closest('.sidebar-hashtag')) {
+        if (!e.target.closest('#hashtag-context-menu')) {
             hideHashtagContextMenu();
         }
     });

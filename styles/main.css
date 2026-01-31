@@ -640,8 +640,7 @@ body {
 }
 
 #text-search-input.active {
-    border-color: var(--accent);
-    background: rgba(34, 211, 94, 0.1);
+    border-color: var(--highlight);
 }
 
 #text-search-input::placeholder {
