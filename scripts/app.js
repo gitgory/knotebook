@@ -720,6 +720,11 @@ function renameHashtag(oldTag, newTag) {
     const filterIndex = state.filterHashtags.findIndex(t => t.toLowerCase() === oldTag.toLowerCase());
     if (filterIndex !== -1) {
         state.filterHashtags[filterIndex] = newTag;
+        // Update the filter input to show the new tag
+        const input = document.getElementById('hashtag-input');
+        if (input) {
+            input.value = state.filterHashtags.join(' ');
+        }
     }
 
     // Update hidden tags if this tag was hidden
