@@ -1901,43 +1901,111 @@ function saveRootState() {
 // ============================================================================
 
 function openEditor(nodeId) {
-    const node = state.nodes.find(n => n.id === nodeId);
-    if (!node) return;
+    // Check if we're in batch edit mode (multiple nodes selected)
+    const isBatchMode = state.selectedNodes.length > 1;
 
-    // Snapshot current state for cancel/revert
-    editorSnapshot = {
-        title: node.title || '',
-        content: node.content || '',
-        hashtags: [...(node.hashtags || [])],
-        completion: node.completion || null
-    };
+    if (isBatchMode) {
+        // Batch edit mode
+        const nodes = state.selectedNodes.map(id => state.nodes.find(n => n.id === id)).filter(Boolean);
+        if (nodes.length === 0) return;
 
-    hideActionBar();
-    const modal = document.getElementById('editor-modal');
-    const titleInput = document.getElementById('note-title');
-    const textarea = document.getElementById('note-text');
+        // Snapshot all nodes for cancel/revert
+        editorSnapshot = {
+            batchMode: true,
+            nodes: nodes.map(node => ({
+                id: node.id,
+                hashtags: [...(node.hashtags || [])],
+                completion: node.completion || null
+            }))
+        };
 
-    titleInput.value = node.title || '';
-    textarea.value = node.content || '';
-    updateHashtagDisplay(node.hashtags || []);
-    updateCompletionButtons(node.completion || '');
+        hideActionBar();
+        const modal = document.getElementById('editor-modal');
+        const titleInput = document.getElementById('note-title');
+        const textarea = document.getElementById('note-text');
+        const enterBtn = document.getElementById('editor-enter');
 
-    // Update enter button based on whether node has children
-    const enterBtn = document.getElementById('editor-enter');
-    if (node.children && node.children.length > 0) {
-        const count = node.children.length;
-        enterBtn.textContent = `View ${count} nested ${count === 1 ? 'note' : 'notes'}`;
-        enterBtn.classList.add('has-children');
-    } else {
+        // Disable title and content fields
+        titleInput.disabled = true;
+        titleInput.value = '';
+        titleInput.placeholder = `Editing ${nodes.length} notes`;
+
+        textarea.disabled = true;
+        textarea.value = '';
+        textarea.placeholder = `Editing ${nodes.length} notes`;
+
+        // Disable enter button
+        enterBtn.disabled = true;
         enterBtn.textContent = 'Step into note';
         enterBtn.classList.remove('has-children');
-    }
 
-    modal.classList.remove('hidden');
-    modal.dataset.nodeId = nodeId;
-    titleInput.focus();
-    titleInput.setSelectionRange(0, 0);
-    titleInput.scrollLeft = 0;
+        // Find common hashtags (tags present in ALL selected nodes)
+        const commonHashtags = nodes.length > 0
+            ? nodes[0].hashtags.filter(tag =>
+                nodes.every(node => node.hashtags && node.hashtags.includes(tag))
+            )
+            : [];
+
+        updateHashtagDisplay(commonHashtags);
+
+        // Check completion status - if all same, show it; otherwise show mixed
+        const completions = nodes.map(n => n.completion || null);
+        const allSame = completions.every(c => c === completions[0]);
+        updateCompletionButtons(allSame ? completions[0] : 'mixed');
+
+        modal.classList.remove('hidden');
+        modal.dataset.batchMode = 'true';
+
+        // Focus on textarea for tag entry
+        textarea.focus();
+    } else {
+        // Single node edit mode
+        const node = state.nodes.find(n => n.id === nodeId);
+        if (!node) return;
+
+        // Snapshot current state for cancel/revert
+        editorSnapshot = {
+            batchMode: false,
+            title: node.title || '',
+            content: node.content || '',
+            hashtags: [...(node.hashtags || [])],
+            completion: node.completion || null
+        };
+
+        hideActionBar();
+        const modal = document.getElementById('editor-modal');
+        const titleInput = document.getElementById('note-title');
+        const textarea = document.getElementById('note-text');
+        const enterBtn = document.getElementById('editor-enter');
+
+        // Enable all fields
+        titleInput.disabled = false;
+        textarea.disabled = false;
+        enterBtn.disabled = false;
+
+        titleInput.value = node.title || '';
+        titleInput.placeholder = '';
+        textarea.value = node.content || '';
+        textarea.placeholder = '';
+        updateHashtagDisplay(node.hashtags || []);
+        updateCompletionButtons(node.completion || '');
+
+        // Update enter button based on whether node has children
+        if (node.children && node.children.length > 0) {
+            const count = node.children.length;
+            enterBtn.textContent = `View ${count} nested ${count === 1 ? 'note' : 'notes'}`;
+            enterBtn.classList.add('has-children');
+        } else {
+            enterBtn.textContent = 'Step into note';
+            enterBtn.classList.remove('has-children');
+        }
+
+        modal.classList.remove('hidden');
+        modal.dataset.nodeId = nodeId;
+        titleInput.focus();
+        titleInput.setSelectionRange(0, 0);
+        titleInput.scrollLeft = 0;
+    }
 }
 
 function closeEditor() {
@@ -1945,24 +2013,38 @@ function closeEditor() {
     const modal = document.getElementById('editor-modal');
     modal.classList.add('hidden');
     delete modal.dataset.nodeId;
+    delete modal.dataset.batchMode;
 }
 
 function cancelEditor() {
     const modal = document.getElementById('editor-modal');
-    const nodeId = modal.dataset.nodeId;
-    const node = state.nodes.find(n => n.id === nodeId);
 
-    // Restore node from snapshot
-    if (node && editorSnapshot) {
-        node.title = editorSnapshot.title;
-        node.content = editorSnapshot.content;
-        node.hashtags = editorSnapshot.hashtags;
-        node.completion = editorSnapshot.completion;
-    }
+    if (editorSnapshot && editorSnapshot.batchMode) {
+        // Batch mode: restore all nodes from snapshot
+        editorSnapshot.nodes.forEach(snapshot => {
+            const node = state.nodes.find(n => n.id === snapshot.id);
+            if (node) {
+                node.hashtags = snapshot.hashtags;
+                node.completion = snapshot.completion;
+            }
+        });
+    } else {
+        // Single node mode
+        const nodeId = modal.dataset.nodeId;
+        const node = state.nodes.find(n => n.id === nodeId);
 
-    // Delete empty nodes (new node that was never filled in)
-    if (node && !node.title.trim() && !node.content.trim()) {
-        deleteNode(nodeId);
+        // Restore node from snapshot
+        if (node && editorSnapshot) {
+            node.title = editorSnapshot.title;
+            node.content = editorSnapshot.content;
+            node.hashtags = editorSnapshot.hashtags;
+            node.completion = editorSnapshot.completion;
+        }
+
+        // Delete empty nodes (new node that was never filled in)
+        if (node && !node.title.trim() && !node.content.trim()) {
+            deleteNode(nodeId);
+        }
     }
 
     editorSnapshot = null;
@@ -1972,25 +2054,65 @@ function cancelEditor() {
 
 function saveEditor() {
     const modal = document.getElementById('editor-modal');
-    const nodeId = modal.dataset.nodeId;
-    const node = state.nodes.find(n => n.id === nodeId);
 
-    if (node) {
-        const titleInput = document.getElementById('note-title');
+    if (modal.dataset.batchMode === 'true') {
+        // Batch mode: apply changes to all selected nodes
+        const nodes = state.selectedNodes.map(id => state.nodes.find(n => n.id === id)).filter(Boolean);
         const textarea = document.getElementById('note-text');
-        node.title = titleInput.value;
-        node.content = textarea.value;
-        node.hashtags = parseHashtags(textarea.value);
-        node.modified = new Date().toISOString();
 
-        // Save completion state
+        // Parse hashtags from textarea (these are tags to add)
+        const newTags = parseHashtags(textarea.value);
+
+        // Get completion state
         const activeBtn = document.querySelector('.completion-btn.active');
-        const val = activeBtn ? activeBtn.dataset.value : '';
-        node.completion = val || null;
+        const completionValue = activeBtn ? activeBtn.dataset.value : '';
 
-        // Delete empty nodes (created but never filled in)
-        if (!node.title.trim() && !node.content.trim()) {
-            deleteNode(nodeId);
+        nodes.forEach(node => {
+            // Add new tags to each node (avoid duplicates)
+            if (newTags.length > 0) {
+                newTags.forEach(tag => {
+                    if (!node.hashtags.includes(tag)) {
+                        node.hashtags.push(tag);
+                    }
+                });
+                // Update content to include new tags
+                const existingContent = node.content.trim();
+                const tagsToAdd = newTags.filter(tag => !node.content.includes(tag));
+                if (tagsToAdd.length > 0) {
+                    node.content = existingContent + (existingContent ? ' ' : '') + tagsToAdd.join(' ');
+                    node.hashtags = parseHashtags(node.content);
+                }
+            }
+
+            // Set completion state (unless it's 'mixed' which means no change)
+            if (completionValue && completionValue !== 'mixed') {
+                node.completion = completionValue || null;
+            }
+
+            node.modified = new Date().toISOString();
+        });
+    } else {
+        // Single node mode
+        const nodeId = modal.dataset.nodeId;
+        const node = state.nodes.find(n => n.id === nodeId);
+
+        if (node) {
+            const titleInput = document.getElementById('note-title');
+            const textarea = document.getElementById('note-text');
+            node.title = titleInput.value;
+            node.content = textarea.value;
+            node.hashtags = parseHashtags(textarea.value);
+            node.modified = new Date().toISOString();
+
+            // Save completion state
+            const activeBtn = document.querySelector('.completion-btn.active');
+            const val = activeBtn ? activeBtn.dataset.value : '';
+            node.completion = val || null;
+
+            // Delete empty nodes (created but never filled in)
+            if (!node.title.trim() && !node.content.trim()) {
+                deleteNode(nodeId);
+            }
         }
     }
 
@@ -2019,9 +2141,16 @@ function updateHashtagDisplay(hashtags) {
 }
 
 function updateCompletionButtons(value) {
-    document.querySelectorAll('.completion-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.value === value);
-    });
+    if (value === 'mixed') {
+        // In batch mode with mixed completion states, show all buttons as inactive
+        document.querySelectorAll('.completion-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+    } else {
+        document.querySelectorAll('.completion-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.value === value);
+        });
+    }
 }
 
 // ============================================================================
