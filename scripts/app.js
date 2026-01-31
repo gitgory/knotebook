@@ -729,10 +729,10 @@ function renameHashtag(oldTag, newTag) {
     }
 
     // Transfer color to new tag name
-    const oldColor = state.hashtagColors[oldTag];
+    const oldColor = hashtagColors[oldTag];
     if (oldColor) {
-        state.hashtagColors[newTag] = oldColor;
-        delete state.hashtagColors[oldTag];
+        hashtagColors[newTag] = oldColor;
+        delete hashtagColors[oldTag];
     }
 
     render();
@@ -752,7 +752,7 @@ function deleteHashtag(tag) {
     state.hiddenHashtags = state.hiddenHashtags.filter(t => t.toLowerCase() !== tag.toLowerCase());
 
     // Remove color assignment
-    delete state.hashtagColors[tag];
+    delete hashtagColors[tag];
 
     render();
 }
