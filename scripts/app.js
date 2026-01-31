@@ -695,6 +695,133 @@ function showAllHashtags() {
     render();
 }
 
+// Rename a hashtag across all nodes
+function renameHashtag(oldTag, newTag) {
+    // Validate new tag format
+    newTag = newTag.trim();
+    if (!newTag.startsWith('#')) {
+        newTag = '#' + newTag;
+    }
+
+    // Don't rename if it's the same
+    if (oldTag.toLowerCase() === newTag.toLowerCase()) {
+        return;
+    }
+
+    // Rename in all nodes at current level
+    state.nodes.forEach(node => {
+        const index = node.hashtags.findIndex(t => t.toLowerCase() === oldTag.toLowerCase());
+        if (index !== -1) {
+            node.hashtags[index] = newTag;
+        }
+    });
+
+    // Update filter if this tag was being filtered
+    const filterIndex = state.filterHashtags.findIndex(t => t.toLowerCase() === oldTag.toLowerCase());
+    if (filterIndex !== -1) {
+        state.filterHashtags[filterIndex] = newTag;
+    }
+
+    // Update hidden tags if this tag was hidden
+    const hiddenIndex = state.hiddenHashtags.findIndex(t => t.toLowerCase() === oldTag.toLowerCase());
+    if (hiddenIndex !== -1) {
+        state.hiddenHashtags[hiddenIndex] = newTag;
+    }
+
+    // Transfer color to new tag name
+    const oldColor = state.hashtagColors[oldTag];
+    if (oldColor) {
+        state.hashtagColors[newTag] = oldColor;
+        delete state.hashtagColors[oldTag];
+    }
+
+    render();
+}
+
+// Delete a hashtag from all nodes
+function deleteHashtag(tag) {
+    // Remove from all nodes at current level
+    state.nodes.forEach(node => {
+        node.hashtags = node.hashtags.filter(t => t.toLowerCase() !== tag.toLowerCase());
+    });
+
+    // Clear from filter if active
+    state.filterHashtags = state.filterHashtags.filter(t => t.toLowerCase() !== tag.toLowerCase());
+
+    // Clear from hidden tags
+    state.hiddenHashtags = state.hiddenHashtags.filter(t => t.toLowerCase() !== tag.toLowerCase());
+
+    // Remove color assignment
+    delete state.hashtagColors[tag];
+
+    render();
+}
+
+// Show hashtag context menu
+function showHashtagContextMenu(tag, x, y) {
+    // Remove existing menu if any
+    const existingMenu = document.getElementById('hashtag-context-menu');
+    if (existingMenu) {
+        existingMenu.remove();
+    }
+
+    const menu = document.createElement('div');
+    menu.id = 'hashtag-context-menu';
+    menu.innerHTML = `
+        <div class="context-menu-item" data-action="rename">Rename tag...</div>
+        <div class="context-menu-item" data-action="delete">Delete tag...</div>
+        <div class="context-menu-item" data-action="color">Change color...</div>
+    `;
+    menu.style.position = 'fixed';
+    menu.style.left = x + 'px';
+    menu.style.top = y + 'px';
+    document.body.appendChild(menu);
+
+    // Adjust position if menu goes off screen
+    const rect = menu.getBoundingClientRect();
+    if (rect.right > window.innerWidth) {
+        menu.style.left = (x - rect.width) + 'px';
+    }
+    if (rect.bottom > window.innerHeight) {
+        menu.style.top = (y - rect.height) + 'px';
+    }
+
+    // Handle menu actions
+    menu.querySelectorAll('.context-menu-item').forEach(item => {
+        item.addEventListener('click', async (e) => {
+            const action = e.target.dataset.action;
+            hideHashtagContextMenu();
+
+            if (action === 'rename') {
+                const newTag = prompt(`Rename tag "${tag}" to:`, tag);
+                if (newTag && newTag.trim()) {
+                    renameHashtag(tag, newTag);
+                }
+            } else if (action === 'delete') {
+                const confirmed = await showConfirmation(`Delete tag "${tag}" from all notes?`);
+                if (confirmed) {
+                    deleteHashtag(tag);
+                }
+            } else if (action === 'color') {
+                // Open color picker
+                const list = document.getElementById('hashtag-list');
+                const colorBtn = list.querySelector(`.hashtag-color-btn[data-tag="${tag}"]`);
+                if (colorBtn) {
+                    colorBtn.click();
+                }
+            }
+        });
+    });
+}
+
+// Hide hashtag context menu
+function hideHashtagContextMenu() {
+    const menu = document.getElementById('hashtag-context-menu');
+    if (menu) {
+        menu.remove();
+    }
+}
+
 // ============================================================================
 // HASHTAG SIDEBAR
 // ============================================================================
@@ -778,10 +905,10 @@ function populateSidebar() {
         const isHidden = hiddenTags.includes(tag.toLowerCase());
         return `
             <div class="sidebar-hashtag${isActive ? ' active' : ''}${isHidden ? ' hidden' : ''}" data-tag="${tag}">
-                <button class="hashtag-hide-btn" data-tag="${tag}" title="${isHidden ? 'Show tag' : 'Hide tag'}">\u00d7</button>
-                <span class="hashtag-pill" style="background: ${isHidden ? `linear-gradient(to right, #6b7280 0%, ${color} 100%)` : color}">${tag}</span>
-                <span class="hashtag-count">(${counts[tag]})</span>
+                <span class="hashtag-pill hashtag-clickable" data-tag="${tag}" style="background: ${isHidden ? `linear-gradient(to right, #6b7280 0%, ${color} 100%)` : color}">${tag}</span>
+                <span class="hashtag-count hashtag-clickable" data-tag="${tag}">(${counts[tag]})</span>
                 <button class="hashtag-color-btn" style="background: ${color}" data-tag="${tag}" title="Change color"></button>
+                <button class="hashtag-hide-btn" data-tag="${tag}" title="${isHidden ? 'Show tag' : 'Hide tag'}">\u00d7</button>
                 <div class="color-picker-dropdown hidden" data-tag="${tag}">
                     ${HASHTAG_COLORS.map(c => `
                         <div class="color-swatch${c === color ? ' active' : ''}"
@@ -810,15 +937,10 @@ function populateSidebar() {
         });
     });
 
-    // Add click handlers
-    list.querySelectorAll('.sidebar-hashtag').forEach(el => {
-        // Click on hashtag row to toggle filter
+    // Add click handlers for filter (pill + count only)
+    list.querySelectorAll('.hashtag-clickable').forEach(el => {
         el.addEventListener('click', (e) => {
-            if (e.target.closest('.hashtag-hide-btn') ||
-                e.target.closest('.hashtag-color-btn') ||
-                e.target.closest('.color-picker-dropdown')) {
-                return; // Don't filter when clicking hide or color controls
-            }
+            e.stopPropagation();
             toggleFilterHashtag(el.dataset.tag);
         });
     });
@@ -848,6 +970,42 @@ function populateSidebar() {
             const tag = dropdown.dataset.tag;
             setHashtagColor(tag, color);
             dropdown.classList.add('hidden');
+        });
+    });
+
+    // Context menu handlers (right-click on hashtag row)
+    let longPressTimer = null;
+    list.querySelectorAll('.sidebar-hashtag').forEach(row => {
+        const tag = row.dataset.tag;
+
+        // Desktop: right-click
+        row.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            showHashtagContextMenu(tag, e.clientX, e.clientY);
+        });
+
+        // Mobile: long-press (500ms)
+        row.addEventListener('touchstart', (e) => {
+            longPressTimer = setTimeout(() => {
+                if (navigator.vibrate) navigator.vibrate(50);
+                const touch = e.touches[0];
+                showHashtagContextMenu(tag, touch.clientX, touch.clientY);
+                longPressTimer = null;
+            }, 500);
+        });
+
+        row.addEventListener('touchend', () => {
+            if (longPressTimer) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+            }
+        });
+
+        row.addEventListener('touchmove', () => {
+            if (longPressTimer) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+            }
         });
     });
 }
@@ -3227,6 +3385,13 @@ function initEventListeners() {
     document.addEventListener('click', (e) => {
         if (!e.target.closest('#project-menu') && !e.target.closest('.project-menu-btn')) {
             hideProjectMenu();
+        }
+    });
+
+    // Close hashtag context menu when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('#hashtag-context-menu') && !e.target.closest('.sidebar-hashtag')) {
+            hideHashtagContextMenu();
         }
     });
 

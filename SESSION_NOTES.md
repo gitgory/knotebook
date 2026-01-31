@@ -4,6 +4,293 @@ This file tracks work across Claude Code sessions for continuity.
 
 ---
 
+## Session 2026-01-30 - Night (Custom Fields Design)
+
+### Summary
+Deep dive into custom fields feature design. Created comprehensive 1,364-line design specification for two-tier field system (First Class + Second Class Fields). Designed data models, UI mockups, hashtag migration tool, and 6-phase implementation plan. This feature transforms knotebook from note-taker to flexible knowledge/project management tool.
+
+### Files Changed
+- `design-spec-custom-fields.txt` - NEW: Complete specification for custom fields feature (1,364 lines)
+  * Two-tier system: First Class (global, special) + Second Class (per-notebook, user-defined)
+  * 7 field types: single-select, multi-select, text, number, date, checkbox, URL
+  * Data models, UI mockups, migration tool, filtering, implementation plan
+  * Future enhancements: calculated fields, templates, bulk editing
+
+### Tasks Completed
+- [x] Explored custom fields concept and use cases
+- [x] Designed two-tier field system (First Class + Second Class)
+- [x] Defined field types and data models
+- [x] Created UI mockups (settings, editor, sidebar, list view)
+- [x] Designed hashtag migration tool (auto-detect patterns)
+- [x] Planned field-based filtering and search
+- [x] Outlined 6-phase implementation plan
+- [x] Documented edge cases and error handling
+- [x] Listed future enhancements and open questions
+
+### Decisions Made
+- **Two-tier field system**: First Class Fields (global, hard-coded, front-of-card) vs Second Class Fields (per-notebook, user-defined, generic handling)
+- **First Class Fields**: Completion (existing) + Priority (planned) + future candidates (flagged, assignee, due-date)
+- **Second Class Fields**: 7 types covering most use cases (single/multi-select, text, number, date, checkbox, URL)
+- **Field scope**: First Class = global across all notebooks, Second Class = per-notebook schemas
+- **Hashtag migration**: Auto-detect patterns like #effort-low, convert to proper fields, remove hashtags
+- **Fields sidebar**: New sidebar (separate from hashtags) for filtering and field management
+- **Priority indicator**: Three options proposed (colored dot, border, badge) - decision needed
+- **Integration**: Fields work with future flat architecture, Persistent Search Zones, List view
+- **Field validation**: Type constraints, required fields, option lists enforced
+- **Backwards compatibility**: Old notebooks without fields load normally, additive only
+
+### Design Highlights
+
+**First Class Fields (Global, Special):**
+- Hard-coded in app with explicit logic
+- Visual indicators on node canvas
+- Examples: completion ○✓◐, priority ⬤ (colored dot)
+- Consistent across all notebooks
+
+**Second Class Fields (Per-Notebook, User-Defined):**
+- Created via settings UI
+- Generic handling (no custom code per field)
+- Context-dependent: books (author, genre), projects (effort, sprint), research (source, methodology)
+- Flexible for different use cases
+
+**Hashtag Migration Tool:**
+- Auto-detects patterns: #prefix-value
+- Suggests field creation with detected options
+- Batch converts notes, removes hashtags
+- Maps to First Class Fields where appropriate (#status-done → completion=yes)
+
+**Use Cases Enabled:**
+- Project management: effort, priority, sprint, team-owner
+- Book collections: author, date-read, genre, rating
+- Research notes: source, methodology, confidence, year
+- CRM: company, role, last-contact
+- Task tracking: difficulty, time-estimate, dependencies
+
+### Open Questions (For Next Session)
+1. Priority indicator design: Colored dot (left of title)? Color-coded border? Badge [H]?
+2. Fields sidebar icon: 📋 clipboard? ⚡ bolt? 🏷️ label? ▦ grid?
+3. Multi-select display: Checkboxes? Tag pills? Dropdown with checkmarks?
+4. Date format: MM/DD/YYYY vs DD/MM/YYYY vs YYYY-MM-DD?
+5. Number precision: Allow decimals or integers only?
+6. Required fields: Block save or warn and allow?
+
+### Implementation Plan (6 Phases)
+1. **Priority Field** (4-6 hours) - Add first First Class Field
+2. **Custom Fields Infrastructure** (8-12 hours) - Per-notebook field definitions
+3. **Fields Sidebar** (6-8 hours) - Filtering and field management UI
+4. **Hashtag Migration** (6-8 hours) - Auto-detect and convert
+5. **Advanced Filtering** (12-16 hours) - Multi-field queries, PSZ integration
+6. **List View** (10-14 hours) - Fields as columns, sorting
+
+### Next Steps
+- [ ] Decide on open questions (priority indicator, icons, formats)
+- [ ] Add custom fields to roadmap (Tier 2 or Tier 3)
+- [ ] Consider starting Phase 1 (Priority Field) as proof-of-concept
+- [ ] OR continue with other Tier 1/2 features
+
+---
+
+## Session 2026-01-30 - Night Part 2 (Autocomplete Testing)
+
+### Summary
+Tested autocomplete TAB auto-insert feature (v48) from late evening session. All 12 test cases passed on desktop and mobile, validating the new behavior where TAB automatically inserts when only one suggestion remains.
+
+### Tasks Completed
+- [x] Test autocomplete TAB improvement (v48)
+  - [x] Desktop tests 1-9 (core functionality and edge cases)
+  - [x] Desktop tests 11-12 (regression tests)
+  - [x] Mobile test 10 (behavior consistent across platforms)
+
+### Test Results
+**All 12 tests passed:**
+- ✓ Single match auto-inserts on TAB/Enter
+- ✓ Multiple matches still require arrow key selection
+- ✓ Works in both note editor and filter input
+- ✓ Works after filtering down from multiple to single match
+- ✓ Case insensitive matching
+- ✓ Empty autocomplete handles TAB gracefully
+- ✓ Highlighted item takes precedence over auto-insert
+- ✓ Arrow key selection still works (no regression)
+- ✓ Escape still closes without inserting
+- ✓ Mobile behavior consistent with desktop
+
+### Files Changed
+- `tasks.md` - Moved "Improved tag suggestions" from Tier 1 To Do → Done (Tier 1 now complete: 0 To Do, 7 Done)
+
+### Decisions Made
+- **Feature validation complete**: Autocomplete TAB auto-insert is production-ready
+- **Tier 1 milestone**: All 7 Quick Wins features now complete
+
+### Next Steps
+- [ ] Choose next feature from Tier 2 (5 To Do items: sidebar editing, tag visibility toggle, text search indicator, etc.)
+- [ ] OR tackle custom fields design questions and start implementation
+- [ ] Clean up TEST_AUTOCOMPLETE_TAB.md (move to archive/knowledge folder?)
+
+### Notes
+- 0 commits this session (testing only)
+- Tier 1 (Quick Wins) is now 100% complete
+- v48 validated across all platforms and use cases
+- Feature reduces friction when typing hashtags with unique prefixes
+
+### Notes
+- 1 commit this session (8168b8a)
+- Custom fields solves real pain point: hashtag pollution for structured data
+- Two-tier system balances consistency (First Class) with flexibility (Second Class)
+- Migration tool makes adoption easier for existing users
+- Integration with future architecture (flat graph, PSZ, multi-view) well thought out
+- Completion status could become custom field, but keeping as First Class for now (special visual treatment)
+- Field types cover 90% of use cases, extensible for future types
+- Per-notebook scope allows context-specific schemas (books vs projects vs research)
+- Fields sidebar provides discovery and filtering UX
+- List view integration makes knotebook database-like for power users
+- Success criteria: reduce tag pollution, improve data quality, enable better filtering
+- TOC regenerated successfully (528 lines)
+- Context usage: 76% (152k/200k tokens) - extensive design discussion
+
+---
+
+## Session 2026-01-30 - Late Evening
+
+### Summary
+MAJOR architectural decision session. After extensive discussion exploring nested vs flat paradigms, transclusion, and organizational methods, we documented a comprehensive future architecture specification. Committed design-spec-future.txt (690 lines) outlining the planned transition from nested hierarchy to flat graph structure with transclusion, Persistent Search Zones, and multiple view modes. Also completed autocomplete TAB improvement (auto-insert single match) and created test plan.
+
+### Files Changed
+- `scripts/app.js` - Improved autocomplete TAB behavior: when only one suggestion remains, TAB auto-inserts without requiring arrow key highlighting; bumped to v48
+- `index.html` - Bumped JS cache version to v48
+- `design-spec-future.txt` - NEW: 690-line comprehensive specification of planned future architecture (flat graph, transclusion, PSZ, multi-view)
+- `TEST_AUTOCOMPLETE_TAB.md` - NEW: 12-test plan for autocomplete TAB auto-insert feature
+
+### Tasks Completed
+- [x] Quick Polish (Option A from roadmap)
+  - [x] Fixed autocomplete TAB behavior - auto-insert when single match
+  - [x] Checked for mockup files (already cleaned up)
+- [x] Explored architectural options (nested vs flat, transclusion approaches)
+- [x] Documented future architecture specification
+  - [x] Flat graph structure (all notes are peers)
+  - [x] Transclusion via [[Note Title]] embeds
+  - [x] Persistent Search Zones (spatial filters, Venn overlaps)
+  - [x] Multiple view modes (Spatial, Force, List, Tree, Timeline)
+  - [x] Migration strategy from nested to flat
+  - [x] Design rationale and success criteria
+- [x] Created autocomplete test plan with 12 test cases
+- [x] Committed major design document as milestone
+
+### Decisions Made
+- **MAJOR: Move away from nested hierarchy** - Current nested navigation is disorienting; flat structure enables transclusion and more flexible organization
+- **Architectural direction: Flat Graph + Transclusion + Persistent Search Zones** - Unique combination not found in other tools (Obsidian, Roam, Miro, Notion)
+- **Preserve spatial organization** - Canvas with manual positioning stays, but not the only organizational method
+- **Multiple view modes** - Same data viewable as: Spatial Canvas, Force-Directed Graph, List/Table, Tree Hierarchy, Timeline/Stream
+- **Transclusion implementation** - [[Note Title]] syntax (Obsidian-style), inline embeds with collapse/expand, edit propagation
+- **Persistent Search Zones (PSZ)** - Spatial regions on canvas representing filters, Venn diagram overlaps for multi-tag notes, saved with project
+- **Current nested implementation preserved** - design-spec.txt remains as reference; design-spec-future.txt is roadmap
+- **Delay Markdown export** - Not pressing; will implement for future flat structure when architecture transitions
+- **Autocomplete improvement** - TAB auto-inserts when only 1 match (reduces friction for unique prefixes)
+
+### Architectural Discussion Summary
+**What we want:**
+1. Transclusion (notes in multiple contexts)
+2. Spatial canvas (positions matter, but not only org method)
+3. Persistent Search Zones (spatial filtering, Venn overlaps)
+4. Flatten hierarchy (remove nested navigation)
+5. Connections matter (graph thinking via edges)
+6. Tags help (but not sole organizational tool)
+
+**What we don't want:**
+- Nested navigation (confusing "where am I")
+- Pure tag-based org (too rigid)
+- Force-directed only (too chaotic, but useful as view mode)
+- No spatial component (loses visual thinking)
+
+**Future implementation phases:**
+1. Flatten data model, convert children→edges
+2. Add transclusion ([[embed]] syntax)
+3. Implement multiple views (List, Timeline, Tree, Force)
+4. Add Persistent Search Zones (spatial filters)
+5. Performance optimization (virtualization for 1000+ notes)
+
+### Next Steps
+- [ ] Test autocomplete TAB improvement (v48) using TEST_AUTOCOMPLETE_TAB.md
+- [ ] Decide: Continue polishing current nested app OR start flat architecture implementation
+- [ ] Consider Tier 1/2 features: sidebar edits, drag-box select, completion filter, etc.
+- [ ] Update plan-outline.txt with "Improved tag suggestions" marked complete
+- [ ] Add "Saved Lenses" concept to Future/Maybe (tag-based saved views)
+
+### Notes
+- 3 commits this session (589b933, 40031ee, plus docs)
+- Session focus: strategic planning over tactical implementation
+- design-spec-future.txt serves as north star for app evolution
+- Current nested implementation still works; no breaking changes
+- Autocomplete improvement is live (v48) and ready for testing
+- Markdown export deferred - will design for flat structure when migrating
+- Persistent Search Zones concept preserved from earlier discussion
+- Force-directed layout, list/table, tree, and timeline views all compatible with flat architecture
+- Migration path documented: flatten recursively, children→edges, preserve positions
+- TOC regenerated successfully (528 lines)
+- Context usage: 65% (129k/200k tokens) - healthy for long architectural discussion
+
+---
+
+## Session 2026-01-30 - Evening
+
+### Summary
+Implemented "Visually turn off certain hashtags" feature (Tier 1) with X button toggle in sidebar. Hidden tags show gradient pills and are filtered from node display while remaining in data. Completed comprehensive testing with multiple rounds of refinements based on user feedback for desktop/mobile layout and scrolling.
+
+### Files Changed
+- `scripts/app.js` - Added hiddenHashtags state array; added toggleHiddenHashtag() and showAllHashtags() functions; updated populateSidebar() to add X buttons and "Show All Tags" button; modified renderNodes() to filter hidden tags from display; added hiddenHashtags to all save/load/export/import functions; bumped to v47
+- `styles/main.css` - Added .hashtag-hide-btn styling (gray when visible, accent when hidden); added .show-all-tags-btn styling with disabled state; removed opacity from hidden rows; increased desktop sidebar width to 344px; positioned sidebar below toolbar; added 200px bottom padding for mobile scrolling; bumped to v47
+- `index.html` - Bumped cache versions to CSS v47, JS v43
+- `plan-outline.txt` - Marked "Visually turn off certain hashtags" as complete
+
+### Tasks Completed
+- [x] Planned implementation with 3 options (chose Option A: X button toggle)
+- [x] Implemented hashtag hiding feature
+  - [x] Added hiddenHashtags state and persistence
+  - [x] X button in sidebar with click handler
+  - [x] Gradient pills for hidden tags (gray→color left-to-right)
+  - [x] Filter hidden tags from node rendering
+  - [x] "Show All Tags" button (always visible, grayed when disabled)
+- [x] Fixed export/import persistence (Test 5)
+- [x] Removed transparency from hidden rows and color picker (Test 7)
+- [x] Fixed "Show All Tags" button to prevent UI shift (always visible)
+- [x] Positioned sidebar below toolbar on desktop (breadcrumbs visible)
+- [x] Adjusted sidebar widths through multiple iterations
+  - [x] Desktop: 220px → 275px → 344px (final: 56% wider)
+  - [x] Mobile: stayed at 220px
+- [x] Fixed mobile sidebar bottom padding (50px → 125px → 200px)
+- [x] Created comprehensive 14-test plan for feature validation
+- [x] Desktop testing: Tests 1-14 all passed
+- [x] Mobile testing: Tests 13-14 passed with real device
+
+### Decisions Made
+- **Hide UI pattern**: X button toggle chosen over right-click menu or separate section for simplicity and discoverability
+- **Sidebar layout**: [X] [#pill] (count) [color-button] provides clear visual hierarchy
+- **Gradient direction**: Left-to-right (gray→color) shows transition from hidden to original state
+- **Show All Tags behavior**: Always visible but grayed out when disabled prevents confusing UI shifts
+- **No transparency on hidden rows**: Only gradient on pill, color swatch and picker stay full opacity for clarity
+- **Sidebar positioning**: Desktop sidebar starts at top: 60px to show breadcrumbs when sidebar is open
+- **Desktop width**: 344px final width (56% wider than 220px) provides comfortable space for long tag names
+- **Mobile padding**: 200px bottom padding ensures last tags fully visible when scrolling (accounts for mobile browser quirks)
+- **Hidden tags still filterable**: Hidden state only affects visual display on nodes, not search/filter functionality
+
+### Next Steps
+- [ ] Clean up mockup HTML files from project root (favicon-*.html, gradient-*.html)
+- [ ] Mobile testing for confirmation modal (from previous session)
+- [ ] Consider next Tier 1 feature or move to Tier 2
+- [ ] Update plan-outline.txt with latest completion status
+
+### Notes
+- 7 commits total (cc19068, acb4ded, 0252f96, bb70dab, 03560f4, 4b7a04f, 9d71d16)
+- All commits pushed successfully to GitHub Pages
+- Feature tested thoroughly with desktop DevTools and real mobile device
+- Export/import persistence required updates to 4 separate functions
+- Mobile sidebar scrolling issue only appeared on real device, not in DevTools simulation
+- Desktop width required two iterations (275px wasn't enough, 344px is comfortable)
+- Mobile padding required three iterations (50px → 125px → 200px) to work on real device
+- Test plan covered 14 scenarios including edge cases and persistence
+- TOC regenerated successfully (526 lines)
+
+---
+
 ## Session 2026-01-30 - Afternoon
 
 ### Summary
