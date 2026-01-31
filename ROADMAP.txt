@@ -28,6 +28,34 @@ COMPLETED
 See SESSION_NOTES.md for more recent changes.
 
 ================================================================================
+RECENTLY COMPLETED (2026-01-30)
+================================================================================
+
+[x] Sidebar tag editing with context menu (2026-01-30)
+    - Right-click (desktop) or long-press (mobile) opens context menu
+    - Menu options: Rename tag, Delete tag, Change color
+    - Rename updates all nodes and note content, preserves filter/hidden state
+    - Delete removes tag from all nodes and content permanently
+    - Context menu auto-positions to avoid screen edges
+    - 500ms long-press with vibration feedback on mobile
+
+[x] Text search indicator (2026-01-30)
+    - Active text filter shows lime outline (--highlight color)
+    - Matches hashtag search indicator styling exactly
+    - Clear button (×) visible when text entered
+
+[x] Improved sidebar hitboxes (2026-01-30)
+    - X (hide) button moved from left to right side of row
+    - Filter action only triggers on pill + count (not entire row)
+    - New layout: [#pill (count)] [color] [X]
+    - Reduces accidental mis-clicks between hide and filter actions
+
+[x] Improved tag suggestions / Autocomplete TAB auto-insert (2026-01-30)
+    - TAB automatically inserts when only one suggestion remains
+    - No need to arrow-down + TAB for unique prefixes
+    - Works in note editor and filter input
+
+================================================================================
 RECENTLY COMPLETED (2026-01-27)
 ================================================================================
 

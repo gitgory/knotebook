@@ -122,8 +122,8 @@ Tested autocomplete TAB auto-insert feature (v48) from late evening session. All
 - **Tier 1 milestone**: All 7 Quick Wins features now complete
 
 ### Next Steps
-- [ ] Choose next feature from Tier 2 (5 To Do items: sidebar editing, tag visibility toggle, text search indicator, etc.)
-- [ ] OR tackle custom fields design questions and start implementation
+- [ ] Test sidebar improvements (v49) using TEST_SIDEBAR_IMPROVEMENTS.md
+- [ ] Choose next Tier 2/3 feature or tackle custom fields design
 - [ ] Clean up TEST_AUTOCOMPLETE_TAB.md (move to archive/knowledge folder?)
 
 ### Notes
@@ -131,6 +131,167 @@ Tested autocomplete TAB auto-insert feature (v48) from late evening session. All
 - Tier 1 (Quick Wins) is now 100% complete
 - v48 validated across all platforms and use cases
 - Feature reduces friction when typing hashtags with unique prefixes
+
+---
+
+## Session 2026-01-30 - Night Part 3 (Sidebar Improvements)
+
+### Summary
+Implemented final two Tier 2 features: sidebar tag editing (context menu with rename/delete) and text search indicator. Also improved sidebar hitboxes by moving X button to right side and restricting filter action to pill+count only. This completes Tier 2 To Do items.
+
+### Files Changed
+- `scripts/app.js` - Added renameHashtag(), deleteHashtag(), showHashtagContextMenu(), hideHashtagContextMenu() functions; updated populateSidebar() for new layout (X moved to right, pill+count clickable for filter); added context menu event handlers (right-click + long-press); added global click handler to close context menu; bumped to v49
+- `styles/main.css` - Added #hashtag-context-menu styles and .context-menu-item styles; updated #text-search-input.active for accent border + 10% tint background; added .hashtag-clickable cursor; added cursor to .hashtag-count; bumped to v49
+- `index.html` - Bumped cache versions to CSS v49, JS v49
+- `tasks.md` - Marked "Sidebar editing" and "Text search indicator" as Done in Tier 2 (2 To Do → 0 To Do, 12 → 14 Done)
+- `TEST_SIDEBAR_IMPROVEMENTS.md` - NEW: 34-test comprehensive test plan for all three improvements
+
+### Tasks Completed
+- [x] Implemented sidebar tag editing (context menu)
+  - [x] Right-click on tag row opens menu (desktop)
+  - [x] Long-press (500ms) opens menu with vibration (mobile)
+  - [x] Menu options: Rename tag, Delete tag, Change color
+  - [x] Rename updates all nodes, preserves filter/hidden state, transfers color
+  - [x] Delete removes tag everywhere, shows confirmation modal
+  - [x] Menu positioning adjusts if near screen edge
+  - [x] Click outside closes menu
+- [x] Implemented text search indicator
+  - [x] Active filter shows accent border on input
+  - [x] Adds 10% opacity accent background tint
+  - [x] Consistent with hashtag sidebar button active state
+- [x] Improved sidebar hitboxes
+  - [x] Moved X (hide) button from left to right
+  - [x] Filter only triggers on pill + count (not entire row)
+  - [x] Layout: [#pill (count)] [color] [X]
+  - [x] Reduces accidental mis-clicks
+- [x] Created comprehensive 34-test plan
+- [x] Committed changes (51a88f0)
+
+### Decisions Made
+- **Context menu pattern**: Right-click (desktop) + long-press (mobile) chosen for discoverability and familiarity
+- **Rename implementation**: Uses browser prompt() for simplicity and cross-platform compatibility
+- **Delete confirmation**: Uses custom modal (consistent with app style)
+- **Auto-add hash**: Rename auto-adds # if user forgets (UX convenience)
+- **Scope**: Rename/delete only affects current nesting level (consistent with filter behavior)
+- **Color transfer**: Renaming preserves color assignment under new name
+- **Text search indicator**: Accent border + subtle tint (10% opacity) for visibility without distraction
+- **Hitbox layout**: X moved to right gives maximum separation from filter action
+- **Filter trigger**: Only pill+count are clickable, not entire row (prevents mis-clicks)
+- **Long-press duration**: 500ms standard for mobile (with vibration feedback)
+
+### Implementation Highlights
+
+**Context Menu Features:**
+- Auto-positions to avoid screen edges (flips left/up as needed)
+- Three actions: Rename, Delete, Change color (opens color picker)
+- Rename validates input (auto-adds #, prevents empty)
+- Delete shows confirmation modal before proceeding
+- Updates filter and hidden state when tags renamed
+- Z-index 300 to appear above all UI
+
+**Text Search Indicator:**
+- Accent border when filter active
+- 10% opacity accent background tint
+- Clear button already shows when text present
+- Works on mobile full-width layout
+
+**Hitbox Improvements:**
+- New layout: `[#pill (count)] [color] [X]`
+- Added `.hashtag-clickable` class to pill and count
+- Click handler attached to clickable elements only (not row)
+- X button easier to click without triggering filter
+
+### Next Steps
+- [x] Test sidebar improvements (v49-v57) - All 18 desktop tests passed
+- [ ] Tier 2 now complete (0 To Do items remaining)
+- [ ] Choose Tier 3 features or custom fields design decisions
+- [ ] Consider "Move action bar above note" (Tier 2 Partial item)
+
+### Notes
+- 1 commit this session (51a88f0)
+- Tier 2 To Do items complete: 2 → 0 (14 Done total)
+- Context menu uses same positioning logic as project menu
+- Rename/delete scope limited to current level (like filters)
+- Browser prompt() used for rename (simple, works everywhere)
+- Long-press timer cleared on touchmove or touchend
+- Text search indicator already had .active class, just needed CSS styling
+- Hitbox change reduces accidental filter triggers significantly
+- Test plan covers desktop, mobile, edge cases, and regression tests
+
+---
+
+## Session 2026-01-30 - Night Part 4 (Sidebar Testing & Bug Fixes)
+
+### Summary
+Comprehensive testing of sidebar improvements revealed 7 bugs which were fixed through iterative debugging (v49→v57). All 18 desktop tests now pass including core functionality, regression tests, edge cases, and visual consistency. Tier 2 To Do items are complete.
+
+### Files Changed
+- `scripts/app.js` - Fixed hashtagColors global reference (v50); added filter input update on rename (v51); updated content text on rename/delete (v52-v53); fixed regex for hashtag matching (v54); changed context menu to mousedown event (v56); bumped to v56
+- `styles/main.css` - Changed text search indicator to match hashtag search (lime outline, v55); removed gray background from text search clear button (v57); bumped to v57
+- `index.html` - Bumped cache versions through v50→v57
+- `SESSION_NOTES.md` - Updated with testing results
+
+### Testing Completed
+**18 desktop tests passed:**
+
+**Core Functionality (11 tests):**
+- ✓ Test 1: Right-click opens context menu
+- ✓ Test 2: Rename tag (immediate update, color preserved)
+- ✓ Test 3: Auto-add hash when renaming
+- ✓ Test 4: Rename tag while filtered (filter input updates)
+- ✓ Test 6: Delete tag (removes from content permanently)
+- ✓ Test 11: Context menu closes on click outside
+- ✓ Test 16: Text search indicator (lime outline)
+- ✓ Test 20: Filter only triggers on pill/count
+- ✓ Test 21: Clicking row background does nothing
+
+**Regression Tests (5 tests):**
+- ✓ Test 26: Color picker still works
+- ✓ Test 27: "Show All Tags" button still works
+- ✓ Test 28: Filter toggle still works
+- ✓ Test 29: Multiple filters with context menu
+- ✓ Test 30: Hashtag sidebar toggle (H key) still works
+
+**Edge Cases (4 tests):**
+- ✓ Test 31: Rename to empty string (validation prevents)
+- ✓ Test 32: Rename to existing tag (merges successfully)
+- ✓ Test 33: Delete last tag (shows "No tags yet")
+- ✓ Test 34: Context menu with no tags (sanity check)
+
+### Bugs Fixed (v50-v57)
+1. **v50:** hashtagColors global variable reference (was using state.hashtagColors)
+2. **v51:** Filter input updates when renaming filtered tag
+3. **v52:** Rename/delete update hashtag text in note content (not just array)
+4. **v53:** Check content instead of hashtags array when renaming
+5. **v54:** Fixed regex - use lookahead `(?=\s|$)` instead of word boundary `\b` (# isn't word char)
+6. **v55:** Text search indicator matches hashtag search (lime outline, no tint)
+7. **v56:** Context menu closes on mousedown instead of click (fires earlier)
+8. **v57:** Text search clear button gray background removed (!important overrides)
+
+### Decisions Made
+- **Iterative debugging approach**: Each bug fixed immediately, tested, then committed
+- **Test-driven fixes**: User testing revealed issues, fixed one at a time
+- **Text search consistency**: Changed to match hashtag search exactly (lime outline when active)
+- **Context menu UX**: Closes on any click outside menu (simpler, more expected)
+- **Clear button styling**: Both search inputs now visually identical
+- **Regex pattern**: `(?=\s|$)` correctly matches hashtags followed by space or end of string
+
+### Next Steps
+- [ ] Update ROADMAP.txt with Tier 2 completion milestone
+- [ ] Consider mobile testing (4 tests) if device available
+- [ ] Choose next feature: Tier 3 or custom fields design decisions
+- [ ] Clean up test files or move to archive
+
+### Notes
+- 8 commits this session (51a88f0, 4b0f3c4, 1d4589a, b369400, 75f6061, 4f80094, d212bdb, 5a56986)
+- Testing revealed issues not caught during development
+- All bugs were fixable without architectural changes
+- User testing invaluable for catching edge cases
+- Regex word boundary issue common pitfall with special chars
+- mousedown vs click timing important for event handlers
+- Browser default button styles needed !important overrides
+- Final version: v57 (8 versions from v49)
+- Context usage: 51% (102k/200k tokens)
 
 ### Notes
 - 1 commit this session (8168b8a)
