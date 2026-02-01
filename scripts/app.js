@@ -2940,12 +2940,34 @@ function placeGhostNodes() {
 
     // Remove nodes from source notebook (using original IDs)
     if (state.pendingMove) {
+        const sourceProjectId = state.pendingMove.sourceProjectId;
+        const sourceProjectName = state.pendingMove.sourceProjectName;
+
         removeNodesFromSourceNotebook(
-            state.pendingMove.sourceProjectId,
+            sourceProjectId,
             state.pendingMove.originalIds
         );
 
-        showToast(`Moved ${ghostNodes.length} note${ghostNodes.length > 1 ? 's' : ''} from ${state.pendingMove.sourceProjectName}`);
+        // Show toast with link back to source notebook
+        const message = `
+            Moved ${ghostNodes.length} note${ghostNodes.length > 1 ? 's' : ''} from ${escapeHtml(sourceProjectName)}
+            <br>
+            <a href="#" id="toast-return-link" style="color: var(--highlight); text-decoration: underline; cursor: pointer;">Return to ${escapeHtml(sourceProjectName)}</a>
+        `;
+        showToast(message, { html: true, hasLink: true });
+
+        // Add click handler for the return link
+        setTimeout(() => {
+            const link = document.getElementById('toast-return-link');
+            if (link) {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const toast = document.getElementById('toast-notification');
+                    if (toast) toast.remove();
+                    openProject(sourceProjectId);
+                });
+            }
+        }, 0);
     }
 
     // Clear ghost state
@@ -2963,6 +2985,10 @@ function placeGhostNodes() {
 function cancelGhostDrag() {
     if (!ghostDragging) return;
 
+    // Store source info before clearing state
+    const sourceProjectId = state.pendingMove ? state.pendingMove.sourceProjectId : null;
+    const sourceProjectName = state.pendingMove ? state.pendingMove.sourceProjectName : null;
+
     ghostNodes = [];
     ghostDragging = false;
     state.pendingMove = null;
@@ -2971,7 +2997,31 @@ function cancelGhostDrag() {
     const canvas = document.getElementById('canvas');
     if (canvas) canvas.classList.remove('ghost-drag-mode');
 
-    showToast('Move cancelled');
+    // Show toast with link back to source notebook
+    if (sourceProjectId && sourceProjectName) {
+        const message = `
+            Move cancelled
+            <br>
+            <a href="#" id="toast-return-link" style="color: var(--highlight); text-decoration: underline; cursor: pointer;">Return to ${escapeHtml(sourceProjectName)}</a>
+        `;
+        showToast(message, { html: true, hasLink: true });
+
+        // Add click handler for the return link
+        setTimeout(() => {
+            const link = document.getElementById('toast-return-link');
+            if (link) {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const toast = document.getElementById('toast-notification');
+                    if (toast) toast.remove();
+                    openProject(sourceProjectId);
+                });
+            }
+        }, 0);
+    } else {
+        showToast('Move cancelled');
+    }
+
     render();
 }
 
@@ -3006,14 +3056,24 @@ function removeNodesFromSourceNotebook(sourceProjectId, nodeIds) {
     }
 }
 
-function showToast(message) {
-    // Simple toast notification (you can enhance this with better styling)
+function showToast(message, options = {}) {
+    // Toast notification with optional HTML content and link
     const existingToast = document.getElementById('toast-notification');
     if (existingToast) existingToast.remove();
 
     const toast = document.createElement('div');
     toast.id = 'toast-notification';
-    toast.textContent = message;
+
+    // Support HTML content if provided
+    if (options.html) {
+        toast.innerHTML = message;
+    } else {
+        toast.textContent = message;
+    }
+
+    // Enable pointer events if there's a link
+    const pointerEvents = options.hasLink ? 'auto' : 'none';
+
     toast.style.cssText = `
         position: fixed;
         top: 80px;
@@ -3026,14 +3086,16 @@ function showToast(message) {
         border: 1px solid var(--highlight);
         z-index: 1000;
         font-size: 14px;
-        pointer-events: none;
+        pointer-events: ${pointerEvents};
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        text-align: center;
     `;
     document.body.appendChild(toast);
 
-    // Auto-remove after 4 seconds (unless it's a "click to place" message)
+    // Auto-remove after duration (default 4s, or longer if has link)
+    const duration = options.duration || (options.hasLink ? 6000 : 4000);
     if (!message.includes('Click to place')) {
-        setTimeout(() => toast.remove(), 4000);
+        setTimeout(() => toast.remove(), duration);
     }
 }
 
