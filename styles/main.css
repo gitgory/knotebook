@@ -562,7 +562,7 @@ body {
     width: 100%;
     padding: 10px 15px;
     border: none;
-    background: transparent;
+    background: var(--bg-secondary);
     color: var(--text-primary);
     text-align: left;
     cursor: pointer;
@@ -575,7 +575,13 @@ body {
 }
 
 .theme-option.active {
-    color: var(--accent);
+    color: var(--highlight);
+    font-weight: 600;
+}
+
+.theme-option.active::before {
+    content: '▸ ';
+    color: var(--highlight);
 }
 
 /* ============================================================================

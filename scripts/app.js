@@ -542,9 +542,9 @@ function hasBodyText(node) {
 // Cycle completion state: null → no → yes → partial → no → ...
 function cycleCompletion(current) {
     if (current === null || current === undefined) return 'no';
-    if (current === 'no') return 'yes';
-    if (current === 'yes') return 'partial';
-    if (current === 'partial') return 'cancelled';
+    if (current === 'no') return 'partial';
+    if (current === 'partial') return 'yes';
+    if (current === 'yes') return 'cancelled';
     return 'no';
 }
 
