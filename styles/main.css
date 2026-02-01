@@ -1902,6 +1902,8 @@ body {
     left: 50%;
     transform: translateX(-50%) translateY(100px);
     display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
     gap: 8px;
     padding: 10px 15px;
     background: var(--bg-secondary);
@@ -1911,6 +1913,7 @@ body {
     z-index: 50;
     opacity: 0;
     transition: transform 0.2s ease-out, opacity 0.2s ease-out;
+    max-width: 90vw;
 }
 
 #selection-action-bar.visible {
