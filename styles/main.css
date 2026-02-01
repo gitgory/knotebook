@@ -2017,7 +2017,7 @@ body {
     }
 
     #selection-action-bar.visible {
-        transform: translateX(-50%) translateY(0);
+        transform: translateX(-50%) translateY(0) !important;
     }
 
     #selection-action-bar.hidden {
