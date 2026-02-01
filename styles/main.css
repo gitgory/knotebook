@@ -806,8 +806,7 @@ body {
 
 .node.completed .node-title,
 .node.completed .node-hashtags-group,
-.node.completed .node-dog-ear,
-.node.completed .node-completion-icon {
+.node.completed .node-dog-ear {
     filter: grayscale(1);
 }
 

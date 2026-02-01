@@ -99,6 +99,11 @@ const PROJECTS_INDEX_KEY = 'graph-notes-projects';
 // THEME
 // ============================================================================
 
+function getCurrentTheme() {
+    const themeAttr = document.documentElement.getAttribute('data-theme');
+    return themeAttr || 'midnight';
+}
+
 function setTheme(themeName) {
     // Remove theme from root if it's 'midnight' (default), otherwise set it
     if (themeName === 'midnight') {
@@ -112,8 +117,13 @@ function setTheme(themeName) {
         btn.classList.toggle('active', btn.dataset.theme === themeName);
     });
 
-    // Save to localStorage
+    // Save to localStorage (global default)
     localStorage.setItem('graph-notes-theme', themeName);
+
+    // Save to current notebook if one is open
+    if (currentProjectId) {
+        saveProjectToStorage();
+    }
 }
 
 function loadSavedTheme() {
@@ -190,7 +200,8 @@ function saveProjectToStorage() {
         edges: state.currentPath.length === 0 ? state.edges : rootEdges,
         hashtagColors: hashtagColors,
         settings: projectSettings,
-        hiddenHashtags: state.hiddenHashtags
+        hiddenHashtags: state.hiddenHashtags,
+        theme: getCurrentTheme()
     };
 
     localStorage.setItem(STORAGE_KEY_PREFIX + currentProjectId, JSON.stringify(projectData));
@@ -280,6 +291,11 @@ function openProject(projectId) {
     hashtagColors = data.hashtagColors || {};
     projectSettings = data.settings || { defaultCompletion: null };
     state.hiddenHashtags = data.hiddenHashtags || [];
+
+    // Apply notebook's theme (or use current global theme if not set)
+    if (data.theme) {
+        setTheme(data.theme);
+    }
 
     // Clear selection and filter
     state.selectedNodes = [];
@@ -2784,7 +2800,8 @@ function handleImportAsNew() {
         edges: pendingImportData.edges || [],
         hashtagColors: pendingImportData.hashtagColors || {},
         settings: pendingImportData.settings || { defaultCompletion: null },
-        hiddenHashtags: pendingImportData.hiddenHashtags || []
+        hiddenHashtags: pendingImportData.hiddenHashtags || [],
+        theme: pendingImportData.theme || getCurrentTheme()
     };
     localStorage.setItem(STORAGE_KEY_PREFIX + projectId, JSON.stringify(projectData));
 
@@ -2834,7 +2851,8 @@ async function handleImportOverwrite() {
         edges: pendingImportData.edges || [],
         hashtagColors: pendingImportData.hashtagColors || {},
         settings: pendingImportData.settings || { defaultCompletion: null },
-        hiddenHashtags: pendingImportData.hiddenHashtags || []
+        hiddenHashtags: pendingImportData.hiddenHashtags || [],
+        theme: pendingImportData.theme || getCurrentTheme()
     };
     localStorage.setItem(STORAGE_KEY_PREFIX + targetProject.id, JSON.stringify(projectData));
 
