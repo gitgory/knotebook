@@ -3484,12 +3484,16 @@ function initEventListeners() {
                 const ctrlHeld = e.ctrlKey || e.metaKey;
                 const altHeld = e.altKey;
 
-                // Alt+click: remove from selection (if already selected)
-                if (altHeld && alreadySelected) {
-                    state.selectedNodes = state.selectedNodes.filter(id => id !== nodeId);
-                    updateSelectionVisuals();
-                    render();
-                    return; // Don't set up dragging
+                // Alt+click: remove from selection (if already selected), or do nothing (if not selected)
+                if (altHeld) {
+                    if (alreadySelected) {
+                        // Remove from selection
+                        state.selectedNodes = state.selectedNodes.filter(id => id !== nodeId);
+                        updateSelectionVisuals();
+                        render();
+                    }
+                    // Whether selected or not, don't set up dragging or change selection further
+                    return;
                 }
 
                 // Store ctrl state and drag start position
