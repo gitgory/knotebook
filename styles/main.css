@@ -289,9 +289,9 @@ body {
 
 #version-info {
     margin-top: 60px;
-    font-size: 0.7rem;
-    color: var(--accent);
-    opacity: 0.5;
+    font-size: 0.6rem;
+    color: var(--highlight);
+    opacity: 0.6;
 }
 
 #projects-section h2 {
@@ -796,6 +796,12 @@ body {
     filter: grayscale(1) brightness(0.5);
 }
 
+/* Preserve accent border color for selected completed/cancelled nodes */
+.node.completed.selected .node-body {
+    stroke: var(--accent);
+    stroke-width: 2;
+}
+
 .node-title {
     fill: var(--text-primary);
     font-size: 14px;
@@ -881,6 +887,10 @@ body {
 
 .completion-partial {
     fill: #f97316;
+}
+
+.completion-cancelled {
+    fill: #ef4444;
 }
 
 .node-completion-circle.completion-no {

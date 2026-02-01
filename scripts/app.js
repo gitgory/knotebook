@@ -1243,7 +1243,7 @@ function renderNodes() {
         g.setAttribute('class', 'node' +
             (state.selectedNodes.includes(node.id) ? ' selected' : '') +
             (node.children && node.children.length > 0 ? ' has-children' : '') +
-            (node.completion === 'yes' ? ' completed' : ''));
+            (node.completion === 'yes' || node.completion === 'cancelled' ? ' completed' : ''));
         g.setAttribute('data-id', node.id);
         g.setAttribute('transform', `translate(${node.position.x}, ${node.position.y})`);
 
@@ -1380,6 +1380,14 @@ function renderNodes() {
                 icon.setAttribute('text-anchor', 'middle');
                 icon.setAttribute('class', 'node-completion-icon completion-partial');
                 icon.textContent = '◐';
+                comp.appendChild(icon);
+            } else if (node.completion === 'cancelled') {
+                const icon = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                icon.setAttribute('x', NODE_WIDTH - 20);
+                icon.setAttribute('y', 28);
+                icon.setAttribute('text-anchor', 'middle');
+                icon.setAttribute('class', 'node-completion-icon completion-cancelled');
+                icon.textContent = '✕';
                 comp.appendChild(icon);
             } else {
                 const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
