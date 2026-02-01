@@ -2191,8 +2191,8 @@ function removeTagFromContent(tag) {
     const textarea = document.getElementById('note-text');
     const escapedTag = tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-    // Remove tag and clean up extra spaces
-    const regex = new RegExp('\\s*' + escapedTag + '(?=\\s|$)', 'gi');
+    // Remove tag + optional trailing space, preserving leading space (unless at start)
+    const regex = new RegExp(escapedTag + '\\s?', 'gi');
     textarea.value = textarea.value.replace(regex, '').trim();
 
     // Clean up multiple spaces
