@@ -3923,6 +3923,15 @@ function initEventListeners() {
 
     // Touch move (for mobile drag and pan)
     canvas.addEventListener('touchmove', (e) => {
+        // Update ghost cursor position if dragging ghosts
+        if (ghostDragging && e.touches.length === 1) {
+            const touch = e.touches[0];
+            const canvasPos = screenToCanvas(touch.clientX, touch.clientY);
+            ghostCursorPos = canvasPos;
+            renderGhostNodes();
+            return;
+        }
+
         // Handle pinch zoom
         if (e.touches.length === 2 && pinchStartDist !== null) {
             e.preventDefault();
@@ -4030,6 +4039,17 @@ function initEventListeners() {
 
     // Touch end
     canvas.addEventListener('touchend', (e) => {
+        // Place ghost nodes if in ghost dragging mode
+        if (ghostDragging) {
+            placeGhostNodes();
+            // Clear touch state
+            touchStartNode = null;
+            touchStartEdge = false;
+            touchStartPos = null;
+            touchMoved = false;
+            return;
+        }
+
         // Clear long-press timer
         if (longPressTimer) {
             clearTimeout(longPressTimer);
