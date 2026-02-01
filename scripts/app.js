@@ -2801,7 +2801,7 @@ function showMoveToModal() {
     const projects = getProjectsList().filter(p => p.id !== currentProjectId);
 
     if (projects.length === 0) {
-        alert('No other notebooks available. Create a new notebook first.');
+        showToast('No other notebooks available. Create a new notebook first.');
         return;
     }
 
