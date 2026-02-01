@@ -544,6 +544,7 @@ function cycleCompletion(current) {
     if (current === null || current === undefined) return 'no';
     if (current === 'no') return 'yes';
     if (current === 'yes') return 'partial';
+    if (current === 'partial') return 'cancelled';
     return 'no';
 }
 

@@ -800,6 +800,7 @@ body {
 .node.completed.selected .node-body {
     stroke: var(--accent);
     stroke-width: 2;
+    filter: none; /* Remove grayscale from border */
 }
 
 .node-title {
