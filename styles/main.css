@@ -792,15 +792,16 @@ body {
     stroke-width: 2;
 }
 
+/* Completed nodes get grayscale filter */
 .node.completed {
     filter: grayscale(1) brightness(0.5);
 }
 
-/* Preserve accent border color for selected completed/cancelled nodes */
+/* For selected completed nodes, use a brighter stroke that survives the filter */
 .node.completed.selected .node-body {
-    stroke: var(--accent);
-    stroke-width: 2;
-    filter: none; /* Remove grayscale from border */
+    /* Use bright cyan that will still look like accent after grayscale+brightness filter */
+    stroke: #00ffff;
+    stroke-width: 3;
 }
 
 .node-title {
