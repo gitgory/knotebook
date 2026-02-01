@@ -3812,6 +3812,7 @@ function initEventListeners() {
     let pinchStartZoom = null;
     let lastTapTime = 0;
     let lastTapNode = null;
+    let tapToAddMode = false;  // After long-press, taps add to selection
 
     // Helper to get distance between two touches
     function getTouchDistance(touches) {
@@ -3889,8 +3890,9 @@ function initEventListeners() {
             // Start long-press timer for multi-select toggle
             longPressTimer = setTimeout(() => {
                 if (touchStartNode && !touchMoved) {
-                    // Long press detected - toggle node in/out of selection
+                    // Long press detected - add to selection and enable tap-to-add mode
                     selectNode(touchStartNode, true);
+                    tapToAddMode = true;  // Enable tap-to-add mode
                     // Vibrate if available for feedback
                     if (navigator.vibrate) {
                         navigator.vibrate(50);
@@ -3906,7 +3908,7 @@ function initEventListeners() {
             touchStartNode = null;
             touchStartEdge = true;
         } else {
-            // Touch on empty space - start panning or cancel edge mode
+            // Touch on empty space - start panning, selection box, or cancel edge mode
             e.preventDefault();
             touchStartNode = null;
 
@@ -3915,6 +3917,26 @@ function initEventListeners() {
                 state.edgeStartNode = null;
                 clearEdgePreview();
             } else {
+                // Start long-press timer for selection box
+                const canvasPos = screenToCanvas(touch.clientX, touch.clientY);
+                longPressTimer = setTimeout(() => {
+                    if (!touchMoved && !state.panning) {
+                        // Long press on empty canvas - start selection box
+                        state.selectionBox = {
+                            start: canvasPos,
+                            end: canvasPos,
+                            mode: 'enclosed',  // Default to enclosed, can change based on drag direction
+                            locked: false
+                        };
+                        // Vibrate for feedback
+                        if (navigator.vibrate) {
+                            navigator.vibrate(50);
+                        }
+                    }
+                    longPressTimer = null;
+                }, 500);
+
+                // Also start panning (will be cancelled if selection box starts)
                 state.panning = true;
                 state.panStart = { x: touch.clientX, y: touch.clientY };
             }
@@ -4003,6 +4025,27 @@ function initEventListeners() {
 
         const canvasPos = screenToCanvas(touch.clientX, touch.clientY);
 
+        // Update selection box if active
+        if (state.selectionBox) {
+            e.preventDefault();
+            state.selectionBox.end = canvasPos;
+
+            // Detect drag direction for mode (enclosed vs intersecting)
+            if (!state.selectionBox.locked) {
+                const dx = state.selectionBox.end.x - state.selectionBox.start.x;
+                if (Math.abs(dx) > 15) {
+                    state.selectionBox.locked = true;
+                    state.selectionBox.mode = dx > 0 ? 'enclosed' : 'intersecting';
+                }
+            }
+
+            // Cancel panning if selection box started
+            state.panning = false;
+
+            render();
+            return;
+        }
+
         if (state.panning) {
             e.preventDefault();
             hideActionBar();
@@ -4063,6 +4106,26 @@ function initEventListeners() {
         // If there are still touches, don't reset everything
         if (e.touches.length > 0) return;
 
+        // Complete selection box if active
+        if (state.selectionBox) {
+            const selectedIds = getNodesInSelectionBox(state.selectionBox);
+            if (selectedIds.length > 0) {
+                // Add to existing selection
+                selectedIds.forEach(id => {
+                    if (!state.selectedNodes.includes(id)) {
+                        state.selectedNodes.push(id);
+                    }
+                });
+                updateSelectionVisuals();
+            }
+            clearSelectionBox();
+            state.panning = false;
+            touchMoved = false;
+            touchStartNode = null;
+            touchStartPos = null;
+            return;
+        }
+
         // If we didn't move, treat as a tap
         if (!touchMoved && touchStartNode) {
             const now = Date.now();
@@ -4073,6 +4136,7 @@ function initEventListeners() {
                 openEditor(touchStartNode);
                 lastTapTime = 0;
                 lastTapNode = null;
+                tapToAddMode = false;  // Exit tap-to-add mode
             } else if (state.edgeStartNode && state.edgeStartNode !== touchStartNode) {
                 // Complete edge creation
                 completeEdgeCreation(touchStartNode);
@@ -4081,19 +4145,25 @@ function initEventListeners() {
             } else {
                 // Single tap
                 const alreadySelected = state.selectedNodes.includes(touchStartNode);
-                if (alreadySelected) {
+
+                if (tapToAddMode && !alreadySelected) {
+                    // In tap-to-add mode - add to selection
+                    selectNode(touchStartNode, true);
+                } else if (alreadySelected) {
                     // Tap on already-selected node - show action bar
                     showActionBar();
                 } else {
-                    // Tap on unselected node - select it (replaces selection)
+                    // Tap on unselected node - select it (replaces selection and exits tap-to-add)
                     selectNode(touchStartNode);
+                    tapToAddMode = false;
                 }
                 lastTapTime = now;
                 lastTapNode = touchStartNode;
             }
         } else if (!touchMoved && !touchStartNode && !touchStartEdge) {
-            // Tap on empty space - deselect
+            // Tap on empty space - deselect and exit tap-to-add mode
             clearSelection();
+            tapToAddMode = false;
             lastTapTime = 0;
             lastTapNode = null;
         }
