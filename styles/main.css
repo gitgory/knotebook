@@ -2004,10 +2004,12 @@ body {
     /* Action bar fixed to top on mobile (below toolbar) */
     #selection-action-bar {
         position: fixed !important;
-        top: 70px !important; /* Below toolbar (toolbar is ~50px + gap) */
+        top: 54px !important; /* Immediately below toolbar (~53px tall) */
         left: 50% !important;
         bottom: auto !important;
         height: auto !important;
+        width: auto !important;
+        min-width: 80vw !important; /* Wider on mobile for better visibility */
         transform: translateX(-50%) translateY(-100px) !important;
         z-index: 200;
         justify-content: center;
