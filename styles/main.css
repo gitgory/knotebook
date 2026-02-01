@@ -1998,12 +1998,12 @@ body {
 
     /* Action bar fixed to top on mobile (below toolbar) */
     #selection-action-bar {
-        position: fixed;
-        top: 60px; /* Below toolbar */
-        left: 50%;
-        bottom: auto;
-        height: auto;
-        transform: translateX(-50%) translateY(-100px);
+        position: fixed !important;
+        top: 60px !important; /* Below toolbar */
+        left: 50% !important;
+        bottom: auto !important;
+        height: auto !important;
+        transform: translateX(-50%) translateY(-100px) !important;
         z-index: 200;
         justify-content: center;
         opacity: 1 !important;

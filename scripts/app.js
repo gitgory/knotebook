@@ -3012,11 +3012,29 @@ function showToast(message, options = {}) {
     `;
     document.body.appendChild(toast);
 
+    // ESC key handler to dismiss toast
+    const escHandler = (e) => {
+        if (e.key === 'Escape' && document.getElementById('toast-notification')) {
+            toast.remove();
+            document.removeEventListener('keydown', escHandler);
+        }
+    };
+    document.addEventListener('keydown', escHandler);
+
     // Auto-remove after duration (default 4s, or longer if has link)
     const duration = options.duration || (options.hasLink ? 6000 : 4000);
-    if (!message.includes('Click to place')) {
-        setTimeout(() => toast.remove(), duration);
-    }
+    const autoRemoveTimer = !message.includes('Click to place') ? setTimeout(() => {
+        toast.remove();
+        document.removeEventListener('keydown', escHandler);
+    }, duration) : null;
+
+    // Override toast.remove to clean up listener
+    const originalRemove = toast.remove.bind(toast);
+    toast.remove = () => {
+        document.removeEventListener('keydown', escHandler);
+        if (autoRemoveTimer) clearTimeout(autoRemoveTimer);
+        originalRemove();
+    };
 }
 
 // ============================================================================
@@ -3234,9 +3252,9 @@ async function importFromFile() {
             const overwriteBtn = document.getElementById('import-overwrite');
             const projects = getProjectsList();
             if (projects.length === 0) {
-                overwriteBtn.classList.add('hidden');
+                overwriteBtn.style.display = 'none';
             } else {
-                overwriteBtn.classList.remove('hidden');
+                overwriteBtn.style.display = '';
             }
 
             modal.classList.remove('hidden');
@@ -3279,9 +3297,9 @@ function importFromFileFallback() {
             const overwriteBtn = document.getElementById('import-overwrite');
             const projects = getProjectsList();
             if (projects.length === 0) {
-                overwriteBtn.classList.add('hidden');
+                overwriteBtn.style.display = 'none';
             } else {
-                overwriteBtn.classList.remove('hidden');
+                overwriteBtn.style.display = '';
             }
 
             modal.classList.remove('hidden');
