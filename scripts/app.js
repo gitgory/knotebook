@@ -74,7 +74,8 @@ const autocomplete = {
     query: '',           // text after '#'
     hashStart: -1,       // char index of '#'
     items: [],           // filtered tag strings
-    selectedIndex: -1    // highlighted item
+    selectedIndex: -1,   // highlighted item
+    suppress: false      // temporarily suppress autocomplete (for synthetic events)
 };
 
 // Editor snapshot for cancel/revert
@@ -2175,6 +2176,8 @@ function updateHashtagDisplay(hashtags, isBatchMode = false, totalNodes = 1, tag
                 const currentContent = textarea.value.trim();
                 textarea.value = currentContent + (currentContent ? ' ' : '') + tag;
 
+                // Suppress autocomplete for this synthetic event
+                autocomplete.suppress = true;
                 // Trigger input event to re-parse and update display
                 textarea.dispatchEvent(new Event('input'));
             } else {
@@ -2182,6 +2185,8 @@ function updateHashtagDisplay(hashtags, isBatchMode = false, totalNodes = 1, tag
                 removedTagsInSession.add(tag);
                 removeTagFromContent(tag);
 
+                // Suppress autocomplete for this synthetic event
+                autocomplete.suppress = true;
                 // Trigger input event to re-parse and update display
                 textarea.dispatchEvent(new Event('input'));
             }
@@ -2379,6 +2384,12 @@ function selectAutocompleteItem(index) {
 }
 
 function updateAutocompleteFromInput(inputElement) {
+    // Skip if autocomplete is suppressed (synthetic event from tag pill clicks)
+    if (autocomplete.suppress) {
+        autocomplete.suppress = false; // Reset flag
+        return;
+    }
+
     const text = inputElement.value;
     const cursorPos = inputElement.selectionStart;
 
