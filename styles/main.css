@@ -2004,20 +2004,23 @@ body {
     /* Action bar fixed to top on mobile (below toolbar) */
     #selection-action-bar {
         position: fixed !important;
-        top: 140px !important; /* Below 3-row toolbar on mobile (buttons + search + breadcrumbs) */
-        left: 50% !important;
+        top: 110px !important; /* Below 3-row toolbar on mobile (buttons + search + breadcrumbs) */
+        left: 0 !important;
+        right: 0 !important;
         bottom: auto !important;
         height: auto !important;
-        width: auto !important;
-        min-width: 80vw !important; /* Wider on mobile for better visibility */
-        transform: translateX(-50%) translateY(-100px) !important;
+        width: 100% !important; /* Full width on mobile */
+        min-width: unset !important;
+        transform: translateY(-100px) !important; /* No X translation needed with full width */
         z-index: 200;
         justify-content: center;
         opacity: 1 !important;
+        border-radius: 0 !important; /* Square corners for full-width */
+        margin: 0 !important;
     }
 
     #selection-action-bar.visible {
-        transform: translateX(-50%) translateY(0) !important;
+        transform: translateY(0) !important; /* No X translation needed with full width */
     }
 
     #selection-action-bar.hidden {
