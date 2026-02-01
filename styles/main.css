@@ -792,10 +792,10 @@ body {
     stroke-width: 2;
 }
 
-/* Completed nodes: apply grayscale to content elements only, not borders */
+/* Completed nodes: apply grayscale to content AND border */
 .node.completed .node-body {
     fill: var(--bg-primary);
-    filter: brightness(0.5);
+    filter: grayscale(1) brightness(0.5);
 }
 
 .node.completed .node-title,
@@ -805,10 +805,11 @@ body {
     filter: grayscale(1) brightness(0.5);
 }
 
-/* Selected completed nodes keep accent border */
+/* Selected completed nodes use lime highlight border (no filter) */
 .node.completed.selected .node-body {
-    stroke: var(--accent);
+    stroke: var(--highlight);
     stroke-width: 2;
+    filter: none; /* Remove grayscale so highlight color shows */
 }
 
 .node-title {
