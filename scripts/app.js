@@ -38,7 +38,7 @@ const state = {
     filterText: '',      // Text search filter (matches title and content)
     hiddenHashtags: [],  // Hashtags hidden from node display (but still in data)
     // Selection box state
-    selectionBox: null   // { start: {x, y}, end: {x, y}, button: 'left'|'right' } or null
+    selectionBox: null   // { start: {x, y}, end: {x, y}, mode: 'enclosed'|'intersecting', locked: boolean } or null
 };
 
 // Node dimensions
@@ -1528,7 +1528,7 @@ function renderSelectionBox() {
     const width = Math.abs(box.end.x - box.start.x);
     const height = Math.abs(box.end.y - box.start.y);
 
-    const rectClass = box.button === 'left' ? 'selection-box solid' : 'selection-box dashed';
+    const rectClass = box.mode === 'enclosed' ? 'selection-box solid' : 'selection-box dashed';
 
     overlay.innerHTML = `
         <rect class="${rectClass}"
@@ -1559,11 +1559,11 @@ function getNodesInSelectionBox(box) {
         const nodeRight = nodeX + NODE_WIDTH;
         const nodeBottom = nodeY + NODE_HEIGHT;
 
-        if (box.button === 'left') {
-            // Left-click: fully enclosed
+        if (box.mode === 'enclosed') {
+            // Drag left-to-right: fully enclosed only
             return nodeX >= x1 && nodeRight <= x2 && nodeY >= y1 && nodeBottom <= y2;
         } else {
-            // Right-click: fully enclosed OR intersecting
+            // Drag right-to-left: fully enclosed OR intersecting
             return !(nodeRight < x1 || nodeX > x2 || nodeBottom < y1 || nodeY > y2);
         }
     }).map(n => n.id);
@@ -3114,14 +3114,15 @@ function initEventListeners() {
                 state.panning = true;
                 state.panStart = { x: e.clientX, y: e.clientY };
                 canvas.style.cursor = 'grabbing';
-            } else if (e.button === 0 || e.button === 2) {
-                // Left or right click on empty canvas - start selection box
-                e.preventDefault(); // Prevent context menu on right-click
+            } else if (e.button === 0) {
+                // Left click on empty canvas - start selection box
+                // Mode (enclosed vs intersecting) determined by initial drag direction
                 const canvasPos = screenToCanvas(e.clientX, e.clientY);
                 state.selectionBox = {
                     start: { x: canvasPos.x, y: canvasPos.y },
                     end: { x: canvasPos.x, y: canvasPos.y },
-                    button: e.button === 0 ? 'left' : 'right',
+                    mode: 'enclosed', // Default, will be determined by initial drag direction
+                    locked: false,     // Mode not locked until initial direction detected
                     ctrlHeld: e.ctrlKey || e.metaKey,
                     altHeld: e.altKey
                 };
@@ -3176,7 +3177,27 @@ function initEventListeners() {
 
         // Update selection box
         if (state.selectionBox) {
-            state.selectionBox.end = { x: canvasPos.x, y: canvasPos.y };
+            const box = state.selectionBox;
+            box.end = { x: canvasPos.x, y: canvasPos.y };
+
+            // Detect initial drag direction to determine mode (only if not locked yet)
+            if (!box.locked) {
+                const dx = box.end.x - box.start.x;
+                const dy = box.end.y - box.start.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                // Lock mode after moving at least 15 pixels
+                if (distance >= 15) {
+                    // Determine mode based on horizontal direction
+                    if (dx > 0) {
+                        box.mode = 'enclosed';  // Drag left-to-right = fully enclosed
+                    } else {
+                        box.mode = 'intersecting';  // Drag right-to-left = intersecting
+                    }
+                    box.locked = true;
+                }
+            }
+
             renderSelectionBox();
         }
 
