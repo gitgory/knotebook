@@ -1716,13 +1716,23 @@ function deepCopyNode(node, offsetX = 0, offsetY = 0) {
         modified: new Date().toISOString()
     };
 
-    // Deep copy children recursively
+    // Deep copy children recursively and create ID mapping
+    const childIdMapping = {};
     if (node.children && node.children.length > 0) {
-        newNode.children = node.children.map(child => deepCopyNode(child, 0, 0));
+        node.children.forEach(child => {
+            const copiedChild = deepCopyNode(child, 0, 0);
+            childIdMapping[child.id] = copiedChild.id;
+            newNode.children.push(copiedChild);
+        });
     }
 
-    // Copy child edges (they reference child IDs which are now different,
-    // so we skip them - edges are ignored per requirements)
+    // Copy child edges and remap IDs to new child IDs
+    if (node.childEdges && node.childEdges.length > 0) {
+        newNode.childEdges = node.childEdges.map(edge => [
+            childIdMapping[edge[0]],
+            childIdMapping[edge[1]]
+        ]);
+    }
 
     return newNode;
 }
