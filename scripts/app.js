@@ -98,6 +98,12 @@ const AUTOSAVE_DELAY = 1500; // 1.5 seconds
 const STORAGE_KEY_PREFIX = 'graph-notes-project-';
 const PROJECTS_INDEX_KEY = 'graph-notes-projects';
 
+// Move to notebook state
+let ghostNodes = [];           // Ghost nodes being positioned in target notebook
+let ghostDragging = false;     // True when dragging ghost nodes
+let ghostCursorPos = { x: 0, y: 0 };  // Current cursor position in canvas coordinates
+const MOVE_STORAGE_KEY = 'graph-notes-pending-move';
+
 // ============================================================================
 // THEME
 // ============================================================================
@@ -343,6 +349,10 @@ function openProject(projectId) {
 
     resetViewport();
     showGraphView();
+
+    // Check for pending move operation
+    checkForPendingMove();
+
     render();
 }
 
@@ -1243,6 +1253,8 @@ function resetViewport() {
 function render() {
     renderEdges();
     renderNodes();
+    renderGhostNodes();
+    renderSelectionBox();
     updateBreadcrumbs();
     updateViewport();
 
@@ -1542,6 +1554,88 @@ function clearSelectionBox() {
     state.selectionBox = null;
     const overlay = document.getElementById('selection-box-overlay');
     if (overlay) overlay.innerHTML = '';
+}
+
+// Render ghost nodes for move operation
+function renderGhostNodes() {
+    const layer = document.getElementById('ghost-layer');
+    layer.innerHTML = '';
+
+    if (!ghostDragging || ghostNodes.length === 0) return;
+
+    // Update ghost node positions to follow cursor
+    if (state.pendingMove && state.pendingMove.relativeOffsets) {
+        ghostNodes.forEach(node => {
+            const offset = state.pendingMove.relativeOffsets[node.id];
+            if (offset) {
+                node.position = {
+                    x: ghostCursorPos.x + offset.dx,
+                    y: ghostCursorPos.y + offset.dy
+                };
+            }
+        });
+    }
+
+    // Render each ghost node
+    for (const node of ghostNodes) {
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.setAttribute('class', 'node ghost');
+        g.setAttribute('transform', `translate(${node.position.x}, ${node.position.y})`);
+
+        // Node body
+        const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        rect.setAttribute('class', 'node-body');
+        rect.setAttribute('width', NODE_WIDTH);
+        rect.setAttribute('height', NODE_HEIGHT);
+        g.appendChild(rect);
+
+        // Node title
+        const title = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        title.setAttribute('class', 'node-title');
+        title.setAttribute('x', 10);
+        title.setAttribute('y', 25);
+        title.textContent = truncateText(node.title || 'Untitled', 20);
+        g.appendChild(title);
+
+        // Hashtags as colored pills (simplified)
+        if (node.hashtags && node.hashtags.length > 0) {
+            const hashtagGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            let xOffset = 8;
+            const y = 44;
+            const maxWidth = NODE_WIDTH - 16;
+
+            for (const tag of node.hashtags) {
+                const color = getHashtagColor(tag, false);
+                const displayTag = tag.length > 10 ? tag.substring(0, 9) + '…' : tag;
+                const pillWidth = displayTag.length * 6.5 + 12;
+
+                if (xOffset + pillWidth > maxWidth) break;
+
+                const pill = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                pill.setAttribute('class', 'hashtag-pill');
+                pill.setAttribute('x', xOffset);
+                pill.setAttribute('y', y - 10);
+                pill.setAttribute('width', pillWidth);
+                pill.setAttribute('height', 16);
+                pill.setAttribute('rx', 8);
+                pill.setAttribute('fill', color);
+                hashtagGroup.appendChild(pill);
+
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('class', 'node-hashtag-text');
+                text.setAttribute('x', xOffset + 6);
+                text.setAttribute('y', y + 1);
+                text.textContent = displayTag;
+                hashtagGroup.appendChild(text);
+
+                xOffset += pillWidth + 4;
+            }
+
+            g.appendChild(hashtagGroup);
+        }
+
+        layer.appendChild(g);
+    }
 }
 
 // Get nodes within selection box
@@ -1917,6 +2011,7 @@ function showNodeContextMenu(nodeId, x, y) {
     menu.innerHTML = `
         <div class="context-menu-item" data-action="bring-front">Bring to Front</div>
         <div class="context-menu-item" data-action="send-back">Send to Back</div>
+        <div class="context-menu-item" data-action="move-to">Move to...</div>
     `;
 
     // Adjust position if menu goes off screen
@@ -1937,6 +2032,8 @@ function showNodeContextMenu(nodeId, x, y) {
             bringToFront();
         } else if (action === 'send-back') {
             sendToBack();
+        } else if (action === 'move-to') {
+            showMoveToModal();
         }
         hideNodeContextMenu();
     });
@@ -2681,6 +2778,256 @@ function hideHelp() {
 }
 
 // ============================================================================
+// MOVE TO NOTEBOOK MODAL
+// ============================================================================
+
+function showMoveToModal() {
+    if (state.selectedNodes.length === 0) return;
+
+    const modal = document.getElementById('move-to-modal');
+    const list = document.getElementById('move-to-list');
+
+    // Get all projects except the current one
+    const projects = getProjectsList().filter(p => p.id !== currentProjectId);
+
+    if (projects.length === 0) {
+        alert('No other notebooks available. Create a new notebook first.');
+        return;
+    }
+
+    // Populate the list
+    list.innerHTML = '';
+    projects.forEach(project => {
+        const item = document.createElement('div');
+        item.className = 'move-to-item';
+        item.dataset.projectId = project.id;
+        item.innerHTML = `
+            <span class="move-to-item-name">${escapeHtml(project.name)}</span>
+            <span class="move-to-item-count">${project.noteCount} notes</span>
+        `;
+        list.appendChild(item);
+    });
+
+    modal.classList.remove('hidden');
+}
+
+function hideMoveToModal() {
+    const modal = document.getElementById('move-to-modal');
+    modal.classList.add('hidden');
+}
+
+function initiateMoveToNotebook(targetProjectId) {
+    // Store original IDs for source cleanup
+    const originalIds = [...state.selectedNodes];
+
+    // Create a mapping from old IDs to new IDs for edge updates
+    const idMapping = {};
+
+    // Get selected nodes and create deep copies with new IDs
+    const nodesToMove = state.selectedNodes.map(id => {
+        const node = state.nodes.find(n => n.id === id);
+        const copy = deepCopyNode(node);
+        idMapping[id] = copy.id;
+        return copy;
+    });
+
+    // Get edges where both endpoints are in the selection, and update to new IDs
+    const edgesToMove = state.edges
+        .filter(edge =>
+            state.selectedNodes.includes(edge[0]) && state.selectedNodes.includes(edge[1])
+        )
+        .map(edge => [idMapping[edge[0]], idMapping[edge[1]]]);
+
+    // Calculate bounding box and relative offsets
+    const bounds = {
+        minX: Math.min(...nodesToMove.map(n => n.position.x)),
+        minY: Math.min(...nodesToMove.map(n => n.position.y)),
+        maxX: Math.max(...nodesToMove.map(n => n.position.x + NODE_WIDTH)),
+        maxY: Math.max(...nodesToMove.map(n => n.position.y + NODE_HEIGHT))
+    };
+
+    const centerX = (bounds.minX + bounds.maxX) / 2;
+    const centerY = (bounds.minY + bounds.maxY) / 2;
+
+    // Store relative offsets from center for each node (using new IDs)
+    const relativeOffsets = {};
+    nodesToMove.forEach(node => {
+        relativeOffsets[node.id] = {
+            dx: node.position.x - centerX,
+            dy: node.position.y - centerY
+        };
+    });
+
+    // Get source project name for toast message
+    const sourceProject = getProjectsList().find(p => p.id === currentProjectId);
+
+    // Store pending move in sessionStorage
+    const pendingMove = {
+        sourceProjectId: currentProjectId,
+        sourceProjectName: sourceProject ? sourceProject.name : 'Unknown',
+        originalIds: originalIds,  // Store original IDs for source cleanup
+        nodes: nodesToMove,
+        edges: edgesToMove,
+        boundingBox: { centerX, centerY },
+        relativeOffsets: relativeOffsets
+    };
+
+    sessionStorage.setItem(MOVE_STORAGE_KEY, JSON.stringify(pendingMove));
+
+    // Switch to target notebook
+    openProject(targetProjectId);
+}
+
+function checkForPendingMove() {
+    const pendingData = sessionStorage.getItem(MOVE_STORAGE_KEY);
+    if (!pendingData) return;
+
+    try {
+        const pendingMove = JSON.parse(pendingData);
+
+        // Set up ghost nodes
+        ghostNodes = pendingMove.nodes;
+        ghostDragging = true;
+
+        // Store pending move data for later use
+        state.pendingMove = pendingMove;
+
+        // Remove from sessionStorage
+        sessionStorage.removeItem(MOVE_STORAGE_KEY);
+
+        // Add ghost drag cursor
+        const canvas = document.getElementById('canvas');
+        if (canvas) canvas.classList.add('ghost-drag-mode');
+
+        // Show toast notification
+        showToast(`Moving ${ghostNodes.length} note${ghostNodes.length > 1 ? 's' : ''}... Click to place or ESC to cancel`);
+
+        // Initial render with ghosts
+        render();
+    } catch (e) {
+        console.error('Error loading pending move:', e);
+        sessionStorage.removeItem(MOVE_STORAGE_KEY);
+    }
+}
+
+function placeGhostNodes() {
+    if (!ghostDragging || ghostNodes.length === 0) return;
+
+    // Add ghost nodes to current notebook as real nodes
+    ghostNodes.forEach(node => {
+        state.nodes.push(node);
+    });
+
+    // Add edges
+    if (state.pendingMove && state.pendingMove.edges) {
+        state.pendingMove.edges.forEach(edge => {
+            state.edges.push(edge);
+        });
+    }
+
+    // Select the newly placed nodes
+    state.selectedNodes = ghostNodes.map(n => n.id);
+
+    // Remove nodes from source notebook (using original IDs)
+    if (state.pendingMove) {
+        removeNodesFromSourceNotebook(
+            state.pendingMove.sourceProjectId,
+            state.pendingMove.originalIds
+        );
+
+        showToast(`Moved ${ghostNodes.length} note${ghostNodes.length > 1 ? 's' : ''} from ${state.pendingMove.sourceProjectName}`);
+    }
+
+    // Clear ghost state
+    ghostNodes = [];
+    ghostDragging = false;
+    state.pendingMove = null;
+
+    // Remove ghost drag cursor
+    const canvas = document.getElementById('canvas');
+    if (canvas) canvas.classList.remove('ghost-drag-mode');
+
+    render();
+}
+
+function cancelGhostDrag() {
+    if (!ghostDragging) return;
+
+    ghostNodes = [];
+    ghostDragging = false;
+    state.pendingMove = null;
+
+    // Remove ghost drag cursor
+    const canvas = document.getElementById('canvas');
+    if (canvas) canvas.classList.remove('ghost-drag-mode');
+
+    showToast('Move cancelled');
+    render();
+}
+
+function removeNodesFromSourceNotebook(sourceProjectId, nodeIds) {
+    // Load source project data
+    const sourceData = localStorage.getItem(STORAGE_KEY_PREFIX + sourceProjectId);
+    if (!sourceData) return;
+
+    try {
+        const project = JSON.parse(sourceData);
+
+        // Remove nodes by ID
+        project.nodes = project.nodes.filter(n => !nodeIds.includes(n.id));
+
+        // Remove edges that reference removed nodes
+        project.edges = project.edges.filter(edge =>
+            !nodeIds.includes(edge[0]) && !nodeIds.includes(edge[1])
+        );
+
+        // Save back to localStorage
+        localStorage.setItem(STORAGE_KEY_PREFIX + sourceProjectId, JSON.stringify(project));
+
+        // Update note count in projects index
+        const projects = getProjectsList();
+        const sourceProject = projects.find(p => p.id === sourceProjectId);
+        if (sourceProject) {
+            sourceProject.noteCount = countNotes(project.nodes);
+            saveProjectsIndex(projects);
+        }
+    } catch (e) {
+        console.error('Error removing nodes from source notebook:', e);
+    }
+}
+
+function showToast(message) {
+    // Simple toast notification (you can enhance this with better styling)
+    const existingToast = document.getElementById('toast-notification');
+    if (existingToast) existingToast.remove();
+
+    const toast = document.createElement('div');
+    toast.id = 'toast-notification';
+    toast.textContent = message;
+    toast.style.cssText = `
+        position: fixed;
+        top: 80px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: var(--surface);
+        color: var(--text-primary);
+        padding: 12px 24px;
+        border-radius: 8px;
+        border: 1px solid var(--highlight);
+        z-index: 1000;
+        font-size: 14px;
+        pointer-events: none;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    `;
+    document.body.appendChild(toast);
+
+    // Auto-remove after 4 seconds (unless it's a "click to place" message)
+    if (!message.includes('Click to place')) {
+        setTimeout(() => toast.remove(), 4000);
+    }
+}
+
+// ============================================================================
 // SETTINGS MODAL
 // ============================================================================
 
@@ -3164,6 +3511,13 @@ function initEventListeners() {
     canvas.addEventListener('mousemove', (e) => {
         const canvasPos = screenToCanvas(e.clientX, e.clientY);
 
+        // Update ghost cursor position if dragging ghosts
+        if (ghostDragging) {
+            ghostCursorPos = canvasPos;
+            renderGhostNodes();
+            return;
+        }
+
         if (state.panning) {
             // Pan the canvas
             const dx = (e.clientX - state.panStart.x) / state.viewport.zoom;
@@ -3298,6 +3652,12 @@ function initEventListeners() {
 
     // Mouse up
     canvas.addEventListener('mouseup', (e) => {
+        // Place ghost nodes if in ghost dragging mode
+        if (ghostDragging) {
+            placeGhostNodes();
+            return;
+        }
+
         // Check if releasing over a node while in edge creation mode
         if (state.edgeStartNode) {
             const target = e.target;
@@ -3797,15 +4157,24 @@ function initEventListeners() {
 
         // Escape - Save editor or clear selection (also closes modals)
         if (e.key === 'Escape') {
+            // Cancel ghost drag if active
+            if (ghostDragging) {
+                cancelGhostDrag();
+                return;
+            }
+
             const editorModal = document.getElementById('editor-modal');
             const helpModal = document.getElementById('help-modal');
             const settingsModal = document.getElementById('settings-modal');
+            const moveToModal = document.getElementById('move-to-modal');
             if (!editorModal.classList.contains('hidden')) {
                 saveEditor();
             } else if (!settingsModal.classList.contains('hidden')) {
                 hideSettings();
             } else if (!helpModal.classList.contains('hidden')) {
                 hideHelp();
+            } else if (!moveToModal.classList.contains('hidden')) {
+                hideMoveToModal();
             } else if (state.edgeStartNode) {
                 state.edgeStartNode = null;
                 clearEdgePreview();
@@ -3894,6 +4263,22 @@ function initEventListeners() {
     document.getElementById('import-new').addEventListener('click', handleImportAsNew);
     document.getElementById('import-overwrite').addEventListener('click', handleImportOverwrite);
     document.getElementById('import-cancel').addEventListener('click', hideImportModal);
+
+    // Move to modal buttons
+    document.getElementById('move-to-cancel').addEventListener('click', hideMoveToModal);
+    document.getElementById('move-to-modal').addEventListener('click', (e) => {
+        if (e.target.id === 'move-to-modal') {
+            hideMoveToModal();
+        }
+    });
+    document.getElementById('move-to-list').addEventListener('click', (e) => {
+        const item = e.target.closest('.move-to-item');
+        if (item) {
+            const targetProjectId = item.dataset.projectId;
+            hideMoveToModal();
+            initiateMoveToNotebook(targetProjectId);
+        }
+    });
 
     // Landing page buttons
     document.getElementById('new-project-btn').addEventListener('click', newProject);
@@ -4164,6 +4549,11 @@ function initEventListeners() {
         }
     });
 
+    document.getElementById('action-move-to').addEventListener('click', () => {
+        hideActionBar();
+        showMoveToModal();
+    });
+
     document.getElementById('action-bring-front').addEventListener('click', () => {
         bringToFront();
         hideActionBar();
@@ -4247,6 +4637,9 @@ function initEventListeners() {
 // ============================================================================
 
 function init() {
+    // Clear any stale pending move operations from browser refresh
+    sessionStorage.removeItem(MOVE_STORAGE_KEY);
+
     loadSavedTheme();
     initThemeSelector();
     initEventListeners();

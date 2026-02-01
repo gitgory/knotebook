@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>knotebook</title>
     <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
-    <link rel="stylesheet" href="styles/main.css?v=86">
+    <link rel="stylesheet" href="styles/main.css?v=87">
 </head>
 <body>
     <div id="app">
@@ -22,7 +22,7 @@
                     <h2>Your Notebooks</h2>
                     <div id="projects-list"></div>
                 </div>
-                <div id="version-info">CSS v86 | JS v86</div>
+                <div id="version-info">CSS v87 | JS v87</div>
             </div>
         </div>
 
@@ -99,6 +99,8 @@
                     <g id="edges-layer"></g>
                     <!-- Nodes will be rendered here -->
                     <g id="nodes-layer"></g>
+                    <!-- Ghost nodes for move operation (above normal nodes) -->
+                    <g id="ghost-layer"></g>
                     <!-- Selection box overlay (for drag-selection) -->
                     <g id="selection-box-overlay"></g>
                 </svg>
@@ -108,6 +110,7 @@
             <div id="selection-action-bar" class="hidden">
                 <button id="action-edit" class="action-btn" data-action="edit">Edit</button>
                 <button id="action-connect" class="action-btn" data-action="connect">Connect</button>
+                <button id="action-move-to" class="action-btn" data-action="move-to">Move to...</button>
                 <button id="action-bring-front" class="action-btn" data-action="bring-front">To Front</button>
                 <button id="action-send-back" class="action-btn" data-action="send-back">To Back</button>
                 <button id="action-duplicate" class="action-btn" data-action="duplicate">Duplicate</button>
@@ -167,6 +170,15 @@
                 <div id="settings-buttons">
                     <button id="settings-close">Close</button>
                 </div>
+            </div>
+        </div>
+
+        <!-- Move to Notebook modal -->
+        <div id="move-to-modal" class="hidden">
+            <div id="move-to-content">
+                <h3>Move to Notebook</h3>
+                <div id="move-to-list"></div>
+                <button id="move-to-cancel">Cancel</button>
             </div>
         </div>
 
@@ -271,6 +283,6 @@
         </div>
     </div>
 
-    <script src="scripts/app.js?v=86"></script>
+    <script src="scripts/app.js?v=87"></script>
 </body>
 </html>

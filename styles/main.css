@@ -777,6 +777,10 @@ body {
     cursor: grabbing !important;
 }
 
+#canvas.ghost-drag-mode {
+    cursor: crosshair !important;
+}
+
 /* ============================================================================
    NODES
    ============================================================================ */
@@ -787,6 +791,30 @@ body {
 
 .node:active {
     cursor: grabbing;
+}
+
+/* Ghost nodes for move operation */
+.node.ghost {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.node.ghost .node-body {
+    fill: rgba(34, 211, 238, 0.15);
+    stroke: var(--highlight);
+    stroke-width: 2;
+    stroke-dasharray: 5, 5;
+}
+
+.node.ghost .node-title,
+.node.ghost .hashtag-pill,
+.node.ghost .node-completion-icon,
+.node.ghost .children-indicator {
+    opacity: 0.7;
+}
+
+#ghost-layer {
+    pointer-events: none;
 }
 
 .node-body {
@@ -1310,6 +1338,95 @@ body {
 }
 
 #settings-close:hover {
+    background: var(--surface-hover);
+}
+
+/* ============================================================================
+   MOVE TO NOTEBOOK MODAL
+   ============================================================================ */
+
+#move-to-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+}
+
+#move-to-modal.hidden {
+    display: none;
+}
+
+#move-to-content {
+    background: var(--bg-secondary);
+    border: 1px solid var(--surface);
+    border-radius: 12px;
+    padding: 30px;
+    width: 500px;
+    max-width: 90%;
+}
+
+#move-to-content h3 {
+    margin: 0 0 20px 0;
+    color: var(--text-primary);
+    font-size: 20px;
+}
+
+#move-to-list {
+    max-height: 400px;
+    overflow-y: auto;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    background: var(--bg-primary);
+}
+
+.move-to-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 15px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--surface);
+    transition: background 0.2s;
+}
+
+.move-to-item:last-child {
+    border-bottom: none;
+}
+
+.move-to-item:hover {
+    background: var(--surface);
+}
+
+.move-to-item-name {
+    flex: 1;
+    color: var(--text-primary);
+    font-size: 16px;
+}
+
+.move-to-item-count {
+    color: var(--text-secondary);
+    font-size: 14px;
+    margin-left: 10px;
+}
+
+#move-to-cancel {
+    width: 100%;
+    padding: 10px;
+    background: var(--surface);
+    border: none;
+    border-radius: 6px;
+    color: var(--text-primary);
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s;
+}
+
+#move-to-cancel:hover {
     background: var(--surface-hover);
 }
 
