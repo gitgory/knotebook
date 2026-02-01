@@ -4165,6 +4165,16 @@ function initEventListeners() {
         }
     });
 
+    document.getElementById('action-bring-front').addEventListener('click', () => {
+        bringToFront();
+        hideActionBar();
+    });
+
+    document.getElementById('action-send-back').addEventListener('click', () => {
+        sendToBack();
+        hideActionBar();
+    });
+
     document.getElementById('action-duplicate').addEventListener('click', () => {
         if (state.selectedNodes.length > 0) {
             const offset = 30; // Offset for duplicated nodes
