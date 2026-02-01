@@ -562,12 +562,12 @@ body {
     width: 100%;
     padding: 10px 15px;
     border: none;
-    background: var(--bg-secondary) !important;
+    background: none !important;
     color: var(--text-primary);
     text-align: left;
     cursor: pointer;
     font-size: 12px;
-    transition: background 0.2s;
+    transition: none;
 }
 
 .theme-option:hover {
@@ -575,13 +575,13 @@ body {
 }
 
 .theme-option.active {
-    color: var(--highlight);
+    color: var(--text-primary);
     font-weight: 600;
 }
 
 .theme-option.active::before {
     content: '> ';
-    color: var(--highlight);
+    color: #fff;
 }
 
 /* ============================================================================
@@ -800,15 +800,15 @@ body {
 
 /* Completed nodes: apply grayscale to content AND border */
 .node.completed .node-body {
-    fill: var(--bg-primary);
-    filter: grayscale(1) brightness(0.7);
+    fill: var(--surface);
+    filter: grayscale(1);
 }
 
 .node.completed .node-title,
 .node.completed .node-hashtags-group,
 .node.completed .node-dog-ear,
 .node.completed .node-completion-icon {
-    filter: grayscale(1) brightness(0.7);
+    filter: grayscale(1);
 }
 
 /* Selected completed nodes use lime highlight border (no filter) */
