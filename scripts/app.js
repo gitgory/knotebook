@@ -3109,8 +3109,8 @@ function initEventListeners() {
                 // Cancel edge creation
                 state.edgeStartNode = null;
                 clearEdgePreview();
-            } else if (state.spacebarHeld || e.button === 1) {
-                // Spacebar held or middle mouse button - always pan (preserve selection)
+            } else if (state.spacebarHeld || e.button === 1 || e.button === 2) {
+                // Spacebar held, middle mouse, or right-click - pan (preserve selection)
                 state.panning = true;
                 state.panStart = { x: e.clientX, y: e.clientY };
                 canvas.style.cursor = 'grabbing';
@@ -3128,8 +3128,7 @@ function initEventListeners() {
                 };
                 renderSelectionBox(); // Render immediately (even though it's a point)
             } else {
-                // Other mouse buttons
-                clearSelection();
+                // Other mouse buttons - pan
                 state.panning = true;
                 state.panStart = { x: e.clientX, y: e.clientY };
                 canvas.style.cursor = 'grabbing';
@@ -3691,7 +3690,7 @@ function initEventListeners() {
         }
 
         // N - New note
-        if (e.key === 'n' && !e.ctrlKey && !e.metaKey) {
+        if (e.key.toLowerCase() === 'n' && !e.ctrlKey && !e.metaKey) {
             e.preventDefault();
             const rect = container.getBoundingClientRect();
             const centerScreen = {
@@ -3706,14 +3705,14 @@ function initEventListeners() {
             openEditor(node.id);
         }
 
-        // Enter - Edit selected node (only if single selection)
-        if (e.key === 'Enter' && state.selectedNodes.length === 1) {
+        // Enter - Edit selected node(s)
+        if (e.key === 'Enter' && state.selectedNodes.length > 0) {
             e.preventDefault();
-            openEditor(state.selectedNodes[0]);
+            openEditor(state.selectedNodes[0]); // openEditor handles batch mode automatically
         }
 
         // F - Fit to view
-        if (e.key === 'f' && !e.ctrlKey && !e.metaKey) {
+        if (e.key.toLowerCase() === 'f' && !e.ctrlKey && !e.metaKey) {
             e.preventDefault();
             fitToView();
         }
@@ -3740,7 +3739,7 @@ function initEventListeners() {
         }
 
         // C - Start connect/edge mode (from selected node, only if single selection)
-        if (e.key === 'c' && !e.ctrlKey && !e.metaKey && state.selectedNodes.length === 1) {
+        if (e.key.toLowerCase() === 'c' && !e.ctrlKey && !e.metaKey && state.selectedNodes.length === 1) {
             e.preventDefault();
             if (state.edgeStartNode) {
                 // Already in edge mode, cancel
@@ -3759,7 +3758,7 @@ function initEventListeners() {
         }
 
         // S - Focus text search
-        if (e.key === 's' && !e.ctrlKey && !e.metaKey) {
+        if (e.key.toLowerCase() === 's' && !e.ctrlKey && !e.metaKey) {
             e.preventDefault();
             document.getElementById('text-search-input').focus();
         }
@@ -3772,7 +3771,7 @@ function initEventListeners() {
         }
 
         // H - Toggle hashtag sidebar
-        if (e.key === 'h' && !e.ctrlKey && !e.metaKey) {
+        if (e.key.toLowerCase() === 'h' && !e.ctrlKey && !e.metaKey) {
             e.preventDefault();
             toggleSidebar();
         }
