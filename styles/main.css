@@ -477,6 +477,11 @@ body {
     transition: background 0.2s;
 }
 
+#new-project-buttons button,
+#import-options button {
+    flex: 1; /* Share space evenly */
+}
+
 #new-project-create,
 #import-new {
     background: var(--accent);
@@ -1999,7 +2004,7 @@ body {
     /* Action bar fixed to top on mobile (below toolbar) */
     #selection-action-bar {
         position: fixed !important;
-        top: 60px !important; /* Below toolbar */
+        top: 70px !important; /* Below toolbar (toolbar is ~50px + gap) */
         left: 50% !important;
         bottom: auto !important;
         height: auto !important;
