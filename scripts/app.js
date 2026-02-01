@@ -1926,11 +1926,18 @@ function showNodeContextMenu(nodeId, x, y) {
     menu.style.top = y + 'px';
     menu.style.zIndex = '300';
 
-    menu.innerHTML = `
-        <div class="context-menu-item" data-action="bring-front">Bring to Front</div>
-        <div class="context-menu-item" data-action="send-back">Send to Back</div>
-        <div class="context-menu-item" data-action="move-to">Move to...</div>
-    `;
+    // Build menu items based on selection count
+    const menuItems = [];
+
+    if (state.selectedNodes.length > 1) {
+        menuItems.push('<div class="context-menu-item" data-action="connect-to">Connect to...</div>');
+    }
+
+    menuItems.push('<div class="context-menu-item" data-action="bring-front">Bring to Front</div>');
+    menuItems.push('<div class="context-menu-item" data-action="send-back">Send to Back</div>');
+    menuItems.push('<div class="context-menu-item" data-action="move-to">Move to...</div>');
+
+    menu.innerHTML = menuItems.join('');
 
     // Adjust position if menu goes off screen
     document.body.appendChild(menu);
@@ -1952,6 +1959,9 @@ function showNodeContextMenu(nodeId, x, y) {
             sendToBack();
         } else if (action === 'move-to') {
             showMoveToModal();
+        } else if (action === 'connect-to') {
+            // Start batch connect mode
+            startEdgeCreation();
         }
         hideNodeContextMenu();
     });
@@ -3451,16 +3461,36 @@ function initEventListeners() {
             }
 
             if (e.shiftKey) {
-                // Shift+click: start/complete edge creation
+                // Shift+click: start/complete edge creation (single or batch)
                 if (state.edgeStartNode) {
+                    // Complete edge creation to this target
                     completeEdgeCreation(nodeId);
                 } else {
-                    startEdgeCreation(nodeId);
+                    // Start edge creation from selected node(s)
+                    if (state.selectedNodes.length > 1) {
+                        // Batch mode: create edges from all selected nodes
+                        startEdgeCreation();
+                    } else if (state.selectedNodes.length === 1) {
+                        // Single mode: use selected node
+                        startEdgeCreation(state.selectedNodes[0]);
+                    } else {
+                        // No selection: use clicked node
+                        startEdgeCreation(nodeId);
+                    }
                 }
             } else {
-                // Regular click or Ctrl+click for multi-select/duplicate
+                // Regular click or Ctrl+click for multi-select/duplicate or Alt+click to remove
                 const alreadySelected = state.selectedNodes.includes(nodeId);
                 const ctrlHeld = e.ctrlKey || e.metaKey;
+                const altHeld = e.altKey;
+
+                // Alt+click: remove from selection (if already selected)
+                if (altHeld && alreadySelected) {
+                    state.selectedNodes = state.selectedNodes.filter(id => id !== nodeId);
+                    updateSelectionVisuals();
+                    render();
+                    return; // Don't set up dragging
+                }
 
                 // Store ctrl state and drag start position
                 state.ctrlHeld = ctrlHeld;
@@ -4682,9 +4712,8 @@ function initEventListeners() {
                 if (state.selectedNodes.length === 1) {
                     startEdgeCreation(state.selectedNodes[0]);
                 } else {
-                    // Batch connect mode
+                    // Batch connect mode (no toast - behavior is clear from context)
                     startEdgeCreation();
-                    showToast(`Tap another note to connect ${state.selectedNodes.length} notes to it`);
                 }
             }
         }
