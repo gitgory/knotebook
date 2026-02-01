@@ -2980,6 +2980,9 @@ function placeGhostNodes() {
     if (canvas) canvas.classList.remove('ghost-drag-mode');
 
     render();
+
+    // Save immediately to target notebook (don't wait for auto-save)
+    saveProjectToStorage();
 }
 
 function cancelGhostDrag() {
