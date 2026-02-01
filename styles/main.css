@@ -2010,6 +2010,7 @@ body {
         bottom: auto !important;
         height: auto !important;
         width: 100% !important; /* Full width on mobile */
+        max-width: 100% !important; /* Override base 90vw */
         min-width: unset !important;
         transform: translateY(-100px) !important; /* No X translation needed with full width */
         z-index: 200;

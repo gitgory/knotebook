@@ -1826,19 +1826,16 @@ function updateSelectionActionBar() {
     const actionBar = document.getElementById('selection-action-bar');
     if (!actionBar) return;
 
-    const editBtn = document.getElementById('action-edit');
     const connectBtn = document.getElementById('action-connect');
     const duplicateBtn = document.getElementById('action-duplicate');
     const deleteBtn = document.getElementById('action-delete');
 
     if (state.selectedNodes.length > 0) {
         // Node(s) selected - configure buttons based on selection count
-        // Edit and Connect only work with single selection
+        // Connect only works with single selection
         if (state.selectedNodes.length === 1) {
-            editBtn.classList.remove('hidden');
             connectBtn.classList.remove('hidden');
         } else {
-            editBtn.classList.add('hidden');
             connectBtn.classList.add('hidden');
         }
         duplicateBtn.classList.remove('hidden');
@@ -1846,7 +1843,6 @@ function updateSelectionActionBar() {
         // Action bar is only shown on mobile via long-press
     } else if (state.selectedEdge !== null) {
         // Edge selected - show only delete
-        editBtn.classList.add('hidden');
         connectBtn.classList.add('hidden');
         duplicateBtn.classList.add('hidden');
         deleteBtn.classList.remove('hidden');
@@ -4651,12 +4647,6 @@ function initEventListeners() {
     });
 
     // Selection action bar buttons
-    document.getElementById('action-edit').addEventListener('click', () => {
-        if (state.selectedNodes.length === 1) {
-            openEditor(state.selectedNodes[0]);
-        }
-    });
-
     document.getElementById('action-connect').addEventListener('click', () => {
         if (state.selectedNodes.length === 1) {
             if (state.edgeStartNode) {
