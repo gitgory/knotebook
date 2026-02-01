@@ -1262,16 +1262,8 @@ function renderNodes() {
     const layer = document.getElementById('nodes-layer');
     layer.innerHTML = '';
 
-    // Sort nodes by zIndex (lower first), then by selected state (selected on top)
+    // Sort nodes by zIndex (lower first = behind, higher = in front)
     const sortedNodes = [...state.nodes].sort((a, b) => {
-        const aSelected = state.selectedNodes.includes(a.id);
-        const bSelected = state.selectedNodes.includes(b.id);
-
-        // Selected nodes always render on top
-        if (aSelected && !bSelected) return 1;
-        if (!aSelected && bSelected) return -1;
-
-        // Otherwise sort by zIndex
         const aZ = a.zIndex || 0;
         const bZ = b.zIndex || 0;
         return aZ - bZ;
@@ -2344,7 +2336,7 @@ function updateHashtagDisplay(hashtags, isBatchMode = false, totalNodes = 1, tag
 
     display.innerHTML = hashtags
         .map(tag => {
-            const color = getHashtagColor(tag);
+            const color = getHashtagColor(tag, false); // Don't auto-assign colors while typing
             const isRemoved = removedTagsInSession.has(tag);
             // If tag is removed, count is 0 (will be deleted from all notes)
             const count = isRemoved ? 0 : (tagCounts[tag] || 0);
@@ -3154,11 +3146,9 @@ function initEventListeners() {
         }
     });
 
-    // Prevent context menu on canvas (we use right-click for selection box)
+    // Prevent default context menu on canvas (we use right-click for selection box and node menu)
     canvas.addEventListener('contextmenu', (e) => {
-        if (e.target === canvas || e.target.closest('#selection-box-overlay')) {
-            e.preventDefault();
-        }
+        e.preventDefault();
     });
 
     // Mouse move
