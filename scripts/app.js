@@ -3229,6 +3229,16 @@ async function importFromFile() {
             const modal = document.getElementById('import-modal');
             const filename = document.getElementById('import-filename');
             filename.textContent = `File: ${file.name}`;
+
+            // Hide overwrite button if no projects exist
+            const overwriteBtn = document.getElementById('import-overwrite');
+            const projects = getProjectsList();
+            if (projects.length === 0) {
+                overwriteBtn.classList.add('hidden');
+            } else {
+                overwriteBtn.classList.remove('hidden');
+            }
+
             modal.classList.remove('hidden');
 
         } catch (err) {
@@ -3264,6 +3274,16 @@ function importFromFileFallback() {
             const modal = document.getElementById('import-modal');
             const filename = document.getElementById('import-filename');
             filename.textContent = `File: ${file.name}`;
+
+            // Hide overwrite button if no projects exist
+            const overwriteBtn = document.getElementById('import-overwrite');
+            const projects = getProjectsList();
+            if (projects.length === 0) {
+                overwriteBtn.classList.add('hidden');
+            } else {
+                overwriteBtn.classList.remove('hidden');
+            }
+
             modal.classList.remove('hidden');
 
         } catch (err) {
@@ -3315,7 +3335,7 @@ async function handleImportOverwrite() {
 
     const projects = getProjectsList();
     if (projects.length === 0) {
-        alert('No existing notebooks to overwrite. Use "Create New Notebook" instead.');
+        showToast('No existing notebooks to overwrite. Use "Create New Notebook" instead.');
         return;
     }
 

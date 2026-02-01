@@ -2002,6 +2002,7 @@ body {
         top: 60px; /* Below toolbar */
         left: 50%;
         bottom: auto;
+        height: auto;
         transform: translateX(-50%) translateY(-100px);
         z-index: 200;
         justify-content: center;
