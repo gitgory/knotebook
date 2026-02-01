@@ -2166,6 +2166,9 @@ function updateHashtagDisplay(hashtags, isBatchMode = false, totalNodes = 1, tag
             const tag = el.dataset.tag;
             const isRemoved = removedTagsInSession.has(tag);
 
+            // Save cursor position
+            const cursorPos = textarea.selectionStart;
+
             if (isRemoved) {
                 // Re-add tag: append to content
                 removedTagsInSession.delete(tag);
@@ -2182,6 +2185,10 @@ function updateHashtagDisplay(hashtags, isBatchMode = false, totalNodes = 1, tag
                 // Trigger input event to re-parse and update display
                 textarea.dispatchEvent(new Event('input'));
             }
+
+            // Restore cursor position (clamped to new content length)
+            const newPos = Math.min(cursorPos, textarea.value.length);
+            textarea.setSelectionRange(newPos, newPos);
         });
     });
 }
