@@ -61,7 +61,7 @@ const HASHTAG_COLORS = [
     '#06b6d4', // Cyan
     '#3b82f6', // Blue
     '#a855f7', // Purple
-    '#64748b', // Slate
+    '#fb923c', // Amber (replaces gray - reserved for unassigned tags)
 ];
 
 // Hashtag color assignments (hashtag -> color)
@@ -1831,13 +1831,8 @@ function updateSelectionActionBar() {
     const deleteBtn = document.getElementById('action-delete');
 
     if (state.selectedNodes.length > 0) {
-        // Node(s) selected - configure buttons based on selection count
-        // Connect only works with single selection
-        if (state.selectedNodes.length === 1) {
-            connectBtn.classList.remove('hidden');
-        } else {
-            connectBtn.classList.add('hidden');
-        }
+        // Node(s) selected - show all buttons (Connect now works for batch connect)
+        connectBtn.classList.remove('hidden');
         duplicateBtn.classList.remove('hidden');
         deleteBtn.classList.remove('hidden');
         // Action bar is only shown on mobile via long-press
@@ -1972,29 +1967,57 @@ function hideNodeContextMenu() {
 // ============================================================================
 
 function startEdgeCreation(nodeId) {
-    state.edgeStartNode = nodeId;
+    // If nodeId provided, use it; otherwise use current selection (for batch connect)
+    if (nodeId) {
+        state.edgeStartNode = nodeId;
+    } else if (state.selectedNodes.length > 0) {
+        // Batch connect mode: store all selected nodes
+        state.edgeStartNode = state.selectedNodes[0]; // Use first as primary for preview
+        state.edgeStartNodes = [...state.selectedNodes]; // Store all for batch creation
+    }
 }
 
 function completeEdgeCreation(targetNodeId) {
     if (!state.edgeStartNode || state.edgeStartNode === targetNodeId) {
         state.edgeStartNode = null;
+        state.edgeStartNodes = null;
         clearEdgePreview();
         return;
     }
 
-    // Toggle edge: remove if exists, create if not
-    const existingIndex = state.edges.findIndex(e =>
-        (e[0] === state.edgeStartNode && e[1] === targetNodeId) ||
-        (e[0] === targetNodeId && e[1] === state.edgeStartNode)
-    );
+    // Batch connect mode: create edges from all source nodes to target
+    if (state.edgeStartNodes && state.edgeStartNodes.length > 0) {
+        state.edgeStartNodes.forEach(sourceId => {
+            if (sourceId === targetNodeId) return; // Skip self-connection
 
-    if (existingIndex !== -1) {
-        state.edges.splice(existingIndex, 1);
+            // Toggle edge: remove if exists, create if not
+            const existingIndex = state.edges.findIndex(e =>
+                (e[0] === sourceId && e[1] === targetNodeId) ||
+                (e[0] === targetNodeId && e[1] === sourceId)
+            );
+
+            if (existingIndex !== -1) {
+                state.edges.splice(existingIndex, 1);
+            } else {
+                state.edges.push([sourceId, targetNodeId]);
+            }
+        });
     } else {
-        state.edges.push([state.edgeStartNode, targetNodeId]);
+        // Single edge creation
+        const existingIndex = state.edges.findIndex(e =>
+            (e[0] === state.edgeStartNode && e[1] === targetNodeId) ||
+            (e[0] === targetNodeId && e[1] === state.edgeStartNode)
+        );
+
+        if (existingIndex !== -1) {
+            state.edges.splice(existingIndex, 1);
+        } else {
+            state.edges.push([state.edgeStartNode, targetNodeId]);
+        }
     }
 
     state.edgeStartNode = null;
+    state.edgeStartNodes = null;
     clearEdgePreview();
     render();
 }
@@ -4648,13 +4671,21 @@ function initEventListeners() {
 
     // Selection action bar buttons
     document.getElementById('action-connect').addEventListener('click', () => {
-        if (state.selectedNodes.length === 1) {
+        if (state.selectedNodes.length > 0) {
             if (state.edgeStartNode) {
                 // Cancel if already in edge mode
                 state.edgeStartNode = null;
+                state.edgeStartNodes = null;
                 clearEdgePreview();
             } else {
-                startEdgeCreation(state.selectedNodes[0]);
+                // Start edge creation (single or batch)
+                if (state.selectedNodes.length === 1) {
+                    startEdgeCreation(state.selectedNodes[0]);
+                } else {
+                    // Batch connect mode
+                    startEdgeCreation();
+                    showToast(`Tap another note to connect ${state.selectedNodes.length} notes to it`);
+                }
             }
         }
     });
