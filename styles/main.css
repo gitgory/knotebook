@@ -1961,12 +1961,7 @@ body {
    MISC
    ============================================================================ */
 
-.selection-box {
-    fill: rgba(74, 159, 255, 0.1);
-    stroke: var(--accent);
-    stroke-width: 1;
-    stroke-dasharray: 4, 4;
-}
+/* Selection box styles moved to node-context-menu section above */
 
 /* ============================================================================
    HASHTAG AUTOCOMPLETE

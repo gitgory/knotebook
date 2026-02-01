@@ -3125,6 +3125,7 @@ function initEventListeners() {
                     ctrlHeld: e.ctrlKey || e.metaKey,
                     altHeld: e.altKey
                 };
+                renderSelectionBox(); // Render immediately (even though it's a point)
             } else {
                 // Other mouse buttons
                 clearSelection();
@@ -3138,6 +3139,11 @@ function initEventListeners() {
     // Handle context menu - show node menu or prevent default for selection box
     canvas.addEventListener('contextmenu', (e) => {
         e.preventDefault();
+
+        // If we're in selection box mode, don't do anything else
+        if (state.selectionBox) {
+            return;
+        }
 
         const target = e.target;
         const nodeEl = target.closest('.node');
