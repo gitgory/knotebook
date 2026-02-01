@@ -3691,6 +3691,13 @@ function initEventListeners() {
         const isBatchMode = modal.dataset.batchMode === 'true';
         const hashtags = parseHashtags(e.target.value);
 
+        // If any removed tags are now in the content, un-remove them
+        hashtags.forEach(tag => {
+            if (removedTagsInSession.has(tag)) {
+                removedTagsInSession.delete(tag);
+            }
+        });
+
         if (isBatchMode) {
             // In batch mode, show all unique tags across selected nodes
             const nodes = state.selectedNodes.map(id => state.nodes.find(n => n.id === id)).filter(Boolean);
