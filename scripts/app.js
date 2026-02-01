@@ -3705,8 +3705,9 @@ function initEventListeners() {
 
             updateHashtagDisplay(allTags, true, nodes.length, tagCounts);
         } else {
-            // Single edit mode: show tags from content
-            updateHashtagDisplay(hashtags, false, 1, {});
+            // Single edit mode: show tags from content + removed tags
+            const allTags = [...new Set([...hashtags, ...removedTagsInSession])].sort();
+            updateHashtagDisplay(allTags, false, 1, {});
         }
 
         updateAutocompleteFromInput(e.target);
