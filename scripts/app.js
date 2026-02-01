@@ -2086,6 +2086,20 @@ function saveEditor() {
         const completionValue = activeBtn ? activeBtn.dataset.value : '';
 
         nodes.forEach(node => {
+            // Remove tags that were marked for removal
+            if (removedTagsInSession.size > 0) {
+                removedTagsInSession.forEach(tag => {
+                    // Remove from hashtags array
+                    node.hashtags = node.hashtags.filter(t => t !== tag);
+                    // Remove from content text
+                    const escapedTag = tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    const regex = new RegExp(escapedTag + '\\s?', 'gi');
+                    node.content = node.content.replace(regex, '').trim();
+                    // Clean up multiple spaces
+                    node.content = node.content.replace(/\s+/g, ' ');
+                });
+            }
+
             // Add new tags to each node (avoid duplicates)
             if (newTags.length > 0) {
                 newTags.forEach(tag => {
