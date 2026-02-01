@@ -792,16 +792,23 @@ body {
     stroke-width: 2;
 }
 
-/* Completed nodes get grayscale filter */
-.node.completed {
+/* Completed nodes: apply grayscale to content elements only, not borders */
+.node.completed .node-body {
+    fill: var(--bg-primary);
+    filter: brightness(0.5);
+}
+
+.node.completed .node-title,
+.node.completed .node-hashtags-group,
+.node.completed .node-dog-ear,
+.node.completed .node-completion-icon {
     filter: grayscale(1) brightness(0.5);
 }
 
-/* For selected completed nodes, use a brighter stroke that survives the filter */
+/* Selected completed nodes keep accent border */
 .node.completed.selected .node-body {
-    /* Use bright cyan that will still look like accent after grayscale+brightness filter */
-    stroke: #00ffff;
-    stroke-width: 3;
+    stroke: var(--accent);
+    stroke-width: 2;
 }
 
 .node-title {
