@@ -4,6 +4,99 @@ This file tracks work across Claude Code sessions for continuity.
 
 ---
 
+## Session 2026-01-31 (Batch Edit Testing & Completion Status Improvements)
+
+### Summary
+Comprehensive testing of batch edit feature with 29 tests, fixing 5 bugs discovered during testing. Added 4th completion state (Cancelled), improved visual clarity of completed/cancelled notes, and polished UI elements (theme dropdown, disabled buttons, version display).
+
+### Files Changed
+- `scripts/app.js` - Fixed tag pill display in single mode; preserved cursor position; suppressed autocomplete on synthetic events; added cancelled state to cycleCompletion(); bumped v60→v76
+- `styles/main.css` - Added disabled button styles; fixed completed node styling (grayscale filter on elements, not whole node); improved theme dropdown (unified backgrounds, white indicator); adjusted completed note brightness; bumped v60→v76
+- `index.html` - Added Cancelled completion button; reordered completion buttons; fixed missing </script> tag; bumped cache versions v60→v76
+- `SESSION_NOTES.md` - This update
+- `ROADMAP.txt` - Updated with batch edit completion and Cancelled state
+
+### Tasks Completed
+- [x] Tested batch edit feature - all 29 tests passed
+- [x] Fixed 5 bugs discovered during testing:
+  1. Tag pills disappearing when clicked (v61) - Combined content tags with removedTagsInSession
+  2. Autocomplete triggering after tag removal (v62-v64) - Removed trailing space, preserved cursor, suppressed autocomplete
+  3. Manually typed removed tags not becoming solid (v65) - Check and remove from removedTagsInSession on input
+  4. Removed tags not actually deleted on save (v66) - Added removal logic to batch save
+  5. Badge counts not updating to 0 when removed (v67) - Set count to 0 for removed tags
+- [x] Added Cancelled completion state (4th option, red ✕ icon)
+- [x] Reordered completion: To do → Partial → Done → Cancelled
+- [x] Fixed completed/cancelled note visibility (lime border when selected)
+- [x] Lightened completed notes (grayscale only, removed darkening filter)
+- [x] Improved theme dropdown (unified styling, white ">" indicator)
+- [x] Made disabled "Step in" button more visually clear
+- [x] Made version info smaller and use highlight color
+- [x] Fixed critical script tag bug (missing </script>)
+
+### Decisions Made
+- **Completion state order**: To do → Partial → Done → Cancelled (both editor and front-of-card cycling)
+- **Completed node styling**: Apply grayscale filter to individual elements (title, tags, icons), not entire node, so borders can show color when selected
+- **Completed node brightness**: Use --surface fill (lighter) with grayscale only, no brightness reduction
+- **Selected completed nodes**: Show lime (--highlight) border with filter:none to preserve color
+- **Cancelled state**: Behaves identically to Done (grayed out), uses red ✕ icon
+- **Theme dropdown indicator**: White ">" prefix for active theme, no background colors
+- **Tag removal approach**: Preserve cursor position + suppress autocomplete for synthetic events
+
+### Bug Fixes Timeline
+- **v61**: Fixed disappearing pills - show removed tags as outlined
+- **v62**: Changed tag removal to delete trailing space instead of leading
+- **v63**: Added cursor position preservation
+- **v64**: Added autocomplete suppression flag for synthetic events
+- **v65**: Auto-remove tags from removedTagsInSession when re-typed
+- **v66**: Actually delete removed tags from nodes on batch save
+- **v67**: Update badge counts to (0/N) for removed tags
+- **v68**: Added disabled button styling
+- **v69**: Added Cancelled state, improved completed node selection visibility
+- **v70**: Fixed completion cycling to include Cancelled
+- **v71-v73**: Iterative fixes for completed node border color (grayscale filter issue)
+- **v74**: Reordered completion states, improved theme dropdown
+- **v75-v76**: Fixed completed note brightness and theme styling
+- **v76 hotfix**: Fixed missing </script> tag
+
+### Implementation Highlights
+
+**Batch Edit Testing:**
+- Created test notebook with 5 notes in various tag combinations
+- Tested single mode (6 tests), batch mode (9 tests), edge cases (5 tests), content sync (3 tests), completion (2 tests), regression (3 tests), mobile (1 test)
+- All tests passed after fixes
+
+**Completion Status Enhancements:**
+- 4 states: None → To do (○) → Partial (◐) → Done (✓) → Cancelled (✕)
+- Cancelled uses red color (#ef4444), same visual treatment as Done
+- Front-of-card click cycles through all 4 states
+- Editor shows all 5 buttons (None + 4 states)
+
+**Completed Node Visibility Fix:**
+- Problem: grayscale filter on entire node grayed out the selection border
+- Solution: Apply filter only to content elements, leave border unfiltered
+- Selected completed nodes: lime border with filter:none override
+- Non-selected completed nodes: gray border (filtered)
+
+**Theme Dropdown:**
+- Removed individual theme background colors
+- White ">" indicator for active theme
+- Unified --bg-secondary background with --surface on hover
+
+### Next Steps
+- [ ] Custom fields feature design decisions (from Night session design spec)
+- [ ] Consider implementing Priority field (First Class Field)
+- [ ] Future: Flat architecture transition (design-spec-future.txt)
+
+### Notes
+- 17 commits this session (260fae1 through aa01613)
+- Version progression: v60 → v76 (16 versions, many iterative fixes)
+- Batch edit feature fully production-ready
+- Critical bug (missing </script>) caught and fixed quickly
+- All user data remained safe in localStorage throughout
+- Context usage: ~54% (108k/200k tokens)
+
+---
+
 ## Session 2026-01-30 - Night Part 5 (Batch Edit Implementation)
 
 ### Summary

@@ -1,7 +1,7 @@
 ================================================================================
 KNOTEBOOK - ROADMAP
 ================================================================================
-Last updated: 2026-01-27
+Last updated: 2026-01-31
 
 ================================================================================
 COMPLETED
@@ -26,6 +26,38 @@ COMPLETED
 [x] Mobile selection action bar (2026-01-24)
 
 See SESSION_NOTES.md for more recent changes.
+
+================================================================================
+RECENTLY COMPLETED (2026-01-31)
+================================================================================
+
+[x] Batch edit notes (2026-01-31)
+    - Multi-select notes (Ctrl+Click) and edit tags/completion in one operation
+    - Clickable tag pills: click to remove (outlined), click again to re-add (solid)
+    - Works in both single and batch modes
+    - Badge counts show (N/Total) for tags in batch mode
+    - Removed tags marked with outlined pills during session
+    - All changes applied to selected notes on save
+    - Comprehensive 29-test plan, all tests passed
+    - Fixed 5 bugs during testing (v61-v67)
+
+[x] Cancelled completion state (2026-01-31)
+    - 4th completion option: Cancelled (red ✕ icon)
+    - Cycles: To do → Partial → Done → Cancelled → To do
+    - Behaves like Done (grayed out with grayscale filter)
+    - Works on both front-of-card clicks and editor buttons
+
+[x] Improved completed/cancelled note visibility (2026-01-31)
+    - Selected completed notes show lime border (--highlight color)
+    - Non-selected completed notes have gray border
+    - Lightened completed notes (grayscale only, no brightness reduction)
+    - Changed fill from --bg-primary to --surface for better visibility
+
+[x] UI polish (2026-01-31)
+    - Disabled button styling (grayed, not-allowed cursor, 40% opacity)
+    - Theme dropdown: unified backgrounds, white ">" indicator for active theme
+    - Version info display: smaller (0.6rem), uses highlight color
+    - Reordered completion buttons in editor
 
 ================================================================================
 RECENTLY COMPLETED (2026-01-30)
@@ -72,10 +104,11 @@ RECENTLY COMPLETED (2026-01-27)
     - Text selection drag out of editor no longer accidentally closes it
     - Empty nodes still auto-deleted on both save and cancel
 
-[x] Completed notes visual styling (2026-01-27)
-    - Notes marked "Done" render with grayscale + 50% brightness
-    - Uses CSS filter (grayscale(1) brightness(0.5)) to keep nodes opaque
+[x] Completed notes visual styling (2026-01-27, updated 2026-01-31)
+    - Notes marked "Done" or "Cancelled" render with grayscale filter
+    - Filter applied to individual elements (not whole node) for better border visibility
     - Node stays fully interactive (clickable, draggable, selectable)
+    - Selected completed notes show colored border (lime highlight)
 
 [x] Terminology update (2026-01-27)
     - "Project" → "Notebook" in all user-facing text
@@ -121,85 +154,6 @@ UP NEXT
 ================================================================================
 
 See plan-outline.txt for the full consolidated feature list (Tiers 1-4).
-
-================================================================================
-DECISIONS LOG
-================================================================================
-
-2026-01-21: Startup decisions
-   - Canvas vs SVG? → SVG (easier interaction handling)
-   - Browser compatibility? → Chrome/Edge (File System Access API)
-   - Nested content indicator? → Stacked rectangles behind node (click to enter)
-   - Node shape? → Rounded rectangles (220x60 px)
-   - Long note text? → Title shown on node, full content in editor
-   - Canvas size? → Infinite canvas with pan/zoom (0.5x to 5x zoom)
-   - Unique note IDs? → Timestamp + counter: "note-{timestamp}-{n}"
-   - Orphaned edges? → Filtered out during render
-   - Position data? → Stored per-note
-   - Hashtags clickable? → Yes, clicking in editor populates search field
-
-2026-01-21: File storage → Monolithic JSON
-    - Considered individual files per note
-    - Chose monolithic for simplicity, atomic saves, and easy sharing
-
-2026-01-22: Hashtag search/filter design
-    - UI: Toolbar input (always visible) vs floating panel vs click-only
-    - Chose toolbar input for discoverability and multi-hashtag support
-    - Behavior: Hide non-matches vs dim vs highlight-only
-    - Chose hide for cleaner focus on relevant notes
-    - Scope: Current level only vs descendants vs entire project
-    - Chose current level for simplicity, can expand later
-    - Logic: OR (any match) vs AND (all must match)
-    - Chose OR for broader, more intuitive filtering
-
-2026-01-22: Project storage redesign
-    - Problem: File System Access API doesn't work on mobile
-    - Solution: localStorage as primary storage, file export for portability
-    - Auto-save: Debounced (1-2 sec) vs immediate vs periodic
-    - Chose debounced for balance of responsiveness and performance
-    - Project naming: Prompt on creation vs auto-name
-    - Chose prompt for intentional naming
-    - Import: Create new vs prompt for action
-    - Chose prompt to give user control over overwrites
-
-2026-01-23: Deletion behavior for nodes with children
-    - Cascade delete vs block deletion vs promote children
-    - Chose promote: children move to current level, preserving content
-    - Edges between promoted children preserved, edges to deleted node removed
-
-2026-01-25: Text search filter design (#1)
-    - Separate input vs combined with hashtag filter
-    - Chose separate: clearer purpose, both visible simultaneously
-    - Filter logic: AND between text search and hashtag filter
-    - Scope: same as hashtag filter (current level only)
-    - Matching: case-insensitive against node.title and node.content
-
-2026-01-25: Completion checkbox design (#5)
-    - State cycle: null (not set) → no → yes → partial → no
-    - Activation: opt-in via editor (not always visible on every node)
-    - Node display: SVG icons in top-right area
-      * 'no': empty gray circle (○)
-      * 'yes': green checkmark (✓)
-      * 'partial': orange half-circle (◐)
-    - Interaction: click indicator on node to cycle, or set via editor buttons
-
-2026-01-25: Children indicator redesign (stacked rectangles)
-    - Options considered:
-      (a) Keep [n] text indicator — functional but text-heavy
-      (b) Different node shape (stacked rectangles) ← CHOSEN
-    - Chose stacked rects: more visually intuitive ("there's stuff underneath"),
-      common UI pattern (file vs folder), frees up bottom-right space,
-      looks cleaner than text-based indicator
-    - Depth: 1 offset rect (1-2 children), 2 offset rects (3+ children)
-    - Offset rects are clickable to enter the node
-
-2026-01-27: Per-notebook settings
-    - Settings stored as `settings` object in project data (alongside nodes, edges, hashtagColors)
-    - First setting: `defaultCompletion` (null or 'no')
-    - Accessible from both toolbar (in-memory) and context menu (direct localStorage read/write)
-    - Completion control always visible in editor regardless of mode; only the default changes
-    - Backwards compatible: missing settings key defaults to { defaultCompletion: null }
-
 
 
 ================================================================================
