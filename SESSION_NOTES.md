@@ -4,6 +4,79 @@ This file tracks work across Claude Code sessions for continuity.
 
 ---
 
+## Session 2026-01-31 - Evening (Per-Notebook Themes & Icon Visibility)
+
+### Summary
+Implemented per-notebook theme settings so each notebook remembers its own theme. Fixed completion icons to stay colored on completed/cancelled notes, ensuring future status indicators remain visible under grayscale filter.
+
+### Files Changed
+- `scripts/app.js` - Added getCurrentTheme(), theme validation with fallback to midnight, theme field to save/load/import/export, applied theme on openProject(); bumped v76→v78
+- `styles/main.css` - Removed .node-completion-icon from grayscale filter; bumped v76→v78
+- `index.html` - Bumped cache versions v76→v78
+- `SESSION_NOTES.md` - Added this session entry
+
+### Tasks Completed
+- [x] Removed completion icons from grayscale filter (stay colored: green ✓, orange ◐, red ✕)
+- [x] Implemented per-notebook theme storage in data model
+- [x] Added getCurrentTheme() helper function
+- [x] Theme applied automatically when opening notebook
+- [x] Theme saved to notebook when changed (also saves to global default)
+- [x] Added theme to export/import flows (preserves theme in JSON)
+- [x] Implemented theme validation with fallback to midnight for deleted themes
+- [x] Tested both features - all working correctly
+
+### Decisions Made
+- **Completion icon visibility**: Keep all status indicators colored (not grayed) on completed notes for better UX and future-proofing for priority/other indicators
+- **Per-notebook themes**: Each notebook stores its own theme preference, making it easy to have different visual contexts for different projects
+- **Theme validation**: Falls back to 'midnight' with console warning if theme doesn't exist, preventing errors from deleted/renamed themes
+- **Landing page theme**: Uses last-used theme from global localStorage
+- **New notebooks**: Default to current global theme when created
+- **Import behavior**: Imported notebooks preserve their theme, or use current theme if not specified
+
+### Implementation Highlights
+
+**Colored Icons on Completed Notes:**
+- Removed `.node-completion-icon` from grayscale filter list
+- Icons stay vibrant: ✓ green, ◐ orange, ✕ red, ○ gray
+- Future status indicators (priority, etc.) will also stay colored
+- Only title, hashtag pills, dog-ear, and border get grayscaled
+
+**Per-Notebook Theme System:**
+- Added `theme` field to notebook data model
+- `getCurrentTheme()` returns current theme (data-theme attr or 'midnight')
+- `openProject()` applies notebook's saved theme via `setTheme(data.theme)`
+- `setTheme()` saves to both current notebook and global default
+- `saveProjectToStorage()` includes `getCurrentTheme()` in saved data
+- Import/export preserve theme setting
+- Theme validation with array of valid themes, fallback to midnight
+
+**Theme Validation:**
+```javascript
+const validThemes = ['midnight', 'slate', 'neon', 'mint', 'ocean',
+                     'sky', 'obsidian', 'aurora', 'graphite', 'sunset'];
+```
+- Validates before applying theme
+- Console warns if theme not found
+- Auto-corrects invalid themes to midnight
+- Self-healing on first load
+
+### Next Steps
+- [ ] Consider implementing Priority field (First Class Field from custom fields design)
+- [ ] Continue working through Tier 3 features from plan-outline.txt
+- [ ] Explore flat architecture transition (design-spec-future.txt)
+- [ ] Consider adding more front-of-card status indicators (priority, flagged, etc.)
+
+### Notes
+- 3 commits this session (75214f2, 608e024, plus docs)
+- Version progression: v76 → v78 (completion icons + themes + validation)
+- Per-notebook themes is a major UX improvement for multi-project workflows
+- Theme validation prevents future issues if themes are renamed/removed
+- Completion icons staying colored confirmed working by user
+- All changes backwards compatible (old notebooks without theme field work fine)
+- Context usage: ~65% (130k/200k tokens)
+
+---
+
 ## Session 2026-01-31 (Batch Edit Testing & Completion Status Improvements)
 
 ### Summary
