@@ -287,6 +287,13 @@ body {
     max-width: 400px;
 }
 
+#version-info {
+    margin-top: 60px;
+    font-size: 0.7rem;
+    color: var(--accent);
+    opacity: 0.5;
+}
+
 #projects-section h2 {
     font-size: 1rem;
     color: var(--text-secondary);

@@ -1,0 +1,24 @@
+# Local Claude Code settings
+.claude/settings.local.json
+
+# Test plans (temporary documentation)
+TEST_*.md
+
+# Generated files
+scripts/toc.txt
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor directories
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+npm-debug.log*
