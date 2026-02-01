@@ -2004,7 +2004,7 @@ body {
     /* Action bar fixed to top on mobile (below toolbar) */
     #selection-action-bar {
         position: fixed !important;
-        top: 54px !important; /* Immediately below toolbar (~53px tall) */
+        top: 140px !important; /* Below 3-row toolbar on mobile (buttons + search + breadcrumbs) */
         left: 50% !important;
         bottom: auto !important;
         height: auto !important;
