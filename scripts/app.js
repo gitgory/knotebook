@@ -2162,7 +2162,8 @@ function updateHashtagDisplay(hashtags, isBatchMode = false, totalNodes = 1, tag
         .map(tag => {
             const color = getHashtagColor(tag);
             const isRemoved = removedTagsInSession.has(tag);
-            const count = tagCounts[tag] || 0;
+            // If tag is removed, count is 0 (will be deleted from all notes)
+            const count = isRemoved ? 0 : (tagCounts[tag] || 0);
             const badge = isBatchMode ? ` (${count}/${totalNodes})` : '';
 
             // Solid pill: background color, white text
