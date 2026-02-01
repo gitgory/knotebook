@@ -3037,17 +3037,6 @@ function initEventListeners() {
             const nodeId = nodeEl.dataset.id;
             const node = state.nodes.find(n => n.id === nodeId);
 
-            // Right-click on node - show context menu
-            if (e.button === 2) {
-                e.preventDefault();
-                // Select the node if not already selected
-                if (!state.selectedNodes.includes(nodeId)) {
-                    selectNode(nodeId, false);
-                }
-                showNodeContextMenu(nodeId, e.clientX, e.clientY);
-                return;
-            }
-
             // Click on children indicator - enter the node
             if (target.classList.contains('node-stack')) {
                 saveRootState();
@@ -3146,9 +3135,23 @@ function initEventListeners() {
         }
     });
 
-    // Prevent default context menu on canvas (we use right-click for selection box and node menu)
+    // Handle context menu - show node menu or prevent default for selection box
     canvas.addEventListener('contextmenu', (e) => {
         e.preventDefault();
+
+        const target = e.target;
+        const nodeEl = target.closest('.node');
+
+        if (nodeEl) {
+            // Right-click on node - show context menu
+            const nodeId = nodeEl.dataset.id;
+            // Select the node if not already selected
+            if (!state.selectedNodes.includes(nodeId)) {
+                selectNode(nodeId, false);
+            }
+            showNodeContextMenu(nodeId, e.clientX, e.clientY);
+        }
+        // Otherwise, context menu is prevented (used for selection box)
     });
 
     // Mouse move
