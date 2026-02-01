@@ -1996,11 +1996,20 @@ body {
         z-index: 250;
     }
 
-    /* Action bar positioning on mobile is handled by JS (positionActionBar) */
+    /* Action bar fixed to top on mobile (below toolbar) */
     #selection-action-bar {
+        position: fixed;
+        top: 60px; /* Below toolbar */
+        left: 50%;
+        bottom: auto;
+        transform: translateX(-50%) translateY(-100px);
         z-index: 200;
         justify-content: center;
         opacity: 1 !important;
+    }
+
+    #selection-action-bar.visible {
+        transform: translateX(-50%) translateY(0);
     }
 
     #selection-action-bar.hidden {

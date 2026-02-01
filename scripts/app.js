@@ -1861,85 +1861,9 @@ function updateSelectionActionBar() {
 }
 
 function positionActionBar() {
-    // Only reposition on touch devices; desktop keeps default CSS positioning
-    if (!('ontouchstart' in window)) return;
-
-    const actionBar = document.getElementById('selection-action-bar');
-    if (!actionBar) return;
-
-    const BAR_MARGIN = 8; // px from viewport edges
-    const GAP = 10; // px gap between bar and node
-
-    let anchorX, anchorTopY, anchorBottomY;
-
-    if (state.selectedNodes.length === 1) {
-        // Single node: anchor above/below the node
-        const node = state.nodes.find(n => n.id === state.selectedNodes[0]);
-        if (!node) return;
-        const topLeft = canvasToScreen(node.position.x, node.position.y);
-        const bottomRight = canvasToScreen(node.position.x + NODE_WIDTH, node.position.y + NODE_HEIGHT);
-        anchorX = (topLeft.x + bottomRight.x) / 2;
-        anchorTopY = topLeft.y;
-        anchorBottomY = bottomRight.y;
-    } else if (state.selectedNodes.length > 1) {
-        // Multi-select: anchor above/below the bounding box of all selected nodes
-        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-        for (const id of state.selectedNodes) {
-            const node = state.nodes.find(n => n.id === id);
-            if (!node) continue;
-            minX = Math.min(minX, node.position.x);
-            minY = Math.min(minY, node.position.y);
-            maxX = Math.max(maxX, node.position.x + NODE_WIDTH);
-            maxY = Math.max(maxY, node.position.y + NODE_HEIGHT);
-        }
-        const topLeft = canvasToScreen(minX, minY);
-        const bottomRight = canvasToScreen(maxX, maxY);
-        anchorX = (topLeft.x + bottomRight.x) / 2;
-        anchorTopY = topLeft.y;
-        anchorBottomY = bottomRight.y;
-    } else if (state.selectedEdge !== null) {
-        // Edge: anchor at midpoint between the two connected nodes
-        const edge = state.edges[state.selectedEdge];
-        if (!edge) return;
-        const nodeA = state.nodes.find(n => n.id === edge[0]);
-        const nodeB = state.nodes.find(n => n.id === edge[1]);
-        if (!nodeA || !nodeB) return;
-        const midCanvasX = (nodeA.position.x + NODE_WIDTH / 2 + nodeB.position.x + NODE_WIDTH / 2) / 2;
-        const midCanvasY = (nodeA.position.y + NODE_HEIGHT / 2 + nodeB.position.y + NODE_HEIGHT / 2) / 2;
-        const midScreen = canvasToScreen(midCanvasX, midCanvasY);
-        anchorX = midScreen.x;
-        anchorTopY = midScreen.y;
-        anchorBottomY = midScreen.y;
-    } else {
-        return;
-    }
-
-    // Measure the bar
-    const barRect = actionBar.getBoundingClientRect();
-    const barW = barRect.width;
-    const barH = barRect.height;
-
-    // Default: position above the anchor
-    let top = anchorTopY - GAP - barH;
-    let flipped = false;
-
-    // Flip below if it would go above the viewport
-    if (top < BAR_MARGIN) {
-        top = anchorBottomY + GAP;
-        flipped = true;
-    }
-
-    // Center horizontally on the anchor, clamped within viewport
-    let left = anchorX - barW / 2;
-    left = Math.max(BAR_MARGIN, Math.min(left, window.innerWidth - barW - BAR_MARGIN));
-
-    // Apply positioning via inline styles
-    actionBar.style.position = 'fixed';
-    actionBar.style.top = top + 'px';
-    actionBar.style.left = left + 'px';
-    actionBar.style.bottom = 'auto';
-    actionBar.style.right = 'auto';
-    actionBar.style.transform = 'none';
+    // Mobile: Fixed position at top handled by CSS
+    // Desktop: Keep default CSS positioning (centered at bottom)
+    // No dynamic repositioning needed anymore
 }
 
 function showActionBar() {
@@ -1963,13 +1887,6 @@ function hideActionBar() {
     setTimeout(() => {
         if (!actionBar.classList.contains('visible')) {
             actionBar.classList.add('hidden');
-            // Clear inline positioning styles so stale positions don't persist
-            actionBar.style.position = '';
-            actionBar.style.top = '';
-            actionBar.style.left = '';
-            actionBar.style.right = '';
-            actionBar.style.bottom = '';
-            actionBar.style.transform = '';
         }
     }, 200);
 }
