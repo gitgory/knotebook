@@ -105,6 +105,13 @@ function getCurrentTheme() {
 }
 
 function setTheme(themeName) {
+    // Validate theme exists (in case of deleted/renamed themes)
+    const validThemes = ['midnight', 'slate', 'neon', 'mint', 'ocean', 'sky', 'obsidian', 'aurora', 'graphite', 'sunset'];
+    if (!validThemes.includes(themeName)) {
+        console.warn(`Theme "${themeName}" not found, falling back to midnight`);
+        themeName = 'midnight';
+    }
+
     // Remove theme from root if it's 'midnight' (default), otherwise set it
     if (themeName === 'midnight') {
         document.documentElement.removeAttribute('data-theme');
