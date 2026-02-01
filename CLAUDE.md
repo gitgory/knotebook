@@ -1,5 +1,8 @@
 # CLAUDE.md - knotebook
 
+## Initiating a New Session
+Display for the user, "I have read your PROJECT-level claude.md file"
+
 ## Project Overview
 
 knotebook is a browser-based note-taking app with interactive graph visualization. Notes ("knotes") are nodes on an infinite SVG canvas; relationships are edges. Supports unlimited nesting (notes contain sub-graphs) and hashtag organization.

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>knotebook</title>
     <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
-    <link rel="stylesheet" href="styles/main.css?v=78">
+    <link rel="stylesheet" href="styles/main.css?v=79">
 </head>
 <body>
     <div id="app">
@@ -99,6 +99,8 @@
                     <g id="edges-layer"></g>
                     <!-- Nodes will be rendered here -->
                     <g id="nodes-layer"></g>
+                    <!-- Selection box overlay (for drag-selection) -->
+                    <g id="selection-box-overlay"></g>
                 </svg>
             </div>
 
@@ -206,6 +208,8 @@
                             <div class="shortcut-row"><span class="key">+</span> Zoom in</div>
                             <div class="shortcut-row"><span class="key">-</span> Zoom out</div>
                             <div class="shortcut-row"><span class="key">0</span> Reset zoom (100%)</div>
+                            <div class="shortcut-row"><span class="key">Ctrl+]</span> Bring to front</div>
+                            <div class="shortcut-row"><span class="key">Ctrl+[</span> Send to back</div>
                             <div class="shortcut-row"><span class="key">Alt+↑</span> Go back</div>
                             <div class="shortcut-row"><span class="key">?</span> Show this help</div>
                         </div>
@@ -213,8 +217,12 @@
                             <h4>Mouse</h4>
                             <div class="shortcut-row"><span class="key">Drag</span> Move note(s)</div>
                             <div class="shortcut-row"><span class="key">Double-click</span> Edit note</div>
+                            <div class="shortcut-row"><span class="key">Right-click</span> Note context menu</div>
                             <div class="shortcut-row"><span class="key">Ctrl+Click</span> Multi-select</div>
                             <div class="shortcut-row"><span class="key">Ctrl+Drag</span> Duplicate note(s)</div>
+                            <div class="shortcut-row"><span class="key">Left-drag empty</span> Selection box (fully enclosed)</div>
+                            <div class="shortcut-row"><span class="key">Right-drag empty</span> Selection box (intersecting)</div>
+                            <div class="shortcut-row"><span class="key">Space+Drag</span> Pan (preserve selection)</div>
                             <div class="shortcut-row"><span class="key">Shift+click</span> Toggle edge</div>
                             <div class="shortcut-row"><span class="key">Shift+drag</span> Draw edge</div>
                             <div class="shortcut-row"><span class="key">Click [n]</span> Enter note</div>
@@ -260,6 +268,6 @@
         </div>
     </div>
 
-    <script src="scripts/app.js?v=78"></script>
+    <script src="scripts/app.js?v=79"></script>
 </body>
 </html>

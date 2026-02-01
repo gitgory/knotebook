@@ -32,10 +32,13 @@ const state = {
     },
     panning: false,      // Currently panning the canvas
     panStart: { x: 0, y: 0 },  // Mouse position when pan started
+    spacebarHeld: false, // True when spacebar is held (for pan mode)
     // Hashtag filter state
     filterHashtags: [],  // Active hashtag filters (OR logic)
     filterText: '',      // Text search filter (matches title and content)
-    hiddenHashtags: []   // Hashtags hidden from node display (but still in data)
+    hiddenHashtags: [],  // Hashtags hidden from node display (but still in data)
+    // Selection box state
+    selectionBox: null   // { start: {x, y}, end: {x, y}, button: 'left'|'right' } or null
 };
 
 // Node dimensions
@@ -909,14 +912,14 @@ function getHashtagCounts() {
     return counts;
 }
 
-// Get color for a hashtag (assigns default if not set)
-function getHashtagColor(hashtag) {
-    if (!hashtagColors[hashtag]) {
+// Get color for a hashtag (assigns default if not set and autoAssign is true)
+function getHashtagColor(hashtag, autoAssign = true) {
+    if (!hashtagColors[hashtag] && autoAssign) {
         // Assign a color based on hash of the hashtag name
         const hash = hashtag.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
         hashtagColors[hashtag] = HASHTAG_COLORS[hash % HASHTAG_COLORS.length];
     }
-    return hashtagColors[hashtag];
+    return hashtagColors[hashtag] || '#64748b'; // Default slate color if not assigned
 }
 
 // Set color for a hashtag
@@ -950,7 +953,7 @@ function populateSidebar() {
         const isHidden = hiddenTags.includes(tag.toLowerCase());
         return `
             <div class="sidebar-hashtag${isActive ? ' active' : ''}${isHidden ? ' hidden' : ''}" data-tag="${tag}">
-                <span class="hashtag-pill hashtag-clickable" data-tag="${tag}" style="background: ${isHidden ? `linear-gradient(to right, #6b7280 0%, ${color} 100%)` : color}">${tag}</span>
+                <span class="hashtag-pill hashtag-clickable" data-tag="${tag}" style="background: ${isHidden ? `linear-gradient(to right, #6b7280 0%, #6b7280 30%, ${color} 100%)` : color}">${tag}</span>
                 <span class="hashtag-count hashtag-clickable" data-tag="${tag}">(${counts[tag]})</span>
                 <button class="hashtag-color-btn" style="background: ${color}" data-tag="${tag}" title="Change color"></button>
                 <button class="hashtag-hide-btn" data-tag="${tag}" title="${isHidden ? 'Show tag' : 'Hide tag'}">\u00d7</button>
@@ -1259,7 +1262,22 @@ function renderNodes() {
     const layer = document.getElementById('nodes-layer');
     layer.innerHTML = '';
 
-    for (const node of state.nodes) {
+    // Sort nodes by zIndex (lower first), then by selected state (selected on top)
+    const sortedNodes = [...state.nodes].sort((a, b) => {
+        const aSelected = state.selectedNodes.includes(a.id);
+        const bSelected = state.selectedNodes.includes(b.id);
+
+        // Selected nodes always render on top
+        if (aSelected && !bSelected) return 1;
+        if (!aSelected && bSelected) return -1;
+
+        // Otherwise sort by zIndex
+        const aZ = a.zIndex || 0;
+        const bZ = b.zIndex || 0;
+        return aZ - bZ;
+    });
+
+    for (const node of sortedNodes) {
         // Skip nodes that don't match filter
         if (!nodeMatchesFilter(node)) continue;
 
@@ -1504,6 +1522,61 @@ function clearEdgePreview() {
     if (existing) existing.remove();
 }
 
+// Render selection box overlay
+function renderSelectionBox() {
+    const overlay = document.getElementById('selection-box-overlay');
+    if (!state.selectionBox) {
+        overlay.innerHTML = '';
+        return;
+    }
+
+    const box = state.selectionBox;
+    const x = Math.min(box.start.x, box.end.x);
+    const y = Math.min(box.start.y, box.end.y);
+    const width = Math.abs(box.end.x - box.start.x);
+    const height = Math.abs(box.end.y - box.start.y);
+
+    const rectClass = box.button === 'left' ? 'selection-box solid' : 'selection-box dashed';
+
+    overlay.innerHTML = `
+        <rect class="${rectClass}"
+              x="${x}" y="${y}"
+              width="${width}" height="${height}" />
+    `;
+}
+
+// Clear selection box
+function clearSelectionBox() {
+    state.selectionBox = null;
+    const overlay = document.getElementById('selection-box-overlay');
+    if (overlay) overlay.innerHTML = '';
+}
+
+// Get nodes within selection box
+function getNodesInSelectionBox(box) {
+    const x1 = Math.min(box.start.x, box.end.x);
+    const y1 = Math.min(box.start.y, box.end.y);
+    const x2 = Math.max(box.start.x, box.end.x);
+    const y2 = Math.max(box.start.y, box.end.y);
+
+    return state.nodes.filter(node => {
+        if (!nodeMatchesFilter(node)) return false;
+
+        const nodeX = node.position.x;
+        const nodeY = node.position.y;
+        const nodeRight = nodeX + NODE_WIDTH;
+        const nodeBottom = nodeY + NODE_HEIGHT;
+
+        if (box.button === 'left') {
+            // Left-click: fully enclosed
+            return nodeX >= x1 && nodeRight <= x2 && nodeY >= y1 && nodeBottom <= y2;
+        } else {
+            // Right-click: fully enclosed OR intersecting
+            return !(nodeRight < x1 || nodeX > x2 || nodeBottom < y1 || nodeY > y2);
+        }
+    }).map(n => n.id);
+}
+
 function updateBreadcrumbs() {
     const el = document.getElementById('breadcrumbs');
     if (state.currentPath.length === 0) {
@@ -1528,6 +1601,7 @@ function createNode(x, y) {
         hashtags: [],
         completion: projectSettings.defaultCompletion,
         position: { x, y },
+        zIndex: 0,
         children: [],
         childEdges: [],
         created: new Date().toISOString(),
@@ -1549,6 +1623,7 @@ function deepCopyNode(node, offsetX = 0, offsetY = 0) {
             x: node.position.x + offsetX,
             y: node.position.y + offsetY
         },
+        zIndex: node.zIndex || 0,
         children: [],
         childEdges: [],
         created: new Date().toISOString(),
@@ -1801,6 +1876,83 @@ function hideActionBar() {
             actionBar.style.transform = '';
         }
     }, 200);
+}
+
+// Bring selected node(s) to front (highest zIndex)
+function bringToFront() {
+    if (state.selectedNodes.length === 0) return;
+
+    // Find the current max zIndex
+    const maxZ = Math.max(...state.nodes.map(n => n.zIndex || 0), 0);
+
+    // Set selected nodes to maxZ + 1
+    state.selectedNodes.forEach(id => {
+        const node = state.nodes.find(n => n.id === id);
+        if (node) node.zIndex = maxZ + 1;
+    });
+
+    render();
+}
+
+// Send selected node(s) to back (lowest zIndex)
+function sendToBack() {
+    if (state.selectedNodes.length === 0) return;
+
+    // Find the current min zIndex
+    const minZ = Math.min(...state.nodes.map(n => n.zIndex || 0), 0);
+
+    // Set selected nodes to minZ - 1
+    state.selectedNodes.forEach(id => {
+        const node = state.nodes.find(n => n.id === id);
+        if (node) node.zIndex = minZ - 1;
+    });
+
+    render();
+}
+
+// Show context menu for node operations
+function showNodeContextMenu(nodeId, x, y) {
+    // Remove existing menu if any
+    hideNodeContextMenu();
+
+    const menu = document.createElement('div');
+    menu.id = 'node-context-menu';
+    menu.style.position = 'fixed';
+    menu.style.left = x + 'px';
+    menu.style.top = y + 'px';
+    menu.style.zIndex = '300';
+
+    menu.innerHTML = `
+        <div class="context-menu-item" data-action="bring-front">Bring to Front</div>
+        <div class="context-menu-item" data-action="send-back">Send to Back</div>
+    `;
+
+    // Adjust position if menu goes off screen
+    document.body.appendChild(menu);
+    const rect = menu.getBoundingClientRect();
+    if (rect.right > window.innerWidth) {
+        menu.style.left = (x - rect.width) + 'px';
+    }
+    if (rect.bottom > window.innerHeight) {
+        menu.style.top = (y - rect.height) + 'px';
+    }
+
+    // Handle menu actions
+    menu.addEventListener('mousedown', (e) => {
+        e.stopPropagation();
+        const action = e.target.dataset.action;
+        if (action === 'bring-front') {
+            bringToFront();
+        } else if (action === 'send-back') {
+            sendToBack();
+        }
+        hideNodeContextMenu();
+    });
+}
+
+function hideNodeContextMenu() {
+    const menu = document.getElementById('node-context-menu');
+    if (menu) menu.remove();
 }
 
 // ============================================================================
@@ -2288,7 +2440,7 @@ function getAutocompleteSuggestions(query) {
         .slice(0, 20);
     return filtered.map(tag => ({
         tag,
-        color: getHashtagColor(tag),
+        color: getHashtagColor(tag, false), // Don't auto-assign colors during autocomplete typing
         count: counts[tag]
     }));
 }
@@ -2403,6 +2555,9 @@ function selectAutocompleteItem(index) {
     const item = autocomplete.items[index];
     const input = autocomplete.targetInput;
     if (!input) return;
+
+    // Assign color when user commits a tag via autocomplete selection
+    getHashtagColor(item.tag, true);
 
     const text = input.value;
     const start = autocomplete.hashStart;
@@ -2890,6 +3045,17 @@ function initEventListeners() {
             const nodeId = nodeEl.dataset.id;
             const node = state.nodes.find(n => n.id === nodeId);
 
+            // Right-click on node - show context menu
+            if (e.button === 2) {
+                e.preventDefault();
+                // Select the node if not already selected
+                if (!state.selectedNodes.includes(nodeId)) {
+                    selectNode(nodeId, false);
+                }
+                showNodeContextMenu(nodeId, e.clientX, e.clientY);
+                return;
+            }
+
             // Click on children indicator - enter the node
             if (target.classList.contains('node-stack')) {
                 saveRootState();
@@ -2957,18 +3123,41 @@ function initEventListeners() {
             const index = parseInt(edgeEl.dataset.index);
             selectEdge(index);
         } else {
-            // Click on empty space - start panning
+            // Click on empty space - start panning or selection box
             if (state.edgeStartNode) {
                 // Cancel edge creation
                 state.edgeStartNode = null;
                 clearEdgePreview();
+            } else if (state.spacebarHeld || e.button === 1) {
+                // Spacebar held or middle mouse button - always pan (preserve selection)
+                state.panning = true;
+                state.panStart = { x: e.clientX, y: e.clientY };
+                canvas.style.cursor = 'grabbing';
+            } else if (e.button === 0 || e.button === 2) {
+                // Left or right click on empty canvas - start selection box
+                e.preventDefault(); // Prevent context menu on right-click
+                const canvasPos = screenToCanvas(e.clientX, e.clientY);
+                state.selectionBox = {
+                    start: { x: canvasPos.x, y: canvasPos.y },
+                    end: { x: canvasPos.x, y: canvasPos.y },
+                    button: e.button === 0 ? 'left' : 'right',
+                    ctrlHeld: e.ctrlKey || e.metaKey,
+                    altHeld: e.altKey
+                };
             } else {
+                // Other mouse buttons
                 clearSelection();
-                // Start panning
                 state.panning = true;
                 state.panStart = { x: e.clientX, y: e.clientY };
                 canvas.style.cursor = 'grabbing';
             }
+        }
+    });
+
+    // Prevent context menu on canvas (we use right-click for selection box)
+    canvas.addEventListener('contextmenu', (e) => {
+        if (e.target === canvas || e.target.closest('#selection-box-overlay')) {
+            e.preventDefault();
         }
     });
 
@@ -2984,6 +3173,12 @@ function initEventListeners() {
             state.viewport.y -= dy;
             state.panStart = { x: e.clientX, y: e.clientY };
             updateViewport();
+        }
+
+        // Update selection box
+        if (state.selectionBox) {
+            state.selectionBox.end = { x: canvasPos.x, y: canvasPos.y };
+            renderSelectionBox();
         }
 
         if (state.dragging && state.selectedNodes.length > 0) {
@@ -3098,6 +3293,31 @@ function initEventListeners() {
         if (state.ctrlClickNode && !state.dragThresholdMet) {
             // Deselect the node that was Ctrl+clicked (it was already selected)
             state.selectedNodes = state.selectedNodes.filter(id => id !== state.ctrlClickNode);
+            updateSelectionVisuals();
+            render();
+        }
+
+        // Complete selection box
+        if (state.selectionBox) {
+            const box = state.selectionBox;
+            const selectedIds = getNodesInSelectionBox(box);
+
+            if (!box.ctrlHeld && !box.altHeld) {
+                // Replace selection
+                state.selectedNodes = selectedIds;
+            } else if (box.ctrlHeld) {
+                // Add to selection
+                selectedIds.forEach(id => {
+                    if (!state.selectedNodes.includes(id)) {
+                        state.selectedNodes.push(id);
+                    }
+                });
+            } else if (box.altHeld) {
+                // Remove from selection
+                state.selectedNodes = state.selectedNodes.filter(id => !selectedIds.includes(id));
+            }
+
+            clearSelectionBox();
             updateSelectionVisuals();
             render();
         }
@@ -3580,6 +3800,35 @@ function initEventListeners() {
             e.preventDefault();
             goBack();
         }
+
+        // Ctrl+] - Bring to front
+        if (e.key === ']' && (e.ctrlKey || e.metaKey)) {
+            e.preventDefault();
+            bringToFront();
+        }
+
+        // Ctrl+[ - Send to back
+        if (e.key === '[' && (e.ctrlKey || e.metaKey)) {
+            e.preventDefault();
+            sendToBack();
+        }
+
+        // Spacebar - Enter pan mode
+        if (e.key === ' ' && !state.spacebarHeld) {
+            e.preventDefault();
+            state.spacebarHeld = true;
+            const canvas = document.getElementById('canvas');
+            canvas.classList.add('pan-mode');
+        }
+    });
+
+    // Spacebar keyup - Exit pan mode
+    document.addEventListener('keyup', (e) => {
+        if (e.key === ' ') {
+            state.spacebarHeld = false;
+            const canvas = document.getElementById('canvas');
+            canvas.classList.remove('pan-mode');
+        }
     });
 
     // Toolbar buttons
@@ -3660,11 +3909,16 @@ function initEventListeners() {
         }
     });
 
-    // Close hashtag context menu when clicking anywhere
+    // Close context menus when clicking anywhere
     document.addEventListener('mousedown', (e) => {
-        const menu = document.getElementById('hashtag-context-menu');
-        if (menu && !e.target.closest('#hashtag-context-menu')) {
+        const hashtagMenu = document.getElementById('hashtag-context-menu');
+        if (hashtagMenu && !e.target.closest('#hashtag-context-menu')) {
             hideHashtagContextMenu();
+        }
+
+        const nodeMenu = document.getElementById('node-context-menu');
+        if (nodeMenu && !e.target.closest('#node-context-menu')) {
+            hideNodeContextMenu();
         }
     });
 

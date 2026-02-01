@@ -2,42 +2,6 @@
 
 Date: 2026-01-26
 
-## Pain Point
-
-Notes frequently belong in many places, not just two. The current nesting model forces a single canonical location. Hashtags help with discovery (find a note from many angles) but don't solve the spatial problem (the note only appears in one graph).
-
-## Concept
-
-Transclusion: including content from one location in another by reference, not by copy. Single source of truth — edit once, updates everywhere. Coined by Ted Nelson alongside "hypertext."
-
-## Two Paradigms Considered
-
-### 1. Transclusion as Primary Paradigm
-- No hierarchy at all. Notes exist in a flat pool, appear in any context equally.
-- No canonical location, no "home."
-- Most expressive. Also the most disorienting — no sense of place.
-- Verdict: Interesting but unsettling. Tabled.
-
-### 2. Hierarchy with Exceptions (leaning toward)
-- Keep nesting as the default organizational spine.
-- Add transclusion as a feature for cross-cutting notes that need to appear in multiple contexts.
-- Preserves spatial stability of the current model.
-- Transclusion is a tool, not the paradigm.
-
-## Transclusion Scope Options
-
-### Flat Reference
-- Transcluded node displays title/content on the canvas.
-- Cannot be navigated into — it's a mirror, not a portal.
-- To reach the sub-graph, follow a link to the source location.
-- Simpler model.
-
-### Full Portal
-- Transcluded node looks and behaves like the original.
-- Navigate into it and see the same sub-graph.
-- Edits and children are shared across all instances.
-- More powerful, but "where am I?" becomes harder.
-
 ## Key Insight: Persistent Search Zones as Transclusion Mechanism
 
 Persistent Search Zones (from plan-outline, Tier 4 Spatial Organization) and transclusion converge into a single concept.
@@ -67,6 +31,3 @@ Persistent Search Zones (from plan-outline, Tier 4 Spatial Organization) and tra
 
 If a note commonly belongs in 5+ places, the "hierarchy with exceptions" model may strain — the exceptions outnumber the rule. Observe whether it's a small set of hub notes that appear everywhere, or whether most notes want multiple homes. That observation should inform the final design.
 
-## Status
-
-Exploratory. No decisions made. Leaning toward hierarchy with exceptions, implemented via Persistent Search Zones as the transclusion mechanism (criteria-driven, not manual).

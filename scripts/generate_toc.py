@@ -105,7 +105,7 @@ def main():
     # Determine paths
     script_dir = Path(__file__).parent
     js_file = script_dir / 'app.js'
-    output_file = script_dir / 'toc.txt'
+    output_file = script_dir / 'app_js_table_of_contents.txt'
 
     # Check if app.js exists
     if not js_file.exists():

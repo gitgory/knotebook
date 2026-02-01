@@ -5,7 +5,9 @@
 TEST_*.md
 
 # Generated files
-scripts/toc.txt
+scripts/*.txt
+scripts/*.bat
+scripts/*.py
 
 # OS files
 .DS_Store

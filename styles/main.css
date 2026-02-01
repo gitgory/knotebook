@@ -769,6 +769,14 @@ body {
     cursor: grabbing;
 }
 
+#canvas.pan-mode {
+    cursor: grab !important;
+}
+
+#canvas.pan-mode:active {
+    cursor: grabbing !important;
+}
+
 /* ============================================================================
    NODES
    ============================================================================ */
@@ -1808,6 +1816,39 @@ body {
 
 .context-menu-item:last-child {
     border-radius: 0 0 6px 6px;
+}
+
+#node-context-menu {
+    position: fixed;
+    background: var(--bg-secondary);
+    border: 1px solid var(--surface);
+    border-radius: 6px;
+    padding: 4px 0;
+    min-width: 160px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    z-index: 300;
+}
+
+/* Selection box overlay */
+#selection-box-overlay {
+    position: absolute;
+    pointer-events: none;
+    z-index: 100;
+}
+
+.selection-box {
+    fill: rgba(34, 211, 238, 0.1); /* Transparent cyan */
+    stroke-width: 2;
+    pointer-events: none;
+}
+
+.selection-box.solid {
+    stroke: var(--highlight); /* Solid border for left-click */
+}
+
+.selection-box.dashed {
+    stroke: var(--highlight); /* Dashed border for right-click */
+    stroke-dasharray: 5, 5;
 }
 
 .sidebar-empty {
