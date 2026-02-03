@@ -3308,8 +3308,6 @@ async function exportToFile() {
             const writable = await handle.createWritable();
             await writable.write(JSON.stringify(data, null, 2));
             await writable.close();
-
-            console.log('Exported successfully');
         } catch (err) {
             if (err.name !== 'AbortError') {
                 console.error('Export failed:', err);
@@ -3319,7 +3317,6 @@ async function exportToFile() {
     } else {
         // Fallback for mobile/unsupported browsers
         downloadAsFile(filename, data);
-        console.log('Exported successfully (fallback)');
     }
 }
 
@@ -3360,8 +3357,6 @@ async function exportProjectToFile(projectId) {
             const writable = await handle.createWritable();
             await writable.write(JSON.stringify(exportData, null, 2));
             await writable.close();
-
-            console.log('Exported successfully');
         } catch (err) {
             if (err.name !== 'AbortError') {
                 console.error('Export failed:', err);
@@ -3371,7 +3366,6 @@ async function exportProjectToFile(projectId) {
     } else {
         // Fallback for mobile/unsupported browsers
         downloadAsFile(filename, exportData);
-        console.log('Exported successfully (fallback)');
     }
 }
 
@@ -4943,19 +4937,6 @@ function init() {
     initThemeSelector();
     initEventListeners();
     showLandingPage();
-    console.log('Graph Notes initialized');
-    console.log('Controls:');
-    console.log('  - Click "Add Note" to create a note');
-    console.log('  - Drag nodes to move them');
-    console.log('  - Double-click a node to edit its content');
-    console.log('  - Shift+click two nodes to create an edge');
-    console.log('  - Click [n] indicator or use editor to enter nested notes');
-    console.log('  - Click breadcrumbs or Alt+Backspace to go back');
-    console.log('  - Delete/Backspace to remove selected node or edge');
-    console.log('  - Drag empty space to pan the canvas');
-    console.log('  - Scroll wheel to zoom in/out');
-    console.log('  - Click "Fit to View" to center and fit all nodes');
-    console.log('  - Click "Home" to return to landing page');
 }
 
 // Start the app when DOM is ready
