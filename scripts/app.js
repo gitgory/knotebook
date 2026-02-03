@@ -2303,9 +2303,16 @@ function getRootEdges() {
 }
 
 function saveRootState() {
+    // Save current level back to its parent (or root)
     if (state.currentPath.length === 0) {
+        // At root - just update the reference
         state.rootNodes = state.nodes;
         state.rootEdges = state.edges;
+    } else {
+        // Inside a child - save current nodes/edges to the parent node's children
+        const currentNode = state.currentPath[state.currentPath.length - 1];
+        currentNode.children = state.nodes;
+        currentNode.childEdges = state.edges;
     }
 }
 
