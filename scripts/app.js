@@ -95,8 +95,27 @@ const HOVER_DELAY = 500; // milliseconds before expanding title on hover
 let currentProjectId = null;
 let autoSaveTimeout = null;
 const AUTOSAVE_DELAY = 1500; // 1.5 seconds
-const STORAGE_KEY_PREFIX = 'graph-notes-project-';
-const PROJECTS_INDEX_KEY = 'graph-notes-projects';
+
+// Storage keys - new installations use 'knotebook-', legacy uses 'graph-notes-'
+// We detect which format to use based on what exists in localStorage
+let STORAGE_KEY_PREFIX = 'knotebook-project-';
+let PROJECTS_INDEX_KEY = 'knotebook-projects';
+
+// Check if user has legacy data, and use legacy keys if so
+function detectStorageKeyFormat() {
+    const hasLegacyIndex = localStorage.getItem('graph-notes-projects') !== null;
+    const hasLegacyProjects = Object.keys(localStorage).some(k => k.startsWith('graph-notes-project-'));
+
+    if (hasLegacyIndex || hasLegacyProjects) {
+        // User has old data, use legacy keys
+        STORAGE_KEY_PREFIX = 'graph-notes-project-';
+        PROJECTS_INDEX_KEY = 'graph-notes-projects';
+    }
+    // Otherwise use new keys (already set as defaults above)
+}
+
+// Detect format on startup
+detectStorageKeyFormat();
 
 // Move to notebook state
 let ghostNodes = [];           // Ghost nodes being positioned in target notebook

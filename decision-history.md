@@ -56,3 +56,30 @@ This file tracks significant technical and design decisions made during developm
 - Individual corrupted projects return null without crashing
 
 ---
+
+## 2026-02-02: Storage Keys - Use Modern Names for New Users
+
+**DECISION**: Auto-detect legacy vs modern storage key format
+**CHOSE**: `knotebook-` for new users, `graph-notes-` for existing users
+**NOT**: Rename all keys (breaks existing users)
+**NOT**: Keep old name forever (confusing for new users)
+
+**Reasoning**:
+- **Backward compatibility**: Existing users' data continues working seamlessly
+- **Modern naming**: New installations use app name "knotebook" instead of legacy "graph-notes"
+- **Zero migration**: No data migration code needed, auto-detection is simple and reliable
+- **User experience**: Users never notice the difference, everything just works
+
+**Implementation**:
+- `detectStorageKeyFormat()` runs on startup
+- Checks for existence of legacy keys in localStorage
+- Sets global `STORAGE_KEY_PREFIX` and `PROJECTS_INDEX_KEY` accordingly
+- Legacy: `graph-notes-project-*` and `graph-notes-projects`
+- Modern: `knotebook-project-*` and `knotebook-projects`
+
+**Impact**:
+- Existing users: No change, continues using legacy keys
+- New users: Clean modern keys matching app name
+- Version bumped to v109
+
+---
