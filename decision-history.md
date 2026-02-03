@@ -30,3 +30,29 @@ This file tracks significant technical and design decisions made during developm
 - Fixed one regression: context menu "Change color" now opens sidebar first
 
 ---
+
+## 2026-02-02: Error Handling - Protect JSON.parse() Calls
+
+**DECISION**: Wrap all JSON.parse() calls in try/catch blocks
+**CHOSE**: Graceful degradation - log error, clear corrupted data, return safe defaults
+**NOT**: Let app crash on corrupted localStorage data
+**NOT**: Use a JSON validation library
+
+**Reasoning**:
+- **Robustness**: Corrupted localStorage (browser bugs, extensions, manual editing) shouldn't crash the app
+- **User experience**: Better to show empty state than white screen of death
+- **Debugging**: Console errors help identify when/why data corruption occurs
+- **Data safety**: Don't auto-delete project data (user may want to recover), only delete index
+
+**Impact**:
+- `getProjectsList()` - wrapped, clears corrupted index
+- `loadProjectFromStorage()` - wrapped, returns null (preserves corrupt data for recovery)
+- 4 other calls already had try/catch protection
+- Version bumped to v107
+
+**Testing**:
+- App gracefully handles corrupted localStorage
+- Projects list shows empty when index is corrupted
+- Individual corrupted projects return null without crashing
+
+---

@@ -178,7 +178,16 @@ function initThemeSelector() {
 // Get list of all saved projects (metadata only)
 function getProjectsList() {
     const index = localStorage.getItem(PROJECTS_INDEX_KEY);
-    return index ? JSON.parse(index) : [];
+    if (!index) return [];
+
+    try {
+        return JSON.parse(index);
+    } catch (e) {
+        console.error('Failed to parse projects index:', e);
+        // Clear corrupted data and return empty list
+        localStorage.removeItem(PROJECTS_INDEX_KEY);
+        return [];
+    }
 }
 
 // Save projects index
@@ -236,7 +245,15 @@ function saveProjectToStorage() {
 function loadProjectFromStorage(projectId) {
     const data = localStorage.getItem(STORAGE_KEY_PREFIX + projectId);
     if (!data) return null;
-    return JSON.parse(data);
+
+    try {
+        return JSON.parse(data);
+    } catch (e) {
+        console.error(`Failed to parse project ${projectId}:`, e);
+        // Don't remove corrupted project data automatically - user may want to recover it
+        // Just return null so app doesn't crash
+        return null;
+    }
 }
 
 // Create a new project
