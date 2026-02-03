@@ -7,7 +7,9 @@
 // DATA STRUCTURES
 // ============================================================================
 
-// Application state
+// Application state - single source of truth
+// All mutable application state is consolidated here for easier debugging
+// and predictable data flow (immediate-mode rendering pattern)
 const state = {
     nodes: [],           // All nodes at current level
     edges: [],           // All edges at current level (pairs of node IDs)
@@ -38,7 +40,30 @@ const state = {
     filterText: '',      // Text search filter (matches title and content)
     hiddenHashtags: [],  // Hashtags hidden from node display (but still in data)
     // Selection box state
-    selectionBox: null   // { start: {x, y}, end: {x, y}, mode: 'enclosed'|'intersecting', locked: boolean } or null
+    selectionBox: null,  // { start: {x, y}, end: {x, y}, mode: 'enclosed'|'intersecting', locked: boolean } or null
+
+    // Project state (per-notebook)
+    currentProjectId: null,        // Currently open project ID
+    hashtagColors: {},             // Hashtag -> color mappings
+    projectSettings: { defaultCompletion: null }, // Per-project settings
+    rootNodes: [],                 // Root level nodes (when navigated into children)
+    rootEdges: [],                 // Root level edges (when navigated into children)
+
+    // Editor state
+    editorSnapshot: null,          // Snapshot for cancel/revert
+    removedTagsInSession: new Set(), // Tags marked for removal in batch edit
+
+    // Ghost nodes (move to notebook)
+    ghostNodes: [],                // Ghost nodes being positioned in target notebook
+    ghostDragging: false,          // True when dragging ghost nodes
+    ghostCursorPos: { x: 0, y: 0 }, // Current cursor position in canvas coordinates
+    pendingMove: null,             // Pending move operation data
+
+    // UI state
+    activeMenuProjectId: null,     // Project menu currently open
+    pendingImportData: null,       // Import data waiting for user choice
+    hoverTimeout: null,            // Timeout for title hover expansion
+    autoSaveTimeout: null          // Debounce timeout for auto-save
 };
 
 // Node dimensions
@@ -64,13 +89,7 @@ const HASHTAG_COLORS = [
     '#fb923c', // Amber (replaces gray - reserved for unassigned tags)
 ];
 
-// Hashtag color assignments (hashtag -> color)
-let hashtagColors = {};
-
-// Per-notebook settings
-let projectSettings = { defaultCompletion: null };
-
-// Autocomplete state
+// Autocomplete state (kept separate as it's transient UI state)
 const autocomplete = {
     active: false,
     targetInput: null,   // DOM element (#note-text or #hashtag-input)
@@ -81,19 +100,8 @@ const autocomplete = {
     suppress: false      // temporarily suppress autocomplete (for synthetic events)
 };
 
-// Editor snapshot for cancel/revert
-let editorSnapshot = null;
-
-// Track removed tags during edit session (for outlined pill state)
-let removedTagsInSession = new Set();
-
-// Title expansion hover timeout
-let hoverTimeout = null;
+// Constants
 const HOVER_DELAY = 500; // milliseconds before expanding title on hover
-
-// Current project info
-let currentProjectId = null;
-let autoSaveTimeout = null;
 const AUTOSAVE_DELAY = 1500; // 1.5 seconds
 const STORAGE_KEY_PREFIX = 'knotebook-project-';
 const PROJECTS_INDEX_KEY = 'knotebook-projects';
@@ -130,10 +138,7 @@ function showStorageUnavailableWarning() {
     document.body.appendChild(warning);
 }
 
-// Move to notebook state
-let ghostNodes = [];           // Ghost nodes being positioned in target notebook
-let ghostDragging = false;     // True when dragging ghost nodes
-let ghostCursorPos = { x: 0, y: 0 };  // Current cursor position in canvas coordinates
+// Move to notebook constant
 const MOVE_STORAGE_KEY = 'knotebook-pending-move';
 
 // ============================================================================
@@ -169,7 +174,7 @@ function setTheme(themeName) {
     localStorage.setItem('graph-notes-theme', themeName);
 
     // Save to current notebook if one is open
-    if (currentProjectId) {
+    if (state.currentProjectId) {
         saveProjectToStorage();
     }
 }
@@ -255,27 +260,27 @@ function countNotes(nodes) {
 
 // Save current project to localStorage
 function saveProjectToStorage() {
-    if (!currentProjectId) return;
+    if (!state.currentProjectId) return;
 
     // Ensure root state is captured
     saveRootState();
 
     const projectData = {
         version: 1,
-        nodes: state.currentPath.length === 0 ? state.nodes : rootNodes,
-        edges: state.currentPath.length === 0 ? state.edges : rootEdges,
-        hashtagColors: hashtagColors,
-        settings: projectSettings,
+        nodes: state.currentPath.length === 0 ? state.nodes : state.rootNodes,
+        edges: state.currentPath.length === 0 ? state.edges : state.rootEdges,
+        hashtagColors: state.hashtagColors,
+        settings: state.projectSettings,
         hiddenHashtags: state.hiddenHashtags,
         theme: getCurrentTheme()
     };
 
     try {
-        localStorage.setItem(STORAGE_KEY_PREFIX + currentProjectId, JSON.stringify(projectData));
+        localStorage.setItem(STORAGE_KEY_PREFIX + state.currentProjectId, JSON.stringify(projectData));
 
         // Update project metadata in index
         const projects = getProjectsList();
-        const projectIndex = projects.findIndex(p => p.id === currentProjectId);
+        const projectIndex = projects.findIndex(p => p.id === state.currentProjectId);
         if (projectIndex >= 0) {
             projects[projectIndex].noteCount = countNotes(projectData.nodes);
             projects[projectIndex].modified = new Date().toISOString();
@@ -382,7 +387,7 @@ function openProject(projectId) {
         return;
     }
 
-    currentProjectId = projectId;
+    state.currentProjectId = projectId;
 
     // Reset navigation
     state.currentPath = [];
@@ -390,10 +395,10 @@ function openProject(projectId) {
     // Load data
     state.nodes = data.nodes || [];
     state.edges = data.edges || [];
-    rootNodes = state.nodes;
-    rootEdges = state.edges;
-    hashtagColors = data.hashtagColors || {};
-    projectSettings = data.settings || { defaultCompletion: null };
+    state.rootNodes = state.nodes;
+    state.rootEdges = state.edges;
+    state.hashtagColors = data.state.hashtagColors || {};
+    state.projectSettings = data.settings || { defaultCompletion: null };
     state.hiddenHashtags = data.hiddenHashtags || [];
 
     // Apply notebook's theme (or use current global theme if not set)
@@ -446,20 +451,18 @@ function openProject(projectId) {
 
 // Schedule auto-save (debounced)
 function scheduleAutoSave() {
-    if (autoSaveTimeout) {
-        clearTimeout(autoSaveTimeout);
+    if (state.autoSaveTimeout) {
+        clearTimeout(state.autoSaveTimeout);
     }
-    autoSaveTimeout = setTimeout(() => {
+    state.autoSaveTimeout = setTimeout(() => {
         saveProjectToStorage();
-        autoSaveTimeout = null;
+        state.autoSaveTimeout = null;
     }, AUTOSAVE_DELAY);
 }
 
 // ============================================================================
 // PROJECT LIST UI
 // ============================================================================
-
-let activeMenuProjectId = null;
 
 function populateProjectsList() {
     const list = document.getElementById('projects-list');
@@ -522,7 +525,7 @@ function populateProjectsList() {
 }
 function showProjectMenu(projectId, x, y) {
     const menu = document.getElementById('project-menu');
-    activeMenuProjectId = projectId;
+    state.activeMenuProjectId = projectId;
 
     // Position menu
     menu.style.left = x + 'px';
@@ -541,7 +544,7 @@ function showProjectMenu(projectId, x, y) {
 
 function hideProjectMenu() {
     document.getElementById('project-menu').classList.add('hidden');
-    activeMenuProjectId = null;
+    state.activeMenuProjectId = null;
 }
 
 function showNewProjectModal() {
@@ -886,10 +889,10 @@ function renameHashtag(oldTag, newTag) {
     }
 
     // Transfer color to new tag name
-    const oldColor = hashtagColors[oldTag];
+    const oldColor = state.hashtagColors[oldTag];
     if (oldColor) {
-        hashtagColors[newTag] = oldColor;
-        delete hashtagColors[oldTag];
+        state.hashtagColors[newTag] = oldColor;
+        delete state.hashtagColors[oldTag];
     }
 
     render();
@@ -915,7 +918,7 @@ function deleteHashtag(tag) {
     state.hiddenHashtags = state.hiddenHashtags.filter(t => t.toLowerCase() !== tag.toLowerCase());
 
     // Remove color assignment
-    delete hashtagColors[tag];
+    delete state.hashtagColors[tag];
 
     render();
 }
@@ -1047,17 +1050,17 @@ function getHashtagCounts() {
 
 // Get color for a hashtag (assigns default if not set and autoAssign is true)
 function getHashtagColor(hashtag, autoAssign = true) {
-    if (!hashtagColors[hashtag] && autoAssign) {
+    if (!state.hashtagColors[hashtag] && autoAssign) {
         // Assign a color based on hash of the hashtag name
         const hash = hashtag.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-        hashtagColors[hashtag] = HASHTAG_COLORS[hash % HASHTAG_COLORS.length];
+        state.hashtagColors[hashtag] = HASHTAG_COLORS[hash % HASHTAG_COLORS.length];
     }
-    return hashtagColors[hashtag] || '#64748b'; // Default slate color if not assigned
+    return state.hashtagColors[hashtag] || '#64748b'; // Default slate color if not assigned
 }
 
 // Set color for a hashtag
 function setHashtagColor(hashtag, color) {
-    hashtagColors[hashtag] = color;
+    state.hashtagColors[hashtag] = color;
     populateSidebar();
     render(); // Re-render to update node hashtag colors
 }
@@ -1290,7 +1293,7 @@ function getGraphBounds(visibleOnly = false) {
 function showLandingPage() {
     document.getElementById('landing-page').classList.remove('hidden');
     document.getElementById('graph-view').classList.add('hidden');
-    currentProjectId = null;
+    state.currentProjectId = null;
     populateProjectsList();
 }
 
@@ -1307,7 +1310,7 @@ function newProject() {
 
 function goHome() {
     // Save current project before leaving
-    if (currentProjectId) {
+    if (state.currentProjectId) {
         saveProjectToStorage();
     }
 
@@ -1321,9 +1324,9 @@ function goHome() {
     state.filterHashtags = [];
     state.filterText = '';
     state.hiddenHashtags = [];
-    rootNodes = [];
-    rootEdges = [];
-    hashtagColors = {};
+    state.rootNodes = [];
+    state.rootEdges = [];
+    state.hashtagColors = {};
 
     showLandingPage();
 }
@@ -1436,7 +1439,7 @@ function render() {
     }
 
     // Auto-save if we have a current project
-    if (currentProjectId) {
+    if (state.currentProjectId) {
         scheduleAutoSave();
     }
 }
@@ -1735,23 +1738,23 @@ function renderGhostNodes() {
     const layer = document.getElementById('ghost-layer');
     layer.replaceChildren();
 
-    if (!ghostDragging || ghostNodes.length === 0) return;
+    if (!state.ghostDragging || state.ghostNodes.length === 0) return;
 
     // Update ghost node positions to follow cursor
     if (state.pendingMove && state.pendingMove.relativeOffsets) {
-        ghostNodes.forEach(node => {
+        state.ghostNodes.forEach(node => {
             const offset = state.pendingMove.relativeOffsets[node.id];
             if (offset) {
                 node.position = {
-                    x: ghostCursorPos.x + offset.dx,
-                    y: ghostCursorPos.y + offset.dy
+                    x: state.ghostCursorPos.x + offset.dx,
+                    y: state.ghostCursorPos.y + offset.dy
                 };
             }
         });
     }
 
     // Render each ghost node
-    for (const node of ghostNodes) {
+    for (const node of state.ghostNodes) {
         const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
         g.setAttribute('class', 'node ghost');
         g.setAttribute('transform', `translate(${node.position.x}, ${node.position.y})`);
@@ -1859,7 +1862,7 @@ function createNode(x, y) {
         title: '',
         content: '',
         hashtags: [],
-        completion: projectSettings.defaultCompletion,
+        completion: state.projectSettings.defaultCompletion,
         position: { x, y },
         zIndex: 0,
         children: [],
@@ -2291,21 +2294,18 @@ function goBack() {
 }
 
 // Root state storage (saved when entering first node)
-let rootNodes = [];
-let rootEdges = [];
-
 function getRootNodes() {
-    return rootNodes;
+    return state.state.rootNodes;
 }
 
 function getRootEdges() {
-    return rootEdges;
+    return state.state.rootEdges;
 }
 
 function saveRootState() {
     if (state.currentPath.length === 0) {
-        rootNodes = state.nodes;
-        rootEdges = state.edges;
+        state.rootNodes = state.nodes;
+        state.rootEdges = state.edges;
     }
 }
 
@@ -2318,7 +2318,7 @@ function openEditor(nodeId) {
     const isBatchMode = state.selectedNodes.length > 1;
 
     // Clear removed tags from previous session
-    removedTagsInSession.clear();
+    state.removedTagsInSession.clear();
 
     if (isBatchMode) {
         // Batch edit mode
@@ -2326,7 +2326,7 @@ function openEditor(nodeId) {
         if (nodes.length === 0) return;
 
         // Snapshot all nodes for cancel/revert
-        editorSnapshot = {
+        state.editorSnapshot = {
             batchMode: true,
             nodes: nodes.map(node => ({
                 id: node.id,
@@ -2390,7 +2390,7 @@ function openEditor(nodeId) {
         if (!node) return;
 
         // Snapshot current state for cancel/revert
-        editorSnapshot = {
+        state.editorSnapshot = {
             batchMode: false,
             title: node.title || '',
             content: node.content || '',
@@ -2440,15 +2440,15 @@ function closeEditor() {
     modal.classList.add('hidden');
     delete modal.dataset.nodeId;
     delete modal.dataset.batchMode;
-    removedTagsInSession.clear();
+    state.removedTagsInSession.clear();
 }
 
 function cancelEditor() {
     const modal = document.getElementById('editor-modal');
 
-    if (editorSnapshot && editorSnapshot.batchMode) {
+    if (state.editorSnapshot && state.editorSnapshot.batchMode) {
         // Batch mode: restore all nodes from snapshot
-        editorSnapshot.nodes.forEach(snapshot => {
+        state.editorSnapshot.nodes.forEach(snapshot => {
             const node = state.nodes.find(n => n.id === snapshot.id);
             if (node) {
                 node.hashtags = snapshot.hashtags;
@@ -2461,11 +2461,11 @@ function cancelEditor() {
         const node = state.nodes.find(n => n.id === nodeId);
 
         // Restore node from snapshot
-        if (node && editorSnapshot) {
-            node.title = editorSnapshot.title;
-            node.content = editorSnapshot.content;
-            node.hashtags = editorSnapshot.hashtags;
-            node.completion = editorSnapshot.completion;
+        if (node && state.editorSnapshot) {
+            node.title = state.editorSnapshot.title;
+            node.content = state.editorSnapshot.content;
+            node.hashtags = state.editorSnapshot.hashtags;
+            node.completion = state.editorSnapshot.completion;
         }
 
         // Delete empty nodes (new node that was never filled in)
@@ -2474,7 +2474,7 @@ function cancelEditor() {
         }
     }
 
-    editorSnapshot = null;
+    state.editorSnapshot = null;
     closeEditor();
     render();
 }
@@ -2496,8 +2496,8 @@ function saveEditor() {
 
         nodes.forEach(node => {
             // Remove tags that were marked for removal
-            if (removedTagsInSession.size > 0) {
-                removedTagsInSession.forEach(tag => {
+            if (state.removedTagsInSession.size > 0) {
+                state.removedTagsInSession.forEach(tag => {
                     // Remove from hashtags array
                     node.hashtags = node.hashtags.filter(t => t !== tag);
                     // Remove from content text
@@ -2557,7 +2557,7 @@ function saveEditor() {
         }
     }
 
-    editorSnapshot = null;
+    state.editorSnapshot = null;
     closeEditor();
     render();
 }
@@ -2570,7 +2570,7 @@ function updateHashtagDisplay(hashtags, isBatchMode = false, totalNodes = 1, tag
     display.replaceChildren();
     hashtags.forEach(tag => {
         const color = getHashtagColor(tag, false); // Don't auto-assign colors while typing
-        const isRemoved = removedTagsInSession.has(tag);
+        const isRemoved = state.removedTagsInSession.has(tag);
         // If tag is removed, count is 0 (will be deleted from all notes)
         const count = isRemoved ? 0 : (tagCounts[tag] || 0);
         const badge = isBatchMode ? ` (${count}/${totalNodes})` : '';
@@ -2598,14 +2598,14 @@ function updateHashtagDisplay(hashtags, isBatchMode = false, totalNodes = 1, tag
     display.querySelectorAll('.editor-hashtag').forEach(el => {
         el.addEventListener('click', () => {
             const tag = el.dataset.tag;
-            const isRemoved = removedTagsInSession.has(tag);
+            const isRemoved = state.removedTagsInSession.has(tag);
 
             // Save cursor position
             const cursorPos = textarea.selectionStart;
 
             if (isRemoved) {
                 // Re-add tag: append to content
-                removedTagsInSession.delete(tag);
+                state.removedTagsInSession.delete(tag);
                 const currentContent = textarea.value.trim();
                 textarea.value = currentContent + (currentContent ? ' ' : '') + tag;
 
@@ -2615,7 +2615,7 @@ function updateHashtagDisplay(hashtags, isBatchMode = false, totalNodes = 1, tag
                 textarea.dispatchEvent(new Event('input'));
             } else {
                 // Remove tag: delete from content and mark as removed
-                removedTagsInSession.add(tag);
+                state.removedTagsInSession.add(tag);
                 removeTagFromContent(tag);
 
                 // Suppress autocomplete for this synthetic event
@@ -2951,7 +2951,7 @@ function showMoveToModal() {
     const list = document.getElementById('move-to-list');
 
     // Get all projects except the current one
-    const projects = getProjectsList().filter(p => p.id !== currentProjectId);
+    const projects = getProjectsList().filter(p => p.id !== state.currentProjectId);
 
     if (projects.length === 0) {
         showToast('No other notebooks available. Create a new notebook first.');
@@ -3029,11 +3029,11 @@ function initiateMoveToNotebook(targetProjectId) {
     });
 
     // Get source project name for toast message
-    const sourceProject = getProjectsList().find(p => p.id === currentProjectId);
+    const sourceProject = getProjectsList().find(p => p.id === state.currentProjectId);
 
     // Store pending move in sessionStorage
     const pendingMove = {
-        sourceProjectId: currentProjectId,
+        sourceProjectId: state.currentProjectId,
         sourceProjectName: sourceProject ? sourceProject.name : 'Unknown',
         originalIds: originalIds,  // Store original IDs for source cleanup
         nodes: nodesToMove,
@@ -3056,8 +3056,8 @@ function checkForPendingMove() {
         const pendingMove = JSON.parse(pendingData);
 
         // Set up ghost nodes
-        ghostNodes = pendingMove.nodes;
-        ghostDragging = true;
+        state.ghostNodes = pendingMove.nodes;
+        state.ghostDragging = true;
 
         // Store pending move data for later use
         state.pendingMove = pendingMove;
@@ -3070,7 +3070,7 @@ function checkForPendingMove() {
         if (canvas) canvas.classList.add('ghost-drag-mode');
 
         // Show toast notification
-        showToast(`Moving ${ghostNodes.length} note${ghostNodes.length > 1 ? 's' : ''}... Click to place or ESC to cancel`);
+        showToast(`Moving ${state.ghostNodes.length} note${state.ghostNodes.length > 1 ? 's' : ''}... Click to place or ESC to cancel`);
 
         // Initial render with ghosts
         render();
@@ -3081,10 +3081,10 @@ function checkForPendingMove() {
 }
 
 function placeGhostNodes() {
-    if (!ghostDragging || ghostNodes.length === 0) return;
+    if (!state.ghostDragging || state.ghostNodes.length === 0) return;
 
     // Add ghost nodes to current notebook as real nodes
-    ghostNodes.forEach(node => {
+    state.ghostNodes.forEach(node => {
         state.nodes.push(node);
     });
 
@@ -3096,7 +3096,7 @@ function placeGhostNodes() {
     }
 
     // Select the newly placed nodes
-    state.selectedNodes = ghostNodes.map(n => n.id);
+    state.selectedNodes = state.ghostNodes.map(n => n.id);
 
     // Remove nodes from source notebook (using original IDs)
     if (state.pendingMove) {
@@ -3109,7 +3109,7 @@ function placeGhostNodes() {
         );
 
         // Show toast with link back to source notebook
-        const message = `Moved ${ghostNodes.length} note${ghostNodes.length > 1 ? 's' : ''} from ${sourceProjectName}`;
+        const message = `Moved ${state.ghostNodes.length} note${state.ghostNodes.length > 1 ? 's' : ''} from ${sourceProjectName}`;
         showToast(message, {
             linkText: `Return to ${sourceProjectName}`,
             linkOnClick: () => openProject(sourceProjectId)
@@ -3117,8 +3117,8 @@ function placeGhostNodes() {
     }
 
     // Clear ghost state
-    ghostNodes = [];
-    ghostDragging = false;
+    state.ghostNodes = [];
+    state.ghostDragging = false;
     state.pendingMove = null;
 
     // Remove ghost drag cursor
@@ -3132,14 +3132,14 @@ function placeGhostNodes() {
 }
 
 function cancelGhostDrag() {
-    if (!ghostDragging) return;
+    if (!state.ghostDragging) return;
 
     // Store source info before clearing state
     const sourceProjectId = state.pendingMove ? state.pendingMove.sourceProjectId : null;
     const sourceProjectName = state.pendingMove ? state.pendingMove.sourceProjectName : null;
 
-    ghostNodes = [];
-    ghostDragging = false;
+    state.ghostNodes = [];
+    state.ghostDragging = false;
     state.pendingMove = null;
 
     // Remove ghost drag cursor
@@ -3270,7 +3270,7 @@ function showSettings(projectId) {
     const modal = document.getElementById('settings-modal');
     const toggle = document.getElementById('settings-task-toggle');
 
-    if (projectId && projectId !== currentProjectId) {
+    if (projectId && projectId !== state.currentProjectId) {
         // Opened from context menu for a non-open project
         const data = loadProjectFromStorage(projectId);
         const settings = (data && data.settings) || { defaultCompletion: null };
@@ -3278,8 +3278,8 @@ function showSettings(projectId) {
         updateSettingsToggle(toggle, settings.defaultCompletion === 'no');
     } else {
         // Opened from toolbar for the current project
-        modal.dataset.projectId = currentProjectId;
-        updateSettingsToggle(toggle, projectSettings.defaultCompletion === 'no');
+        modal.dataset.projectId = state.currentProjectId;
+        updateSettingsToggle(toggle, state.projectSettings.defaultCompletion === 'no');
     }
 
     modal.classList.remove('hidden');
@@ -3305,9 +3305,9 @@ function toggleSettingsTask() {
     const newValue = isOn ? 'no' : null;
 
     const targetId = modal.dataset.projectId;
-    if (targetId === currentProjectId) {
+    if (targetId === state.currentProjectId) {
         // Update in-memory settings for the currently open project
-        projectSettings.defaultCompletion = newValue;
+        state.projectSettings.defaultCompletion = newValue;
         saveProjectToStorage();
     } else {
         // Update localStorage directly for a non-open project
@@ -3341,7 +3341,7 @@ function downloadAsFile(filename, data) {
 
 // Export current project to file
 async function exportToFile() {
-    if (!currentProjectId) {
+    if (!state.currentProjectId) {
         alert('No notebook open to export');
         return;
     }
@@ -3351,17 +3351,17 @@ async function exportToFile() {
 
     // Get project name for filename
     const projects = getProjectsList();
-    const project = projects.find(p => p.id === currentProjectId);
+    const project = projects.find(p => p.id === state.currentProjectId);
     const filename = ((project ? project.name : 'graph-notes').slice(0, 100)) + '.json';
 
     const data = {
         version: 1,
         name: project ? project.name : 'Untitled',
         created: new Date().toISOString(),
-        nodes: state.currentPath.length === 0 ? state.nodes : rootNodes,
-        edges: state.currentPath.length === 0 ? state.edges : rootEdges,
-        hashtagColors: hashtagColors,
-        settings: projectSettings,
+        nodes: state.currentPath.length === 0 ? state.nodes : state.rootNodes,
+        edges: state.currentPath.length === 0 ? state.edges : state.rootEdges,
+        hashtagColors: state.hashtagColors,
+        settings: state.projectSettings,
         hiddenHashtags: state.hiddenHashtags
     };
 
@@ -3409,7 +3409,7 @@ async function exportProjectToFile(projectId) {
         created: new Date().toISOString(),
         nodes: data.nodes || [],
         edges: data.edges || [],
-        hashtagColors: data.hashtagColors || {},
+        hashtagColors: data.state.hashtagColors || {},
         settings: data.settings || {},
         hiddenHashtags: data.hiddenHashtags || []
     };
@@ -3440,9 +3440,6 @@ async function exportProjectToFile(projectId) {
     }
 }
 
-// Imported file data (temporary storage during import flow)
-let pendingImportData = null;
-
 // Import from file (landing page)
 async function importFromFile() {
     // Try File System Access API first, fall back to file input
@@ -3460,7 +3457,7 @@ async function importFromFile() {
             const data = JSON.parse(text);
 
             // Store for import flow
-            pendingImportData = data;
+            state.pendingImportData = data;
 
             // Show import modal
             const modal = document.getElementById('import-modal');
@@ -3505,7 +3502,7 @@ function importFromFileFallback() {
             const data = JSON.parse(text);
 
             // Store for import flow
-            pendingImportData = data;
+            state.pendingImportData = data;
 
             // Show import modal
             const modal = document.getElementById('import-modal');
@@ -3534,24 +3531,24 @@ function importFromFileFallback() {
 
 function hideImportModal() {
     document.getElementById('import-modal').classList.add('hidden');
-    pendingImportData = null;
+    state.pendingImportData = null;
 }
 
 function handleImportAsNew() {
-    if (!pendingImportData) return;
+    if (!state.pendingImportData) return;
 
-    const name = pendingImportData.name || 'Imported Notebook';
+    const name = state.pendingImportData.name || 'Imported Notebook';
     const projectId = createProject(name);
 
     // Save imported data to the new project
     const projectData = {
         version: 1,
-        nodes: pendingImportData.nodes || [],
-        edges: pendingImportData.edges || [],
-        hashtagColors: pendingImportData.hashtagColors || {},
-        settings: pendingImportData.settings || { defaultCompletion: null },
-        hiddenHashtags: pendingImportData.hiddenHashtags || [],
-        theme: pendingImportData.theme || getCurrentTheme()
+        nodes: state.pendingImportData.nodes || [],
+        edges: state.pendingImportData.edges || [],
+        hashtagColors: state.pendingImportData.state.hashtagColors || {},
+        settings: state.pendingImportData.settings || { defaultCompletion: null },
+        hiddenHashtags: state.pendingImportData.hiddenHashtags || [],
+        theme: state.pendingImportData.theme || getCurrentTheme()
     };
     localStorage.setItem(STORAGE_KEY_PREFIX + projectId, JSON.stringify(projectData));
 
@@ -3568,7 +3565,7 @@ function handleImportAsNew() {
 }
 
 async function handleImportOverwrite() {
-    if (!pendingImportData) return;
+    if (!state.pendingImportData) return;
 
     const projects = getProjectsList();
     if (projects.length === 0) {
@@ -3597,12 +3594,12 @@ async function handleImportOverwrite() {
     // Save imported data to the existing project
     const projectData = {
         version: 1,
-        nodes: pendingImportData.nodes || [],
-        edges: pendingImportData.edges || [],
-        hashtagColors: pendingImportData.hashtagColors || {},
-        settings: pendingImportData.settings || { defaultCompletion: null },
-        hiddenHashtags: pendingImportData.hiddenHashtags || [],
-        theme: pendingImportData.theme || getCurrentTheme()
+        nodes: state.pendingImportData.nodes || [],
+        edges: state.pendingImportData.edges || [],
+        hashtagColors: state.pendingImportData.state.hashtagColors || {},
+        settings: state.pendingImportData.settings || { defaultCompletion: null },
+        hiddenHashtags: state.pendingImportData.hiddenHashtags || [],
+        theme: state.pendingImportData.theme || getCurrentTheme()
     };
     localStorage.setItem(STORAGE_KEY_PREFIX + targetProject.id, JSON.stringify(projectData));
 
@@ -3785,8 +3782,8 @@ function initEventListeners() {
         const canvasPos = screenToCanvas(e.clientX, e.clientY);
 
         // Update ghost cursor position if dragging ghosts
-        if (ghostDragging) {
-            ghostCursorPos = canvasPos;
+        if (state.ghostDragging) {
+            state.ghostCursorPos = canvasPos;
             renderGhostNodes();
             return;
         }
@@ -3894,9 +3891,9 @@ function initEventListeners() {
             const nodeEl = target.closest('.node');
 
             // Clear any pending hover timeout
-            if (hoverTimeout) {
-                clearTimeout(hoverTimeout);
-                hoverTimeout = null;
+            if (state.hoverTimeout) {
+                clearTimeout(state.hoverTimeout);
+                state.hoverTimeout = null;
             }
 
             // Collapse all previously expanded titles
@@ -3912,10 +3909,10 @@ function initEventListeners() {
                 if (titleEl) {
                     const fullTitle = titleEl.getAttribute('data-full-title');
                     if (fullTitle && fullTitle.length > 20) {
-                        hoverTimeout = setTimeout(() => {
+                        state.hoverTimeout = setTimeout(() => {
                             titleEl.textContent = fullTitle;
                             titleEl.classList.add('node-title-expanded');
-                            hoverTimeout = null;
+                            state.hoverTimeout = null;
                         }, HOVER_DELAY);
                     }
                 }
@@ -3926,7 +3923,7 @@ function initEventListeners() {
     // Mouse up
     canvas.addEventListener('mouseup', (e) => {
         // Place ghost nodes if in ghost dragging mode
-        if (ghostDragging) {
+        if (state.ghostDragging) {
             placeGhostNodes();
             return;
         }
@@ -4144,10 +4141,10 @@ function initEventListeners() {
     // Touch move (for mobile drag and pan)
     canvas.addEventListener('touchmove', (e) => {
         // Update ghost cursor position if dragging ghosts
-        if (ghostDragging && e.touches.length === 1) {
+        if (state.ghostDragging && e.touches.length === 1) {
             const touch = e.touches[0];
             const canvasPos = screenToCanvas(touch.clientX, touch.clientY);
-            ghostCursorPos = canvasPos;
+            state.ghostCursorPos = canvasPos;
             renderGhostNodes();
             return;
         }
@@ -4281,7 +4278,7 @@ function initEventListeners() {
     // Touch end
     canvas.addEventListener('touchend', (e) => {
         // Place ghost nodes if in ghost dragging mode
-        if (ghostDragging) {
+        if (state.ghostDragging) {
             placeGhostNodes();
             // Clear touch state
             touchStartNode = null;
@@ -4521,7 +4518,7 @@ function initEventListeners() {
         // Escape - Save editor or clear selection (also closes modals)
         if (e.key === 'Escape') {
             // Cancel ghost drag if active
-            if (ghostDragging) {
+            if (state.ghostDragging) {
                 cancelGhostDrag();
                 return;
             }
@@ -4659,7 +4656,7 @@ function initEventListeners() {
     document.querySelectorAll('.project-menu-item').forEach(item => {
         item.addEventListener('click', () => {
             const action = item.dataset.action;
-            const projectId = activeMenuProjectId;
+            const projectId = state.activeMenuProjectId;
             hideProjectMenu();
 
             if (action === 'rename') handleRenameProject(projectId);
@@ -4724,7 +4721,7 @@ function initEventListeners() {
             node.completion = val || null;
         }
 
-        editorSnapshot = null;
+        state.editorSnapshot = null;
         closeEditor();
         saveRootState();
         enterNode(nodeId);
@@ -4763,8 +4760,8 @@ function initEventListeners() {
 
         // If any removed tags are now in the content, un-remove them
         hashtags.forEach(tag => {
-            if (removedTagsInSession.has(tag)) {
-                removedTagsInSession.delete(tag);
+            if (state.removedTagsInSession.has(tag)) {
+                state.removedTagsInSession.delete(tag);
             }
         });
 
@@ -4801,7 +4798,7 @@ function initEventListeners() {
             updateHashtagDisplay(allTags, true, nodes.length, tagCounts);
         } else {
             // Single edit mode: show tags from content + removed tags
-            const allTags = [...new Set([...hashtags, ...removedTagsInSession])].sort();
+            const allTags = [...new Set([...hashtags, ...state.removedTagsInSession])].sort();
             updateHashtagDisplay(allTags, false, 1, {});
         }
 
@@ -5024,7 +5021,7 @@ document.addEventListener('DOMContentLoaded', init);
 
 // Warn before closing if there are pending unsaved changes
 window.addEventListener('beforeunload', (e) => {
-    if (autoSaveTimeout) {
+    if (state.autoSaveTimeout) {
         // There's a pending auto-save, warn the user
         e.preventDefault();
         e.returnValue = '';

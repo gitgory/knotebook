@@ -117,3 +117,43 @@ This file tracks significant technical and design decisions made during developm
 - Version bumped to v111
 
 ---
+
+## 2026-02-02: State Management - Consolidate Scattered Globals
+
+**DECISION**: Move all mutable globals into single `state` object
+**CHOSE**: Centralized state object with all application state
+**NOT**: Keep scattered globals across the codebase
+**NOT**: Use getters/setters (adds unnecessary indirection)
+
+**Reasoning**:
+- **Single source of truth**: All state in one place, easier to track changes
+- **Easier debugging**: Can inspect entire app state in one object
+- **Clearer data flow**: Explicit `state.` prefix shows mutation points
+- **Maintainability**: Less cognitive load when reasoning about state
+- **Immediate-mode rendering**: Pattern already re-renders on any state change
+
+**Moved to state object**:
+- currentProjectId → state.currentProjectId
+- hashtagColors → state.hashtagColors
+- projectSettings → state.projectSettings
+- rootNodes/rootEdges → state.rootNodes/state.rootEdges
+- editorSnapshot → state.editorSnapshot
+- removedTagsInSession → state.removedTagsInSession
+- hoverTimeout → state.hoverTimeout
+- autoSaveTimeout → state.autoSaveTimeout
+- ghostNodes/ghostDragging/ghostCursorPos → state.ghostNodes/state.ghostDragging/state.ghostCursorPos
+- pendingMove → state.pendingMove
+- activeMenuProjectId → state.activeMenuProjectId
+- pendingImportData → state.pendingImportData
+
+**Kept separate** (transient UI state):
+- autocomplete object (ephemeral, not app state)
+- Constants (NODE_WIDTH, AUTOSAVE_DELAY, etc.)
+
+**Impact**:
+- ~150 references updated across codebase
+- No behavior changes, pure refactor
+- Cleaner architecture, easier to maintain
+- Version bumped to v112
+
+---
