@@ -378,19 +378,43 @@ function populateProjectsList() {
     const projects = getProjectsList();
 
     if (projects.length === 0) {
-        list.innerHTML = '<div class="projects-empty">No notebooks yet. Create one to get started!</div>';
+        const emptyDiv = document.createElement('div');
+        emptyDiv.className = 'projects-empty';
+        emptyDiv.textContent = 'No notebooks yet. Create one to get started!';
+        list.replaceChildren(emptyDiv);
         return;
     }
 
-    list.innerHTML = projects.map(project => `
-        <div class="project-item" data-id="${project.id}">
-            <div class="project-info">
-                <div class="project-name">${escapeHtml(project.name)}</div>
-                <div class="project-stats">${project.noteCount || 0} notes</div>
-            </div>
-            <button class="project-menu-btn" data-id="${project.id}" title="More options">⋮</button>
-        </div>
-    `).join('');
+    list.replaceChildren();
+    projects.forEach(project => {
+        const item = document.createElement('div');
+        item.className = 'project-item';
+        item.dataset.id = project.id;
+
+        const info = document.createElement('div');
+        info.className = 'project-info';
+
+        const name = document.createElement('div');
+        name.className = 'project-name';
+        name.textContent = project.name;
+
+        const stats = document.createElement('div');
+        stats.className = 'project-stats';
+        stats.textContent = `${project.noteCount || 0} notes`;
+
+        info.appendChild(name);
+        info.appendChild(stats);
+
+        const btn = document.createElement('button');
+        btn.className = 'project-menu-btn';
+        btn.dataset.id = project.id;
+        btn.title = 'More options';
+        btn.textContent = '⋮';
+
+        item.appendChild(info);
+        item.appendChild(btn);
+        list.appendChild(item);
+    });
 
     // Click on project to open
     list.querySelectorAll('.project-item').forEach(item => {
@@ -408,13 +432,6 @@ function populateProjectsList() {
         });
     });
 }
-
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
 function showProjectMenu(projectId, x, y) {
     const menu = document.getElementById('project-menu');
     activeMenuProjectId = projectId;
@@ -825,14 +842,24 @@ function showHashtagContextMenu(tag, x, y) {
 
     const menu = document.createElement('div');
     menu.id = 'hashtag-context-menu';
-    menu.innerHTML = `
-        <div class="context-menu-item" data-action="rename">Rename tag...</div>
-        <div class="context-menu-item" data-action="delete">Delete tag...</div>
-        <div class="context-menu-item" data-action="color">Change color...</div>
-    `;
     menu.style.position = 'fixed';
     menu.style.left = x + 'px';
     menu.style.top = y + 'px';
+
+    const menuItems = [
+        { action: 'rename', text: 'Rename tag...' },
+        { action: 'delete', text: 'Delete tag...' },
+        { action: 'color', text: 'Change color...' }
+    ];
+
+    menuItems.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'context-menu-item';
+        div.dataset.action = item.action;
+        div.textContent = item.text;
+        menu.appendChild(div);
+    });
+
     document.body.appendChild(menu);
 
     // Adjust position if menu goes off screen
@@ -861,12 +888,20 @@ function showHashtagContextMenu(tag, x, y) {
                     deleteHashtag(tag);
                 }
             } else if (action === 'color') {
-                // Open color picker
-                const list = document.getElementById('hashtag-list');
-                const colorBtn = list.querySelector(`.hashtag-color-btn[data-tag="${tag}"]`);
-                if (colorBtn) {
-                    colorBtn.click();
+                // Open sidebar if not already open
+                const sidebar = document.getElementById('hashtag-sidebar');
+                if (sidebar.classList.contains('hidden')) {
+                    showSidebar();
                 }
+
+                // Wait for sidebar to render, then open color picker
+                setTimeout(() => {
+                    const list = document.getElementById('hashtag-list');
+                    const colorBtn = list.querySelector(`.hashtag-color-btn[data-tag="${tag}"]`);
+                    if (colorBtn) {
+                        colorBtn.click();
+                    }
+                }, 0);
             }
         });
     });
@@ -945,7 +980,10 @@ function populateSidebar() {
     const hashtags = Object.keys(counts).sort();
 
     if (hashtags.length === 0) {
-        list.innerHTML = '<div class="sidebar-empty">No tags yet</div>';
+        const emptyDiv = document.createElement('div');
+        emptyDiv.className = 'sidebar-empty';
+        emptyDiv.textContent = 'No tags yet';
+        list.replaceChildren(emptyDiv);
         return;
     }
 
@@ -953,30 +991,75 @@ function populateSidebar() {
     const activeFilters = state.filterHashtags.map(t => t.toLowerCase());
     const hiddenTags = state.hiddenHashtags.map(t => t.toLowerCase());
 
+    // Clear list
+    list.replaceChildren();
+
     // Add "Show All Tags" button (always visible, grayed out when not needed)
     const hasHiddenTags = state.hiddenHashtags.length > 0;
-    const headerHtml = `<button class="show-all-tags-btn${hasHiddenTags ? '' : ' disabled'}" id="show-all-tags-btn"${hasHiddenTags ? '' : ' disabled'}>Show All Tags</button>`;
+    const headerBtn = document.createElement('button');
+    headerBtn.className = 'show-all-tags-btn' + (hasHiddenTags ? '' : ' disabled');
+    headerBtn.id = 'show-all-tags-btn';
+    headerBtn.disabled = !hasHiddenTags;
+    headerBtn.textContent = 'Show All Tags';
+    list.appendChild(headerBtn);
 
-    list.innerHTML = headerHtml + hashtags.map(tag => {
+    // Add hashtags
+    hashtags.forEach(tag => {
         const color = getHashtagColor(tag);
         const isActive = activeFilters.includes(tag.toLowerCase());
         const isHidden = hiddenTags.includes(tag.toLowerCase());
-        return `
-            <div class="sidebar-hashtag${isActive ? ' active' : ''}${isHidden ? ' hidden' : ''}" data-tag="${tag}">
-                <span class="hashtag-pill hashtag-clickable" data-tag="${tag}" style="background: ${isHidden ? `linear-gradient(to right, #6b7280 0%, #6b7280 30%, ${color} 100%)` : color}">${tag}</span>
-                <span class="hashtag-count hashtag-clickable" data-tag="${tag}">(${counts[tag]})</span>
-                <button class="hashtag-color-btn" style="background: ${color}" data-tag="${tag}" title="Change color"></button>
-                <button class="hashtag-hide-btn" data-tag="${tag}" title="${isHidden ? 'Show tag' : 'Hide tag'}">\u00d7</button>
-                <div class="color-picker-dropdown hidden" data-tag="${tag}">
-                    ${HASHTAG_COLORS.map(c => `
-                        <div class="color-swatch${c === color ? ' active' : ''}"
-                             style="background: ${c}"
-                             data-color="${c}"></div>
-                    `).join('')}
-                </div>
-            </div>
-        `;
-    }).join('');
+
+        const container = document.createElement('div');
+        container.className = 'sidebar-hashtag' + (isActive ? ' active' : '') + (isHidden ? ' hidden' : '');
+        container.dataset.tag = tag;
+
+        // Pill
+        const pill = document.createElement('span');
+        pill.className = 'hashtag-pill hashtag-clickable';
+        pill.dataset.tag = tag;
+        pill.textContent = tag;
+        pill.style.background = isHidden ? `linear-gradient(to right, #6b7280 0%, #6b7280 30%, ${color} 100%)` : color;
+
+        // Count
+        const count = document.createElement('span');
+        count.className = 'hashtag-count hashtag-clickable';
+        count.dataset.tag = tag;
+        count.textContent = `(${counts[tag]})`;
+
+        // Color button
+        const colorBtn = document.createElement('button');
+        colorBtn.className = 'hashtag-color-btn';
+        colorBtn.style.background = color;
+        colorBtn.dataset.tag = tag;
+        colorBtn.title = 'Change color';
+
+        // Hide button
+        const hideBtn = document.createElement('button');
+        hideBtn.className = 'hashtag-hide-btn';
+        hideBtn.dataset.tag = tag;
+        hideBtn.title = isHidden ? 'Show tag' : 'Hide tag';
+        hideBtn.textContent = '\u00d7';
+
+        // Color picker dropdown
+        const dropdown = document.createElement('div');
+        dropdown.className = 'color-picker-dropdown hidden';
+        dropdown.dataset.tag = tag;
+
+        HASHTAG_COLORS.forEach(c => {
+            const swatch = document.createElement('div');
+            swatch.className = 'color-swatch' + (c === color ? ' active' : '');
+            swatch.style.background = c;
+            swatch.dataset.color = c;
+            dropdown.appendChild(swatch);
+        });
+
+        container.appendChild(pill);
+        container.appendChild(count);
+        container.appendChild(colorBtn);
+        container.appendChild(hideBtn);
+        container.appendChild(dropdown);
+        list.appendChild(container);
+    });
 
     // Show all tags button handler
     const showAllBtn = document.getElementById('show-all-tags-btn');
@@ -1272,7 +1355,7 @@ function render() {
 
 function renderNodes() {
     const layer = document.getElementById('nodes-layer');
-    layer.innerHTML = '';
+    layer.replaceChildren();
 
     // Sort nodes by zIndex (lower first = behind, higher = in front)
     const sortedNodes = [...state.nodes].sort((a, b) => {
@@ -1453,7 +1536,7 @@ function renderNodes() {
 
 function renderEdges() {
     const layer = document.getElementById('edges-layer');
-    layer.innerHTML = '';
+    layer.replaceChildren();
 
     // Get visible node IDs for filtering edges
     const visibleIds = getVisibleNodeIds();
@@ -1530,7 +1613,7 @@ function clearEdgePreview() {
 function renderSelectionBox() {
     const overlay = document.getElementById('selection-box-overlay');
     if (!state.selectionBox) {
-        overlay.innerHTML = '';
+        overlay.replaceChildren();
         return;
     }
 
@@ -1542,24 +1625,27 @@ function renderSelectionBox() {
 
     const rectClass = box.mode === 'enclosed' ? 'selection-box solid' : 'selection-box dashed';
 
-    overlay.innerHTML = `
-        <rect class="${rectClass}"
-              x="${x}" y="${y}"
-              width="${width}" height="${height}" />
-    `;
+    overlay.replaceChildren();
+    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    rect.setAttribute('class', rectClass);
+    rect.setAttribute('x', x);
+    rect.setAttribute('y', y);
+    rect.setAttribute('width', width);
+    rect.setAttribute('height', height);
+    overlay.appendChild(rect);
 }
 
 // Clear selection box
 function clearSelectionBox() {
     state.selectionBox = null;
     const overlay = document.getElementById('selection-box-overlay');
-    if (overlay) overlay.innerHTML = '';
+    if (overlay) overlay.replaceChildren();
 }
 
 // Render ghost nodes for move operation
 function renderGhostNodes() {
     const layer = document.getElementById('ghost-layer');
-    layer.innerHTML = '';
+    layer.replaceChildren();
 
     if (!ghostDragging || ghostNodes.length === 0) return;
 
@@ -1930,14 +2016,20 @@ function showNodeContextMenu(nodeId, x, y) {
     const menuItems = [];
 
     if (state.selectedNodes.length > 1) {
-        menuItems.push('<div class="context-menu-item" data-action="connect-to">Connect to...</div>');
+        menuItems.push({ action: 'connect-to', text: 'Connect to...' });
     }
 
-    menuItems.push('<div class="context-menu-item" data-action="bring-front">Bring to Front</div>');
-    menuItems.push('<div class="context-menu-item" data-action="send-back">Send to Back</div>');
-    menuItems.push('<div class="context-menu-item" data-action="move-to">Move to...</div>');
+    menuItems.push({ action: 'bring-front', text: 'Bring to Front' });
+    menuItems.push({ action: 'send-back', text: 'Send to Back' });
+    menuItems.push({ action: 'move-to', text: 'Move to...' });
 
-    menu.innerHTML = menuItems.join('');
+    menuItems.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'context-menu-item';
+        div.dataset.action = item.action;
+        div.textContent = item.text;
+        menu.appendChild(div);
+    });
 
     // Adjust position if menu goes off screen
     document.body.appendChild(menu);
@@ -2387,23 +2479,32 @@ function updateHashtagDisplay(hashtags, isBatchMode = false, totalNodes = 1, tag
     const modal = document.getElementById('editor-modal');
     const textarea = document.getElementById('note-text');
 
-    display.innerHTML = hashtags
-        .map(tag => {
-            const color = getHashtagColor(tag, false); // Don't auto-assign colors while typing
-            const isRemoved = removedTagsInSession.has(tag);
-            // If tag is removed, count is 0 (will be deleted from all notes)
-            const count = isRemoved ? 0 : (tagCounts[tag] || 0);
-            const badge = isBatchMode ? ` (${count}/${totalNodes})` : '';
+    display.replaceChildren();
+    hashtags.forEach(tag => {
+        const color = getHashtagColor(tag, false); // Don't auto-assign colors while typing
+        const isRemoved = removedTagsInSession.has(tag);
+        // If tag is removed, count is 0 (will be deleted from all notes)
+        const count = isRemoved ? 0 : (tagCounts[tag] || 0);
+        const badge = isBatchMode ? ` (${count}/${totalNodes})` : '';
 
-            // Solid pill: background color, white text
-            // Outlined pill: transparent background, colored border, white text
-            const style = isRemoved
-                ? `background: transparent; border: 2px solid ${color}; color: #fff;`
-                : `background: ${color}; color: #fff;`;
+        const span = document.createElement('span');
+        span.className = 'hashtag editor-hashtag';
+        span.dataset.tag = tag;
+        span.textContent = tag + badge;
 
-            return `<span class="hashtag editor-hashtag" data-tag="${tag}" style="${style}">${tag}${badge}</span>`;
-        })
-        .join('');
+        // Solid pill: background color, white text
+        // Outlined pill: transparent background, colored border, white text
+        if (isRemoved) {
+            span.style.background = 'transparent';
+            span.style.border = `2px solid ${color}`;
+            span.style.color = '#fff';
+        } else {
+            span.style.background = color;
+            span.style.color = '#fff';
+        }
+
+        display.appendChild(span);
+    });
 
     // Add click handlers to remove/re-add tags
     display.querySelectorAll('.editor-hashtag').forEach(el => {
@@ -2499,21 +2600,39 @@ function showAutocomplete(inputElement) {
     const list = document.getElementById('hashtag-autocomplete-list');
 
     if (suggestions.length === 0) {
-        list.innerHTML = '<div class="autocomplete-empty">No matching tags</div>';
+        const emptyDiv = document.createElement('div');
+        emptyDiv.className = 'autocomplete-empty';
+        emptyDiv.textContent = 'No matching tags';
+        list.replaceChildren(emptyDiv);
     } else {
-        list.innerHTML = suggestions.map((item, i) =>
-            `<div class="autocomplete-item" data-index="${i}">` +
-                `<span class="ac-pill" style="background:${item.color}"></span>` +
-                `<span class="ac-tag">${item.tag}</span>` +
-                `<span class="ac-count">${item.count}</span>` +
-            `</div>`
-        ).join('');
+        list.replaceChildren();
+        suggestions.forEach((item, i) => {
+            const div = document.createElement('div');
+            div.className = 'autocomplete-item';
+            div.dataset.index = i;
 
-        list.querySelectorAll('.autocomplete-item').forEach(el => {
-            el.addEventListener('mousedown', (e) => {
+            const pill = document.createElement('span');
+            pill.className = 'ac-pill';
+            pill.style.background = item.color;
+
+            const tag = document.createElement('span');
+            tag.className = 'ac-tag';
+            tag.textContent = item.tag;
+
+            const count = document.createElement('span');
+            count.className = 'ac-count';
+            count.textContent = item.count;
+
+            div.appendChild(pill);
+            div.appendChild(tag);
+            div.appendChild(count);
+
+            div.addEventListener('mousedown', (e) => {
                 e.preventDefault(); // prevent input blur
-                selectAutocompleteItem(parseInt(el.dataset.index));
+                selectAutocompleteItem(i);
             });
+
+            list.appendChild(div);
         });
     }
 
@@ -2752,15 +2871,22 @@ function showMoveToModal() {
     }
 
     // Populate the list
-    list.innerHTML = '';
+    list.replaceChildren();
     projects.forEach(project => {
         const item = document.createElement('div');
         item.className = 'move-to-item';
         item.dataset.projectId = project.id;
-        item.innerHTML = `
-            <span class="move-to-item-name">${escapeHtml(project.name)}</span>
-            <span class="move-to-item-count">${project.noteCount} notes</span>
-        `;
+
+        const name = document.createElement('span');
+        name.className = 'move-to-item-name';
+        name.textContent = project.name;
+
+        const count = document.createElement('span');
+        count.className = 'move-to-item-count';
+        count.textContent = `${project.noteCount} notes`;
+
+        item.appendChild(name);
+        item.appendChild(count);
         list.appendChild(item);
     });
 
@@ -2895,25 +3021,11 @@ function placeGhostNodes() {
         );
 
         // Show toast with link back to source notebook
-        const message = `
-            Moved ${ghostNodes.length} note${ghostNodes.length > 1 ? 's' : ''} from ${escapeHtml(sourceProjectName)}
-            <br>
-            <a href="#" id="toast-return-link" style="color: var(--highlight); text-decoration: underline; cursor: pointer;">Return to ${escapeHtml(sourceProjectName)}</a>
-        `;
-        showToast(message, { html: true, hasLink: true });
-
-        // Add click handler for the return link
-        setTimeout(() => {
-            const link = document.getElementById('toast-return-link');
-            if (link) {
-                link.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const toast = document.getElementById('toast-notification');
-                    if (toast) toast.remove();
-                    openProject(sourceProjectId);
-                });
-            }
-        }, 0);
+        const message = `Moved ${ghostNodes.length} note${ghostNodes.length > 1 ? 's' : ''} from ${sourceProjectName}`;
+        showToast(message, {
+            linkText: `Return to ${sourceProjectName}`,
+            linkOnClick: () => openProject(sourceProjectId)
+        });
     }
 
     // Clear ghost state
@@ -2948,25 +3060,10 @@ function cancelGhostDrag() {
 
     // Show toast with link back to source notebook
     if (sourceProjectId && sourceProjectName) {
-        const message = `
-            Move cancelled
-            <br>
-            <a href="#" id="toast-return-link" style="color: var(--highlight); text-decoration: underline; cursor: pointer;">Return to ${escapeHtml(sourceProjectName)}</a>
-        `;
-        showToast(message, { html: true, hasLink: true });
-
-        // Add click handler for the return link
-        setTimeout(() => {
-            const link = document.getElementById('toast-return-link');
-            if (link) {
-                link.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const toast = document.getElementById('toast-notification');
-                    if (toast) toast.remove();
-                    openProject(sourceProjectId);
-                });
-            }
-        }, 0);
+        showToast('Move cancelled', {
+            linkText: `Return to ${sourceProjectName}`,
+            linkOnClick: () => openProject(sourceProjectId)
+        });
     } else {
         showToast('Move cancelled');
     }
@@ -3006,18 +3103,29 @@ function removeNodesFromSourceNotebook(sourceProjectId, nodeIds) {
 }
 
 function showToast(message, options = {}) {
-    // Toast notification with optional HTML content and link
+    // Toast notification with optional link
     const existingToast = document.getElementById('toast-notification');
     if (existingToast) existingToast.remove();
 
     const toast = document.createElement('div');
     toast.id = 'toast-notification';
 
-    // Support HTML content if provided
-    if (options.html) {
-        toast.innerHTML = message;
-    } else {
-        toast.textContent = message;
+    // Always use textContent for base message
+    toast.textContent = message;
+
+    // If a link is needed, append it programmatically
+    if (options.linkText && options.linkOnClick) {
+        toast.appendChild(document.createElement('br'));
+        const link = document.createElement('a');
+        link.href = '#';
+        link.style.cssText = 'color: var(--highlight); text-decoration: underline; cursor: pointer;';
+        link.textContent = options.linkText;
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            toast.remove();
+            options.linkOnClick();
+        });
+        toast.appendChild(link);
     }
 
     // Enable pointer events if there's a link
