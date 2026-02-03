@@ -397,7 +397,7 @@ function openProject(projectId) {
     state.edges = data.edges || [];
     state.rootNodes = state.nodes;
     state.rootEdges = state.edges;
-    state.hashtagColors = data.state.hashtagColors || {};
+    state.hashtagColors = data.hashtagColors || {};
     state.projectSettings = data.settings || { defaultCompletion: null };
     state.hiddenHashtags = data.hiddenHashtags || [];
 
@@ -3409,7 +3409,7 @@ async function exportProjectToFile(projectId) {
         created: new Date().toISOString(),
         nodes: data.nodes || [],
         edges: data.edges || [],
-        hashtagColors: data.state.hashtagColors || {},
+        hashtagColors: data.hashtagColors || {},
         settings: data.settings || {},
         hiddenHashtags: data.hiddenHashtags || []
     };
@@ -3545,7 +3545,7 @@ function handleImportAsNew() {
         version: 1,
         nodes: state.pendingImportData.nodes || [],
         edges: state.pendingImportData.edges || [],
-        hashtagColors: state.pendingImportData.state.hashtagColors || {},
+        hashtagColors: state.pendingImportData.hashtagColors || {},
         settings: state.pendingImportData.settings || { defaultCompletion: null },
         hiddenHashtags: state.pendingImportData.hiddenHashtags || [],
         theme: state.pendingImportData.theme || getCurrentTheme()
@@ -3596,7 +3596,7 @@ async function handleImportOverwrite() {
         version: 1,
         nodes: state.pendingImportData.nodes || [],
         edges: state.pendingImportData.edges || [],
-        hashtagColors: state.pendingImportData.state.hashtagColors || {},
+        hashtagColors: state.pendingImportData.hashtagColors || {},
         settings: state.pendingImportData.settings || { defaultCompletion: null },
         hiddenHashtags: state.pendingImportData.hiddenHashtags || [],
         theme: state.pendingImportData.theme || getCurrentTheme()
