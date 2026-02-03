@@ -4,6 +4,286 @@ This file tracks work across Claude Code sessions for continuity.
 
 ---
 
+## Session 2026-02-02 - 11:16 PM (Security Hardening + State Refactor) (v106-v115)
+
+### Summary
+Implemented comprehensive XSS protection by eliminating all innerHTML usage, added JSON.parse error handling, modernized localStorage key names, and consolidated scattered global variables into single state object. Fixed multiple critical bugs discovered during state consolidation refactor through thorough testing.
+
+### Files Changed
+- `scripts/app.js` - Replaced 13 innerHTML calls with createElement/textContent/replaceChildren; wrapped JSON.parse in try/catch; consolidated 14 global variables into state object; removed escapeHtml function; added localStorage availability checks; fixed data.state.hashtagColors and state.state.rootNodes bugs; added goBack save; bumped v105→v115
+- `styles/main.css` - No changes this session
+- `index.html` - Incremented cache versions v105→v115
+- `decision-history.md` - Added 5 new decisions (XSS, JSON.parse, storage keys, localStorage availability, state consolidation)
+- `.claude/CLAUDE.md` - Added XSS protection guidelines to Code Conventions
+- `design-spec.txt` - Added SECURITY section (#13) with XSS protection patterns
+
+### Tasks Completed
+- [x] **XSS Protection (v106)** - Eliminated all innerHTML usage
+  - Replaced 13 innerHTML assignments with safe DOM APIs
+  - populateSidebar() - createElement for hashtag list (60+ lines)
+  - showAutocomplete() - createElement for suggestions
+  - showToast() - removed HTML option, added linkText/linkOnClick params
+  - updateHashtagDisplay() - createElement for tag pills
+  - populateProjectsList() - createElement for project list
+  - Context menus - createElement with menu items array
+  - renderSelectionBox() - createElementNS for SVG rect
+  - Removed obsolete escapeHtml() function
+- [x] **JSON.parse Error Handling (v107)**
+  - Wrapped getProjectsList() and loadProjectFromStorage()
+  - Added error logging and graceful degradation
+  - Quota exceeded alerts with export prompts
+- [x] **Console Cleanup (v108)**
+  - Removed 4 "Exported successfully" logs
+  - Removed init() welcome message (13 lines)
+  - Kept all error/warning logs for debugging
+- [x] **Storage Key Modernization (v110)**
+  - Renamed graph-notes-* → knotebook-*
+  - Simplified codebase (-20 lines)
+  - Removed overengineered auto-detection (v109→v110 revert)
+- [x] **localStorage Availability Checks (v111)**
+  - Added isLocalStorageAvailable() test function
+  - Red banner warning if storage unavailable (private browsing)
+  - Wrapped all setItem() in try/catch
+  - QuotaExceededError handling with user alerts
+- [x] **State Consolidation (v112-v115)**
+  - Moved 14 global variables into state object
+  - ~150 references updated across codebase
+  - Fixed critical bugs from aggressive replace-all:
+    - v113: data.state.hashtagColors → data.hashtagColors
+    - v115: state.state.rootNodes → state.rootNodes
+    - v115: state.state.rootEdges → state.rootEdges
+    - v115: Added scheduleAutoSave() to goBack()
+- [x] Comprehensive testing after each change
+- [x] Fixed context menu "Change color" to open sidebar first
+- [x] Regenerated table of contents (763 lines)
+
+### Decisions Made
+- **XSS Protection**: Use safe DOM APIs everywhere, never innerHTML with user data (documented in design-spec.txt #13)
+- **JSON.parse Safety**: Graceful degradation over crashes, preserve corrupted data for recovery
+- **Storage Keys**: Simple rename over migration (YAGNI principle)
+- **localStorage Handling**: Check availability, wrap all writes, clear user feedback on errors
+- **State Management**: Single source of truth over scattered globals for better maintainability
+- **Replace-all Strategy**: Too aggressive with "state" token - learned to be more careful with bulk changes
+
+### Bug Fixes
+1. **v106**: Context menu "Change color" didn't work - added sidebar open check with setTimeout
+2. **v113**: openProject() failed - data.state.hashtagColors should be data.hashtagColors (replace-all error)
+3. **v114**: Navigation completely broken - attempted fix made it worse
+4. **v115**: Fixed state.state.rootNodes (double prefix from replace-all)
+5. **v115**: goBack() didn't persist changes - added scheduleAutoSave() call
+
+### Testing Results
+**XSS Tests:**
+- ✅ Project name: `<img src=x onerror=alert('xss')>` rendered as text
+- ✅ Note title: `<script>alert('note')</script>` rendered as text
+- ✅ Hashtag: Special characters rejected by validation
+
+**Regression Tests (v115):**
+- ✅ Create new project
+- ✅ Add notes and save/reload
+- ✅ Hashtag colors persist
+- ✅ Batch editor works
+- ✅ Navigation (enter/exit nodes) works
+- ✅ Context menus functional
+
+### Implementation Highlights
+
+**Security Layers:**
+1. Input validation (hashtag regex blocks dangerous chars)
+2. Output escaping (textContent, dataset auto-escape)
+3. Error handling (JSON.parse, localStorage writes)
+4. Availability checks (private browsing, quota exceeded)
+
+**State Consolidation:**
+```javascript
+// Before: 14 scattered globals
+let currentProjectId = null;
+let hashtagColors = {};
+// ... 12 more
+
+// After: Single source of truth
+const state = {
+    currentProjectId: null,
+    hashtagColors: {},
+    // ... all consolidated
+};
+```
+
+**Replace-all Pitfalls:**
+- Changed "return state.rootNodes" → "return state.state.rootNodes" (WRONG)
+- Changed "data.hashtagColors" → "data.state.hashtagColors" (WRONG)
+- Changed object keys "hashtagColors:" → "state.hashtagColors:" (WRONG)
+- Lesson: Be more selective with search/replace, especially with common tokens
+
+### Next Steps
+- [ ] Continue with Tier 3 features from ROADMAP.txt
+- [ ] Consider implementing Priority field
+- [ ] Test performance with large graphs (100+ nodes)
+
+### Notes
+- 10 commits this session (d2df5cf through 3e58d0e)
+- Version progression: v105 → v115 (10 versions)
+- Major refactor with multiple critical bugs caught through testing
+- All XSS vulnerabilities eliminated
+- All JSON.parse calls protected
+- All mutable state consolidated
+- Context usage peaked at 147k/200k (73%) during refactor
+- TABLE_OF_CONTENTS regenerated: 763 lines (from 746)
+- **Lesson learned**: Test immediately after large refactors, replace-all can be dangerous
+- Security documentation added to project (design-spec.txt, CLAUDE.md)
+- Codebase significantly more secure and maintainable despite bumpy refactor journey
+
+---
+
+## Session 2026-02-01 - Afternoon Continued (Mobile UX + Batch Connect + Polish) (v93-v103)
+
+### Summary
+Following successful Move to Notebook implementation and testing, implemented major mobile UX improvements (multi-select, selection box, repositioned action bar), added batch connect functionality for desktop and mobile, enhanced selection interaction with Alt+Click remove, replaced gray with amber in tag palette, and increased partial completion icon size for better visual balance.
+
+### Files Changed
+- `scripts/app.js` - Implemented mobile multi-select (long-press tap-to-add mode), selection box on mobile (long-press empty canvas), batch connect (multiple nodes to one target), Alt+Click to remove from selection, updated edge creation logic, modified color palette (gray→amber); bumped v92→v105
+- `styles/main.css` - Repositioned mobile action bar to top below toolbar (8 iterations to fix positioning/width/visibility), added wrapping support, fixed height constraints, added !important flags for specificity; bumped v88→v102
+- `index.html` - Reordered action bar buttons, removed Edit button, updated version displays; bumped v92→v105
+- `SESSION_NOTES.md` - This update
+
+### Tasks Completed
+- [x] **Mobile Multi-Select Improvements (v93)**
+  - Implemented tap-to-add mode: long-press first node → tap others to add to selection
+  - Implemented selection box on mobile: long-press empty canvas → drag to select
+  - Visual feedback: "Tap another note to add to selection" toast
+- [x] **Mobile Action Bar Repositioning (v93-v102)**
+  - Moved action bar from floating near nodes to top of screen below toolbar
+  - Fixed 8 iterations of CSS issues:
+    - v96: Vertical spanning (added height: auto)
+    - v97: Hidden behind toolbar (adjusted top positioning)
+    - v98-v99: Visibility issues (added !important to transform)
+    - v100: Wrong toolbar height calculation (1 row → 3 rows, top: 54px → 110px)
+    - v101-v102: Width not 100% (added max-width: 100% !important)
+  - Final position: top: 110px, full width, flush with toolbar
+  - Added flex-wrap: wrap for responsive button layout
+- [x] **Action Bar Cleanup (v102)**
+  - Removed Edit button (redundant with double-tap)
+  - Reordered buttons: Connect → Duplicate → To Front → To Back → Move to... → Delete
+- [x] **Batch Connect Implementation (v103-v105)**
+  - Select multiple nodes → Connect button → tap target → connects all to target
+  - Works via: mobile action bar, desktop context menu, Shift+Click
+  - Modified startEdgeCreation() to support multiple source nodes
+  - Modified completeEdgeCreation() to create edges from all sources
+  - Added state.edgeStartNodes[] array for batch mode
+  - Added "Connect to..." to right-click context menu
+  - Desktop Shift+Click: starts batch if multiple selected, completes batch on target
+- [x] **Selection Enhancement: Alt+Click Remove (v104-v105)**
+  - Alt+Click on selected node removes it from selection
+  - Alt+Click on unselected node does nothing (prevents accidental selection replacement)
+  - Added early return for all Alt+Click cases
+- [x] **Color Palette Update (v103)**
+  - Replaced gray (#64748b) with amber (#fb923c) in HASHTAG_COLORS
+  - Improves tag color variety and visibility
+- [x] **Completion Icon Size Fix (v103)**
+  - Increased partial completion icon (◐) font-size from 16px to 18px
+  - Matches visual size of other completion icons (yes ✓, no ⭕, cancelled ✕)
+- [x] Fixed import modal button layout (v97)
+- [x] Removed toast notification for batch connect (v104)
+
+### Decisions Made
+- **Mobile multi-select**: Long-press pattern familiar to mobile users, tap-to-add mode clear with toast feedback
+- **Selection box on mobile**: Long-press empty canvas natural gesture, matches desktop drag behavior
+- **Action bar position**: Top of screen less obtrusive than floating near selections, always accessible
+- **Action bar width**: Full width (100%) on mobile for easier touch targets, wraps on narrow screens
+- **Batch connect UX**: Reuse existing edge creation infrastructure (state.edgeStartNode), clear "N nodes → target" workflow
+- **Shift+Click behavior**: Desktop users can batch connect with Shift+Click (consistent with existing Shift+Click edge creation)
+- **Alt+Click semantics**: Remove from selection only (never add/replace), prevents accidental selection loss
+- **Color palette**: Amber more vibrant than gray, better fits dark theme aesthetic
+- **Icon sizing**: Partial completion icon smaller than others, increased to 18px for visual consistency
+
+### Implementation Highlights
+
+**Mobile Multi-Select:**
+- Long-press first node sets state.longPressNode
+- Subsequent taps (when longPressNode set) add to selection
+- Toast shown once: "Tap another note to add to selection"
+- Works alongside existing Ctrl+Click desktop multi-select
+
+**Selection Box on Mobile:**
+- Long-press empty canvas (touchstart on canvas, no node hit)
+- 500ms timer before activating selection box mode
+- Drag to select nodes (existing selection box logic reused)
+- Touch coordinates converted to canvas space
+
+**Action Bar Repositioning Journey:**
+```
+v93: Implemented → vertical span issue
+v96: height: auto → still behind toolbar
+v97-v99: Adjusted top → visibility issues
+v100: top: 110px → width not 100%
+v101-v102: max-width: 100% !important → FIXED
+```
+
+**Batch Connect Flow:**
+```
+Desktop: Select N nodes → Right-click → "Connect to..." → Click target
+Desktop: Select N nodes → Shift+Click → Click target
+Mobile: Select N nodes → Tap Connect → Tap target
+```
+
+**Edge Creation Logic:**
+```javascript
+if (state.edgeStartNodes && state.edgeStartNodes.length > 0) {
+    // Batch mode: connect all start nodes to target
+    state.edgeStartNodes.forEach(startId => {
+        if (!edgeExists(startId, nodeId)) {
+            currentEdges.push([startId, nodeId]);
+        }
+    });
+} else {
+    // Single mode: connect one node
+    if (!edgeExists(state.edgeStartNode, nodeId)) {
+        currentEdges.push([state.edgeStartNode, nodeId]);
+    }
+}
+```
+
+**Alt+Click Logic:**
+```javascript
+if (altHeld) {
+    if (alreadySelected) {
+        // Remove from selection
+        state.selectedNodes = state.selectedNodes.filter(id => id !== nodeId);
+        updateSelectionVisuals();
+        render();
+    }
+    return; // Always return for Alt+Click (never add/replace)
+}
+```
+
+### Testing Results
+- ✅ Mobile multi-select: All 4 tests passed (long-press, tap-to-add, selection box, deselect)
+- ✅ Mobile action bar: Positioned correctly at top:110px, full width, visible, wraps on narrow screens
+- ✅ Batch connect: Desktop (context menu + Shift+Click) and mobile (action bar) all working
+- ✅ Alt+Click: Removes selected, ignores unselected, all tests passed
+- ✅ Color palette: Gray removed, amber in place
+- ✅ Partial completion icon: Visually matches other icons
+
+### Next Steps
+- [ ] Continue working through Tier 3 features from ROADMAP.txt
+- [ ] Consider implementing Priority field (First Class Field)
+- [ ] Test performance with large graphs (100+ nodes)
+- [ ] Explore flat architecture transition (design-spec-future.txt)
+
+### Notes
+- No commits this session (handoff in progress)
+- Version progression: v92 → v105 (13 versions)
+- Mobile UX significantly improved: multi-select, selection box, repositioned action bar
+- Batch connect major workflow enhancement (works on desktop + mobile)
+- Action bar repositioning took 8 iterations due to complex CSS specificity and mobile toolbar layout
+- Context warning shown at 30% remaining (60k tokens) - successfully managed context
+- All features tested and working on both desktop and mobile
+- Session demonstrates iterative refinement: feature → test → fix → polish
+- Final polish items (icon size, color palette) improve visual consistency
+- TABLE_OF_CONTENTS regenerated: 746 lines (app.js structure updated)
+
+---
+
 ## Session 2026-02-01 - Move to Notebook Feature (v87-v92)
 
 ### Summary
