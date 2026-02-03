@@ -2291,28 +2291,24 @@ function goBack() {
     // Reset viewport for the new level
     resetViewport();
     render();
+
+    // Save after navigation to persist the updated tree
+    scheduleAutoSave();
 }
 
 // Root state storage (saved when entering first node)
 function getRootNodes() {
-    return state.state.rootNodes;
+    return state.rootNodes;
 }
 
 function getRootEdges() {
-    return state.state.rootEdges;
+    return state.rootEdges;
 }
 
 function saveRootState() {
-    // Save current level back to its parent (or root)
     if (state.currentPath.length === 0) {
-        // At root - just update the reference
         state.rootNodes = state.nodes;
         state.rootEdges = state.edges;
-    } else {
-        // Inside a child - save current nodes/edges to the parent node's children
-        const currentNode = state.currentPath[state.currentPath.length - 1];
-        currentNode.children = state.nodes;
-        currentNode.childEdges = state.edges;
     }
 }
 
