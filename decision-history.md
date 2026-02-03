@@ -57,29 +57,31 @@ This file tracks significant technical and design decisions made during developm
 
 ---
 
-## 2026-02-02: Storage Keys - Use Modern Names for New Users
+## 2026-02-02: Storage Keys - Rename to Match App Name
 
-**DECISION**: Auto-detect legacy vs modern storage key format
-**CHOSE**: `knotebook-` for new users, `graph-notes-` for existing users
-**NOT**: Rename all keys (breaks existing users)
-**NOT**: Keep old name forever (confusing for new users)
+**DECISION**: Rename localStorage keys from `graph-notes-*` to `knotebook-*`
+**CHOSE**: Simple rename, user clears old data manually
+**NOT**: Auto-detect and support both formats (overengineering)
+**NOT**: Add migration logic (unnecessary complexity)
 
 **Reasoning**:
-- **Backward compatibility**: Existing users' data continues working seamlessly
-- **Modern naming**: New installations use app name "knotebook" instead of legacy "graph-notes"
-- **Zero migration**: No data migration code needed, auto-detection is simple and reliable
-- **User experience**: Users never notice the difference, everything just works
+- **Simplicity**: Clean codebase without legacy compatibility code
+- **Correct naming**: Keys match app name "knotebook" instead of old "graph-notes"
+- **Small user base**: Only developer testing data exists, easy to clear and recreate
+- **YAGNI**: Don't build migration for a one-time edge case
 
-**Implementation**:
-- `detectStorageKeyFormat()` runs on startup
-- Checks for existence of legacy keys in localStorage
-- Sets global `STORAGE_KEY_PREFIX` and `PROJECTS_INDEX_KEY` accordingly
-- Legacy: `graph-notes-project-*` and `graph-notes-projects`
-- Modern: `knotebook-project-*` and `knotebook-projects`
+**Keys changed**:
+- `graph-notes-projects` → `knotebook-projects`
+- `graph-notes-project-*` → `knotebook-project-*`
+- `graph-notes-pending-move` → `knotebook-pending-move`
+
+**User action required**:
+- Clear localStorage or delete old `graph-notes-*` keys
+- Existing projects will need to be recreated or re-imported
 
 **Impact**:
-- Existing users: No change, continues using legacy keys
-- New users: Clean modern keys matching app name
-- Version bumped to v109
+- Clean, simple codebase
+- No legacy baggage
+- Version bumped to v110
 
 ---
