@@ -85,3 +85,35 @@ This file tracks significant technical and design decisions made during developm
 - Version bumped to v110
 
 ---
+
+## 2026-02-02: Storage Error Handling - Check Availability and Quota
+
+**DECISION**: Add localStorage availability checks and quota error handling
+**CHOSE**: Try/catch on all setItem calls, detect unavailability on startup
+**NOT**: Assume localStorage always works
+**NOT**: Use alternative storage (IndexedDB, etc.) - overkill for this app
+
+**Reasoning**:
+- **Private browsing**: Some browsers block localStorage in private mode
+- **Quota exceeded**: Large projects can hit 5-10MB localStorage limits
+- **User experience**: Better to show error than silently fail
+- **Graceful degradation**: Warn user, suggest export as workaround
+
+**Implementation**:
+- `isLocalStorageAvailable()` - tests write/read on startup
+- `showStorageUnavailableWarning()` - persistent red banner if unavailable
+- Wrap all `localStorage.setItem()` in try/catch
+- Special handling for QuotaExceededError (prompt user to export/delete)
+- Non-critical operations (like removeItem) fail silently with console.error
+
+**Error Messages**:
+- Quota exceeded → "Export immediately to avoid losing work"
+- Create project fails → Roll back index entry
+- Save fails → Alert user to export
+
+**Impact**:
+- App won't crash in private browsing mode
+- Users get clear feedback when storage quota exceeded
+- Version bumped to v111
+
+---

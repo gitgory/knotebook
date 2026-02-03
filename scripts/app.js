@@ -98,6 +98,38 @@ const AUTOSAVE_DELAY = 1500; // 1.5 seconds
 const STORAGE_KEY_PREFIX = 'knotebook-project-';
 const PROJECTS_INDEX_KEY = 'knotebook-projects';
 
+// Check if localStorage is available
+function isLocalStorageAvailable() {
+    try {
+        const test = '__localStorage_test__';
+        localStorage.setItem(test, test);
+        localStorage.removeItem(test);
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
+
+// Show persistent warning about localStorage unavailability
+function showStorageUnavailableWarning() {
+    const warning = document.createElement('div');
+    warning.id = 'storage-warning';
+    warning.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        background: #dc2626;
+        color: white;
+        padding: 12px;
+        text-align: center;
+        z-index: 10000;
+        font-size: 14px;
+    `;
+    warning.textContent = '⚠️ Storage unavailable (private browsing or quota exceeded). Changes will not be saved. Export your work frequently!';
+    document.body.appendChild(warning);
+}
+
 // Move to notebook state
 let ghostNodes = [];           // Ghost nodes being positioned in target notebook
 let ghostDragging = false;     // True when dragging ghost nodes
@@ -192,7 +224,16 @@ function getProjectsList() {
 
 // Save projects index
 function saveProjectsIndex(projects) {
-    localStorage.setItem(PROJECTS_INDEX_KEY, JSON.stringify(projects));
+    try {
+        localStorage.setItem(PROJECTS_INDEX_KEY, JSON.stringify(projects));
+    } catch (e) {
+        console.error('Failed to save projects index:', e);
+        if (e.name === 'QuotaExceededError') {
+            alert('Storage quota exceeded! Please export and delete old projects to free up space.');
+        } else {
+            alert('Failed to save projects list. Your changes may not persist.');
+        }
+    }
 }
 
 // Generate unique project ID
@@ -229,15 +270,24 @@ function saveProjectToStorage() {
         theme: getCurrentTheme()
     };
 
-    localStorage.setItem(STORAGE_KEY_PREFIX + currentProjectId, JSON.stringify(projectData));
+    try {
+        localStorage.setItem(STORAGE_KEY_PREFIX + currentProjectId, JSON.stringify(projectData));
 
-    // Update project metadata in index
-    const projects = getProjectsList();
-    const projectIndex = projects.findIndex(p => p.id === currentProjectId);
-    if (projectIndex >= 0) {
-        projects[projectIndex].noteCount = countNotes(projectData.nodes);
-        projects[projectIndex].modified = new Date().toISOString();
-        saveProjectsIndex(projects);
+        // Update project metadata in index
+        const projects = getProjectsList();
+        const projectIndex = projects.findIndex(p => p.id === currentProjectId);
+        if (projectIndex >= 0) {
+            projects[projectIndex].noteCount = countNotes(projectData.nodes);
+            projects[projectIndex].modified = new Date().toISOString();
+            saveProjectsIndex(projects);
+        }
+    } catch (e) {
+        console.error('Failed to save project:', e);
+        if (e.name === 'QuotaExceededError') {
+            alert('Storage quota exceeded! Export this project immediately to avoid losing work.');
+        } else {
+            alert('Failed to save project. Consider exporting to preserve your work.');
+        }
     }
 }
 
@@ -280,7 +330,22 @@ function createProject(name) {
         settings: { defaultCompletion: null },
         hiddenHashtags: []
     };
-    localStorage.setItem(STORAGE_KEY_PREFIX + projectId, JSON.stringify(projectData));
+
+    try {
+        localStorage.setItem(STORAGE_KEY_PREFIX + projectId, JSON.stringify(projectData));
+    } catch (e) {
+        console.error('Failed to create project:', e);
+        if (e.name === 'QuotaExceededError') {
+            alert('Storage quota exceeded! Cannot create new project.');
+        } else {
+            alert('Failed to create project.');
+        }
+        // Remove from index if storage failed
+        const projects = getProjectsList();
+        const filtered = projects.filter(p => p.id !== projectId);
+        saveProjectsIndex(filtered);
+        return null;
+    }
 
     return projectId;
 }
@@ -300,7 +365,13 @@ function deleteProject(projectId) {
     const projects = getProjectsList();
     const filtered = projects.filter(p => p.id !== projectId);
     saveProjectsIndex(filtered);
-    localStorage.removeItem(STORAGE_KEY_PREFIX + projectId);
+
+    try {
+        localStorage.removeItem(STORAGE_KEY_PREFIX + projectId);
+    } catch (e) {
+        console.error('Failed to delete project from storage:', e);
+        // Non-critical - index is already updated
+    }
 }
 
 // Open a project
@@ -4930,8 +5001,17 @@ function initEventListeners() {
 // ============================================================================
 
 function init() {
+    // Check if localStorage is available
+    if (!isLocalStorageAvailable()) {
+        showStorageUnavailableWarning();
+    }
+
     // Clear any stale pending move operations from browser refresh
-    sessionStorage.removeItem(MOVE_STORAGE_KEY);
+    try {
+        sessionStorage.removeItem(MOVE_STORAGE_KEY);
+    } catch (e) {
+        console.warn('sessionStorage not available:', e);
+    }
 
     loadSavedTheme();
     initThemeSelector();
