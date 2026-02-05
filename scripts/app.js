@@ -861,9 +861,9 @@ function handleCreateProject() {
         return;
     }
 
-    // Validate: max length (low limit for testing - TODO: raise to 100)
-    if (name.length > 20) {
-        alert(`Notebook name is too long (${name.length} characters). Maximum: 20 characters.`);
+    // Validate: max length
+    if (name.length > 100) {
+        alert(`Notebook name is too long (${name.length} characters). Maximum: 100 characters.`);
         input.focus();
         return;
     }
@@ -889,9 +889,9 @@ function handleRenameProject(projectId) {
         return;
     }
 
-    // Validate: max length (low limit for testing - TODO: raise to 100)
-    if (trimmed.length > 20) {
-        alert(`Notebook name is too long (${trimmed.length} characters). Maximum: 20 characters.`);
+    // Validate: max length
+    if (trimmed.length > 100) {
+        alert(`Notebook name is too long (${trimmed.length} characters). Maximum: 100 characters.`);
         return;
     }
 
@@ -2817,15 +2817,15 @@ function saveEditor() {
             const titleInput = document.getElementById('note-title');
             const textarea = document.getElementById('note-text');
 
-            // Validate title length (soft limit for testing - TODO: raise to 200)
-            if (titleInput.value.length > 20) {
-                const confirmSave = confirm(`Warning: Title is ${titleInput.value.length} characters (recommended max: 20). Save anyway?`);
+            // Validate title length (soft limit)
+            if (titleInput.value.length > 200) {
+                const confirmSave = confirm(`Warning: Title is ${titleInput.value.length} characters (recommended max: 200). Save anyway?`);
                 if (!confirmSave) return;
             }
 
-            // Validate content length (soft limit for testing - TODO: raise to 100k)
-            if (textarea.value.length > 100) {
-                const confirmSave = confirm(`Warning: Content is ${textarea.value.length} characters (recommended max: 100). Save anyway?`);
+            // Validate content length (soft limit)
+            if (textarea.value.length > 100000) {
+                const confirmSave = confirm(`Warning: Content is ${textarea.value.length} characters (recommended max: 100,000). Save anyway?`);
                 if (!confirmSave) return;
             }
 
