@@ -4,6 +4,38 @@ This file tracks significant technical and design decisions made during developm
 
 ---
 
+## 2026-02-04: Input Validation - Soft vs Hard Limits
+
+DECISION: Use soft limits (confirmation dialogs) for note content, hard limits (errors) for project names
+CHOSE: Confirm dialogs for title/content with option to override, block for project names
+NOT: Hard limits for everything (too restrictive)
+NOT: No limits at all (poor UX, potential issues)
+
+Reasoning:
+- User autonomy: Users may have legitimate reasons for long titles/content
+- UI protection: Project names affect UI layout, need hard limits
+- Storage awareness: Warn users when approaching localStorage quota risk
+- Test-driven: Started with low limits (20/100) to test, then raised to production (200/100k)
+- Validation: Empty project names blocked, prevents UI bugs
+
+---
+
+## 2026-02-04: Stack Overflow Risk - No Protection Needed
+
+DECISION: Don't add depth limits to recursive functions (countNotes)
+CHOSE: Trust browser stack limits (10k-50k calls depending on browser)
+NOT: Add artificial depth limits (unnecessary complexity)
+NOT: Rewrite as iterative (not worth the complexity)
+
+Reasoning:
+- Practical limits: Typical nesting 2-5 levels, extreme 20-50 levels
+- Stack limits: Browsers support 10k+ recursive calls before overflow
+- Risk assessment: Would need 10,000+ nested levels to overflow (impossible in practice)
+- processSaveQueue: Already safe (uses setTimeout, breaks call stack)
+- Cost/benefit: Adding protection adds complexity for zero real-world benefit
+
+---
+
 ## 2026-02-04: Auto-Save Queue - Single Pending Item Strategy
 
 DECISION: Limit save queue to one pending item, reset debounce on subsequent changes
