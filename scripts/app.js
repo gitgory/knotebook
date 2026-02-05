@@ -71,7 +71,8 @@ const state = {
     saveStatus: 'saved',           // 'saved' | 'pending' | 'saving' | 'error'
     lastSaveTime: null,            // Timestamp of last successful save
     lastSaveError: null,           // Error message from last failed save
-    lastSaveHash: null             // Hash of last saved data to detect changes
+    lastSaveHash: null,            // Hash of last saved data to detect changes
+    savedFadeTimeout: null         // Timeout for fading out "Saved" status
 };
 
 // Node dimensions
@@ -524,26 +525,50 @@ function updateSaveStatus(status, error = null) {
         case 'saved':
             iconEl.textContent = '✓';
             textEl.textContent = 'Saved';
+
+            // Clear any existing fade timeout to prevent flicker
+            if (state.savedFadeTimeout) {
+                clearTimeout(state.savedFadeTimeout);
+                state.savedFadeTimeout = null;
+            }
+
             // Remove fade-out first (make visible)
             statusEl.classList.remove('fade-out');
+
             // Auto-fade after 2 seconds
-            setTimeout(() => {
+            state.savedFadeTimeout = setTimeout(() => {
                 statusEl.classList.add('fade-out');
+                state.savedFadeTimeout = null;
             }, 2000);
             break;
         case 'pending':
             iconEl.textContent = '●';
             textEl.textContent = 'Pending...';
+            // Clear saved fade timeout when transitioning away
+            if (state.savedFadeTimeout) {
+                clearTimeout(state.savedFadeTimeout);
+                state.savedFadeTimeout = null;
+            }
             break;
         case 'saving':
             iconEl.textContent = '⟳';
             textEl.textContent = 'Saving...';
+            // Clear saved fade timeout when transitioning away
+            if (state.savedFadeTimeout) {
+                clearTimeout(state.savedFadeTimeout);
+                state.savedFadeTimeout = null;
+            }
             break;
         case 'error':
             iconEl.textContent = '✕';
             textEl.textContent = 'Error';
             if (error) {
                 statusEl.title = error;
+            }
+            // Clear saved fade timeout when transitioning away
+            if (state.savedFadeTimeout) {
+                clearTimeout(state.savedFadeTimeout);
+                state.savedFadeTimeout = null;
             }
             break;
     }
