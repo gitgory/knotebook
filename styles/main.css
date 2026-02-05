@@ -701,6 +701,7 @@ body {
     color: var(--text-secondary);
     transition: opacity 0.3s;
     user-select: none;
+    min-width: 85px; /* Prevent layout shift between "Saved", "Pending...", "Saving..." */
 }
 
 .save-status.saved {
