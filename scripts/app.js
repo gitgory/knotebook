@@ -70,7 +70,8 @@ const state = {
     saveInProgress: false,         // True when save is actively running
     saveStatus: 'saved',           // 'saved' | 'pending' | 'saving' | 'error'
     lastSaveTime: null,            // Timestamp of last successful save
-    lastSaveError: null            // Error message from last failed save
+    lastSaveError: null,           // Error message from last failed save
+    lastSaveHash: null             // Hash of last saved data to detect changes
 };
 
 // Node dimensions
@@ -569,6 +570,17 @@ async function processSaveQueue() {
         // Execute the save
         await saveProjectToStorage();
 
+        // Update hash after successful save
+        const savedData = {
+            nodes: state.currentPath.length === 0 ? state.nodes : state.rootNodes,
+            edges: state.currentPath.length === 0 ? state.edges : state.rootEdges,
+            hashtagColors: state.hashtagColors,
+            settings: state.projectSettings,
+            hiddenHashtags: state.hiddenHashtags,
+            theme: getCurrentTheme()
+        };
+        state.lastSaveHash = hashData(savedData);
+
         // Success
         state.saveStatus = 'saved';
         state.lastSaveTime = Date.now();
@@ -597,8 +609,38 @@ async function processSaveQueue() {
     }
 }
 
+// Simple hash function for change detection
+function hashData(data) {
+    const str = JSON.stringify(data);
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        const char = str.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash; // Convert to 32-bit integer
+    }
+    return hash;
+}
+
 // Schedule auto-save (debounced with queue to prevent race conditions)
 function scheduleAutoSave() {
+    if (!state.currentProjectId) return;
+
+    // Calculate hash of current data to detect changes
+    const currentData = {
+        nodes: state.currentPath.length === 0 ? state.nodes : state.rootNodes,
+        edges: state.currentPath.length === 0 ? state.edges : state.rootEdges,
+        hashtagColors: state.hashtagColors,
+        settings: state.projectSettings,
+        hiddenHashtags: state.hiddenHashtags,
+        theme: getCurrentTheme()
+    };
+    const currentHash = hashData(currentData);
+
+    // Skip if nothing changed
+    if (currentHash === state.lastSaveHash) {
+        return;
+    }
+
     // Add to queue
     state.saveQueue.push({
         timestamp: Date.now(),
@@ -1603,7 +1645,7 @@ function render() {
         populateSidebar();
     }
 
-    // Auto-save if we have a current project
+    // Auto-save if we have a current project (only saves if data changed)
     if (state.currentProjectId) {
         scheduleAutoSave();
     }
