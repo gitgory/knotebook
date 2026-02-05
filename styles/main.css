@@ -705,15 +705,15 @@ body {
 }
 
 .save-status.saved {
-    color: var(--text-secondary);
+    color: var(--text-tertiary);
 }
 
 .save-status.pending {
-    color: var(--text-secondary);
+    color: var(--text-tertiary);
 }
 
 .save-status.saving {
-    color: var(--text-secondary);
+    color: var(--text-tertiary);
 }
 
 .save-status.error {
