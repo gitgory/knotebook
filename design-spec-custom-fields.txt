@@ -50,14 +50,6 @@ PROBLEM STATEMENT
    - Can't provide defaults
    - Can't mark fields as required
 
-**Examples of Use Cases:**
-
-- **Project Management:** effort, priority, sprint, team-owner, status
-- **Book Collection:** author, date-read, genre, rating, publisher
-- **Research Notes:** source, methodology, confidence, year
-- **CRM/Contacts:** company, role, last-contact, relationship
-- **Task Management:** difficulty, time-estimate, dependencies
-- **Content Calendar:** publish-date, platform, audience, status
 
 ================================================================================
 TWO-TIER FIELD SYSTEM

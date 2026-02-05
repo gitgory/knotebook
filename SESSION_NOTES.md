@@ -4,6 +4,118 @@ This file tracks work across Claude Code sessions for continuity.
 
 ---
 
+## Session 2026-02-04 - Evening (Regression Testing + Auto-Save System) (v116-v130)
+
+### Summary
+Comprehensive regression testing of v106-v115 security/state refactor changes. Implemented and refined async save queue system with change detection to prevent race conditions and UI blocking. Fixed multiple bugs through iterative testing: layout shift, color issues, infinite save loops, and flicker. All features now production-ready with subtle, non-distracting save status indicator.
+
+### Files Changed
+- `scripts/app.js` - Added stringifyAsync(), processSaveQueue(), hashData() for change detection; state.saveQueue/saveInProgress/saveStatus/lastSaveHash; updateSaveStatus() with fade timeout management; fixed infinite loop by limiting queue to one item; removed debug logging; bumped v115→v128
+- `styles/main.css` - Added save-status styles with animations (pulse, spin, fade-out); fixed layout shift with min-width; unified colors to text-secondary with opacity; bumped v103→v130
+- `index.html` - Added save-status HTML to toolbar; bumped cache versions v115→v130
+- `file_structure.txt` - Updated to reflect current project structure
+- `decision-history.md` - (pending update)
+
+### Tasks Completed
+- [x] **Regression Testing (v106-v115)**
+  - XSS Protection: All innerHTML replaced with safe APIs - ✅ Pass
+  - JSON.parse Error Handling: Graceful degradation - ✅ Pass
+  - localStorage Availability: Private browsing detection - ✅ Pass
+  - State Consolidation: All features working after refactor - ✅ Pass (tests 1-10)
+  - Critical Bug Fixes: Hashtag colors, navigation, root nodes - ✅ Pass
+  - Mobile Compatibility: Touch interactions, action bar - ✅ Pass
+- [x] **Auto-Save Implementation (v116-v118)**
+  - Core save queue system with async stringifyAsync()
+  - Save status UI indicator (✓ Saved | ● Pending | ⟳ Saving | ✕ Error)
+  - beforeunload protection (blocks tab close during saves)
+- [x] **Auto-Save Refinements (v119-v130)**
+  - v119: Fixed layout shift with min-width: 85px
+  - v120: Subtle gray colors instead of distracting accents
+  - v121: Fixed flicker by managing fade-out timeout
+  - v122: Change detection with data hashing to prevent unnecessary saves
+  - v123: Managed savedFadeTimeout to prevent flicker on repeated saves
+  - v124: Only update status when transitioning states
+  - v125-v126: Debug logging to diagnose infinite loop
+  - v127: Fixed infinite loop by limiting queue to one pending item
+  - v128: Removed "Saving..." status (too fast, distracting)
+  - v129: Used text-tertiary for dimmer color
+  - v130: Fixed undefined text-tertiary, used opacity: 0.6 instead
+
+### Decisions Made
+- **Auto-save in editor**: No auto-save during typing (correct - editor has snapshot/cancel)
+- **Save status colors**: Subtle gray (text-secondary @ 60% opacity) over bright accent colors
+- **Queue strategy**: Limit to one pending item, debounce resets timer on rapid changes
+- **Change detection**: Hash-based comparison prevents saves when nothing changed
+- **Saving status**: Removed - saves complete in milliseconds, just shows Pending→Saved
+- **beforeunload**: Cannot customize browser warning (security restriction)
+
+### Implementation Highlights
+
+**Async Save Queue System:**
+```javascript
+// Prevents race conditions and UI blocking
+stringifyAsync() → requestIdleCallback (Safari fallback: setTimeout)
+processSaveQueue() → sequential processing with state.saveInProgress flag
+hashData() → simple integer hash to detect actual changes
+```
+
+**Save Status Indicator:**
+- Location: Toolbar between settings and search
+- States: Pending (pulsing dot) → Saved (checkmark, fades after 2s)
+- Error: Red, clickable for details, stays visible
+- Subtle: text-secondary @ 60% opacity, min-width prevents layout shift
+
+**Change Detection:**
+- Calculates hash of nodes, edges, colors, settings, theme
+- Skips save if hash matches lastSaveHash
+- Only one item allowed in queue - subsequent changes reset debounce timer
+- Prevents infinite loops from rapid render() calls during drag
+
+**Bug Fixes Journey:**
+1. v119: Layout shift from varying text lengths
+2. v120-v121: Flicker from fade-out animation conflicts
+3. v122: Unnecessary saves on canvas clicks
+4. v123-v124: Repeated updateSaveStatus calls resetting timer
+5. v125-v127: Infinite loop - mousemove during drag adding 15 queue items
+6. v129-v130: Undefined CSS variable causing wrong color
+
+### Testing Results
+
+**Regression Tests (v106-v115):**
+- ✅ All 10 core functionality tests passed
+- ✅ XSS protection verified
+- ✅ JSON.parse error handling confirmed
+- ✅ Mobile compatibility verified
+
+**Auto-Save Tests:**
+- ✅ Save status visible and updates correctly
+- ✅ No layout shift between states
+- ✅ Rapid typing debounces properly
+- ✅ Tab close blocks during pending/saving
+- ✅ Tab close allows after saved
+- ✅ No "Pending..." on canvas clicks (hash check works)
+- ✅ No flicker between states
+- ✅ Smooth fade-out after 2 seconds
+
+### Next Steps
+- [ ] Run full TEST_AUTO_SAVE_RACE_CONDITIONS.md test plan
+- [ ] Update decision-history.md with auto-save decisions
+- [ ] Continue with new features from ROADMAP.txt
+- [ ] Clean up temporary test plan files
+
+### Notes
+- 15 commits this session (318bcfc through c02711b)
+- Version progression: v115 → v130 (15 versions over ~3 hours)
+- Major debugging session: used stack traces to find infinite loop source
+- All auto-save features production-ready and non-distracting
+- Context usage peaked at ~132k/200k (66%)
+- Iterative refinement: feature → test → fix → polish → test → fix...
+- Learned: requestIdleCallback Safari fallback, hash-based change detection
+- browserunload warning cannot be customized (security feature)
+- Queue strategy critical: one pending item prevents infinite loops
+
+---
+
 ## Session 2026-02-02 - 11:16 PM (Security Hardening + State Refactor) (v106-v115)
 
 ### Summary
@@ -116,8 +228,9 @@ const state = {
 - Lesson: Be more selective with search/replace, especially with common tokens
 
 ### Next Steps
-- [ ] Continue with Tier 3 features from ROADMAP.txt
-- [ ] Consider implementing Priority field
+- [ ] Commits
+- [ ] Continue with AUTO_SAVE_FIX_PLAN.md
+- [ ] Continue with TEST_AUTO_SAVE_RACE_CONDITIONS.md
 - [ ] Test performance with large graphs (100+ nodes)
 
 ### Notes

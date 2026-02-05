@@ -1,0 +1,47 @@
+knotebook/
+    index.html                               # app main entry point
+
+    scripts/
+        app.js                               # all app logic in a single file
+        app_js_table_of_contents.txt         # high level overview of app.js structure
+        generate_toc.py                      # script to generate table of contents
+        generate_toc.bat                     # batch file to launch script
+
+    styles/
+        main.css                             # app styles and theme definitions
+
+    assets/
+        favicon.svg                          # favicon
+        favicon-stylized.svg                 # backup favicon
+
+    knowledge/
+        transclusion-summary.md              # conversation about transclusion feature
+        app-controls-reference.md            # extracted controls reference
+
+    .claude/
+        CLAUDE.md                            # project-specific instructions for Claude Code
+        settings.local.json                  # local Claude Code settings
+
+    # Documentation
+    design-spec.txt                          # core design vision and decisions
+    design-spec-dimensions.txt               # feature-specific: dimensions and custom fields
+    design-spec-custom-fields.txt            # feature-specific: custom fields system
+    ROADMAP.txt                              # task tracking and future plans
+    SESSION_NOTES.md                         # detailed record of all sessions with progress
+    decision-history.md                      # record of major decisions and reasons why
+    GRIGRI.txt                               # about the project owner
+
+    # Code reviews
+    new-user-review.txt                      # code review from user's perspective
+    code-review.txt                          # code review from engineer's perspective
+
+    # Current work
+    AUTO_SAVE_FIX_PLAN.md                    # plan for auto-save improvements
+    TEST_AUTO_SAVE_RACE_CONDITIONS.md        # test plan for auto-save race conditions
+
+    # Git
+    .gitignore                               # git ignore patterns
+    .git/                                    # git repository
+    
+
+    
