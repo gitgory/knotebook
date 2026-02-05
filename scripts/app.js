@@ -509,9 +509,6 @@ function updateSaveStatus(status, error = null) {
     const iconEl = statusEl.querySelector('.save-icon');
     const textEl = statusEl.querySelector('.save-text');
 
-    // Debug logging
-    console.log('updateSaveStatus:', status, 'from:', state.saveStatus);
-
     // Remove all status classes
     statusEl.classList.remove('saved', 'pending', 'saving', 'error');
 
@@ -595,7 +592,7 @@ async function processSaveQueue() {
     // Mark as in progress
     state.saveInProgress = true;
     state.saveStatus = 'saving';
-    updateSaveStatus('saving');
+    // Don't show "Saving..." status - save is too fast, skip directly to "Saved"
 
     try {
         // Execute the save
@@ -691,7 +688,6 @@ function scheduleAutoSave() {
         timestamp: Date.now(),
         projectId: state.currentProjectId
     });
-    console.log('scheduleAutoSave: Added to queue, length now:', state.saveQueue.length);
 
     // Update status to pending
     state.saveStatus = 'pending';
