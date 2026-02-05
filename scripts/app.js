@@ -667,27 +667,37 @@ function scheduleAutoSave() {
     };
     const currentHash = hashData(currentData);
 
-    // Skip if nothing changed
+    // Skip if nothing changed since last save
     if (currentHash === state.lastSaveHash) {
         return;
     }
 
-    // Add to queue
+    // Don't add to queue if we already have a pending save
+    // The debounce will handle coalescing multiple rapid changes
+    if (state.saveQueue.length > 0) {
+        // Just reset the debounce timer
+        if (state.autoSaveTimeout) {
+            clearTimeout(state.autoSaveTimeout);
+        }
+        state.autoSaveTimeout = setTimeout(() => {
+            processSaveQueue();
+            state.autoSaveTimeout = null;
+        }, AUTOSAVE_DELAY);
+        return;
+    }
+
+    // Add to queue (only if queue is empty)
     state.saveQueue.push({
         timestamp: Date.now(),
         projectId: state.currentProjectId
     });
-    console.log('scheduleAutoSave: Added to queue, length now:', state.saveQueue.length, 'stack:', new Error().stack);
+    console.log('scheduleAutoSave: Added to queue, length now:', state.saveQueue.length);
 
     // Update status to pending
     state.saveStatus = 'pending';
     updateSaveStatus('pending');
 
-    // Debounce: clear and reset timer
-    if (state.autoSaveTimeout) {
-        clearTimeout(state.autoSaveTimeout);
-    }
-
+    // Debounce: set timer
     state.autoSaveTimeout = setTimeout(() => {
         processSaveQueue();
         state.autoSaveTimeout = null;
