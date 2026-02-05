@@ -509,6 +509,9 @@ function updateSaveStatus(status, error = null) {
     const iconEl = statusEl.querySelector('.save-icon');
     const textEl = statusEl.querySelector('.save-text');
 
+    // Debug logging
+    console.log('updateSaveStatus:', status, 'from:', state.saveStatus);
+
     // Remove all status classes
     statusEl.classList.remove('saved', 'pending', 'saving', 'error');
 
