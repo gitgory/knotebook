@@ -1,4 +1,4 @@
-/* Graph Notes - Main Styles */
+/* knotebook - Main Styles */
 
 /* ============================================================================
    THEME DEFINITIONS
@@ -692,6 +692,58 @@ body {
     display: none;
 }
 
+/* Save status indicator */
+.save-status {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    transition: opacity 0.3s;
+    user-select: none;
+}
+
+.save-status.saved {
+    color: var(--highlight);
+}
+
+.save-status.pending {
+    color: var(--text-secondary);
+}
+
+.save-status.saving {
+    color: var(--accent);
+}
+
+.save-status.error {
+    color: var(--danger);
+    cursor: pointer;
+}
+
+.save-status.fade-out {
+    opacity: 0;
+}
+
+/* Pulse animation for pending state */
+.save-status.pending .save-icon {
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 1; }
+}
+
+/* Spin animation for saving state */
+.save-status.saving .save-icon {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
 #hashtag-search {
     position: relative;
     display: flex;
@@ -943,6 +995,7 @@ body {
 
 .completion-partial {
     fill: #f97316;
+    font-size: 18px;
 }
 
 .completion-cancelled {

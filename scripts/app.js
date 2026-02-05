@@ -1,5 +1,5 @@
 /**
- * Graph Notes - Main Application
+ * knotebook - Main Application
  * A visual note-taking app with graph structure
  */
 
@@ -63,7 +63,14 @@ const state = {
     activeMenuProjectId: null,     // Project menu currently open
     pendingImportData: null,       // Import data waiting for user choice
     hoverTimeout: null,            // Timeout for title hover expansion
-    autoSaveTimeout: null          // Debounce timeout for auto-save
+    autoSaveTimeout: null,         // Debounce timeout for auto-save
+
+    // Save queue state (for race condition prevention)
+    saveQueue: [],                 // Array of pending save requests
+    saveInProgress: false,         // True when save is actively running
+    saveStatus: 'saved',           // 'saved' | 'pending' | 'saving' | 'error'
+    lastSaveTime: null,            // Timestamp of last successful save
+    lastSaveError: null            // Error message from last failed save
 };
 
 // Node dimensions
@@ -171,16 +178,16 @@ function setTheme(themeName) {
     });
 
     // Save to localStorage (global default)
-    localStorage.setItem('graph-notes-theme', themeName);
+    localStorage.setItem('knotebook-theme', themeName);
 
     // Save to current notebook if one is open
     if (state.currentProjectId) {
-        saveProjectToStorage();
+        scheduleAutoSave();
     }
 }
 
 function loadSavedTheme() {
-    const savedTheme = localStorage.getItem('graph-notes-theme') || 'midnight';
+    const savedTheme = localStorage.getItem('knotebook-theme') || 'midnight';
     setTheme(savedTheme);
 }
 
@@ -258,8 +265,30 @@ function countNotes(nodes) {
     return count;
 }
 
-// Save current project to localStorage
-function saveProjectToStorage() {
+// Helper: Stringify JSON asynchronously to avoid blocking UI
+function stringifyAsync(data) {
+    return new Promise((resolve, reject) => {
+        // Use requestIdleCallback if available, otherwise fallback to immediate execution
+        const callback = () => {
+            try {
+                const json = JSON.stringify(data);
+                resolve(json);
+            } catch (e) {
+                reject(e);
+            }
+        };
+
+        if (typeof requestIdleCallback !== 'undefined') {
+            requestIdleCallback(callback, { timeout: 1000 }); // Fallback after 1s if browser busy
+        } else {
+            // Fallback for browsers without requestIdleCallback (like Safari)
+            setTimeout(callback, 0);
+        }
+    });
+}
+
+// Save current project to localStorage (async to prevent race conditions)
+async function saveProjectToStorage() {
     if (!state.currentProjectId) return;
 
     // Ensure root state is captured
@@ -276,7 +305,18 @@ function saveProjectToStorage() {
     };
 
     try {
-        localStorage.setItem(STORAGE_KEY_PREFIX + state.currentProjectId, JSON.stringify(projectData));
+        // Non-blocking JSON.stringify()
+        const jsonData = await stringifyAsync(projectData);
+
+        // localStorage.setItem is synchronous, but wrap in Promise for consistency
+        await new Promise((resolve, reject) => {
+            try {
+                localStorage.setItem(STORAGE_KEY_PREFIX + state.currentProjectId, jsonData);
+                resolve();
+            } catch (e) {
+                reject(e);
+            }
+        });
 
         // Update project metadata in index
         const projects = getProjectsList();
@@ -286,13 +326,23 @@ function saveProjectToStorage() {
             projects[projectIndex].modified = new Date().toISOString();
             saveProjectsIndex(projects);
         }
+
+        // Success
+        return true;
     } catch (e) {
         console.error('Failed to save project:', e);
+
+        // Store error for UI display
+        state.lastSaveError = e.message;
+
         if (e.name === 'QuotaExceededError') {
             alert('Storage quota exceeded! Export this project immediately to avoid losing work.');
         } else {
             alert('Failed to save project. Consider exporting to preserve your work.');
         }
+
+        // Re-throw to allow queue to handle failure
+        throw e;
     }
 }
 
@@ -449,13 +499,116 @@ function openProject(projectId) {
     render();
 }
 
-// Schedule auto-save (debounced)
+// Update save status UI indicator
+function updateSaveStatus(status, error = null) {
+    const statusEl = document.getElementById('save-status');
+    if (!statusEl) return;
+
+    const iconEl = statusEl.querySelector('.save-icon');
+    const textEl = statusEl.querySelector('.save-text');
+
+    // Remove all status classes
+    statusEl.classList.remove('saved', 'pending', 'saving', 'error', 'fade-out');
+
+    // Add new status class
+    statusEl.classList.add(status);
+
+    // Update icon and text based on status
+    switch (status) {
+        case 'saved':
+            iconEl.textContent = '✓';
+            textEl.textContent = 'Saved';
+            // Auto-fade after 2 seconds
+            setTimeout(() => {
+                statusEl.classList.add('fade-out');
+            }, 2000);
+            break;
+        case 'pending':
+            iconEl.textContent = '●';
+            textEl.textContent = 'Pending...';
+            break;
+        case 'saving':
+            iconEl.textContent = '⟳';
+            textEl.textContent = 'Saving...';
+            break;
+        case 'error':
+            iconEl.textContent = '✕';
+            textEl.textContent = 'Error';
+            if (error) {
+                statusEl.title = error;
+            }
+            break;
+    }
+}
+
+// Process the save queue sequentially (prevents race conditions)
+async function processSaveQueue() {
+    // Already processing
+    if (state.saveInProgress) return;
+
+    // Empty queue
+    if (state.saveQueue.length === 0) {
+        state.saveStatus = 'saved';
+        updateSaveStatus('saved');
+        return;
+    }
+
+    // Mark as in progress
+    state.saveInProgress = true;
+    state.saveStatus = 'saving';
+    updateSaveStatus('saving');
+
+    try {
+        // Execute the save
+        await saveProjectToStorage();
+
+        // Success
+        state.saveStatus = 'saved';
+        state.lastSaveTime = Date.now();
+        state.lastSaveError = null;
+        updateSaveStatus('saved');
+
+        // Remove processed item
+        state.saveQueue.shift();
+    } catch (e) {
+        console.error('Save failed in queue:', e);
+
+        // Update status
+        state.saveStatus = 'error';
+        updateSaveStatus('error', e.message);
+
+        // Remove failed item (don't retry infinitely)
+        state.saveQueue.shift();
+    } finally {
+        state.saveInProgress = false;
+
+        // Process next in queue (if any)
+        if (state.saveQueue.length > 0) {
+            // Small delay to avoid tight loop
+            setTimeout(() => processSaveQueue(), 100);
+        }
+    }
+}
+
+// Schedule auto-save (debounced with queue to prevent race conditions)
 function scheduleAutoSave() {
+    // Add to queue
+    state.saveQueue.push({
+        timestamp: Date.now(),
+        projectId: state.currentProjectId
+    });
+
+    // Update status to pending
+    state.saveStatus = 'pending';
+    updateSaveStatus('pending');
+
+    // Debounce: clear and reset timer
     if (state.autoSaveTimeout) {
         clearTimeout(state.autoSaveTimeout);
     }
+
     state.autoSaveTimeout = setTimeout(() => {
-        saveProjectToStorage();
+        processSaveQueue();
         state.autoSaveTimeout = null;
     }, AUTOSAVE_DELAY);
 }
@@ -1308,10 +1461,15 @@ function newProject() {
     showNewProjectModal();
 }
 
-function goHome() {
+async function goHome() {
     // Save current project before leaving
     if (state.currentProjectId) {
-        saveProjectToStorage();
+        // Force immediate save before navigation
+        state.saveQueue.push({
+            timestamp: Date.now(),
+            projectId: state.currentProjectId
+        });
+        await processSaveQueue();
     }
 
     // Reset state
@@ -3131,7 +3289,11 @@ function placeGhostNodes() {
     render();
 
     // Save immediately to target notebook (don't wait for auto-save)
-    saveProjectToStorage();
+    state.saveQueue.push({
+        timestamp: Date.now(),
+        projectId: state.currentProjectId
+    });
+    processSaveQueue(); // Start immediately but don't await (async operation)
 }
 
 function cancelGhostDrag() {
@@ -3311,7 +3473,7 @@ function toggleSettingsTask() {
     if (targetId === state.currentProjectId) {
         // Update in-memory settings for the currently open project
         state.projectSettings.defaultCompletion = newValue;
-        saveProjectToStorage();
+        scheduleAutoSave();
     } else {
         // Update localStorage directly for a non-open project
         const data = loadProjectFromStorage(targetId);
@@ -3355,7 +3517,7 @@ async function exportToFile() {
     // Get project name for filename
     const projects = getProjectsList();
     const project = projects.find(p => p.id === state.currentProjectId);
-    const filename = ((project ? project.name : 'graph-notes').slice(0, 100)) + '.json';
+    const filename = ((project ? project.name : 'knotebook-notes').slice(0, 100)) + '.json';
 
     const data = {
         version: 1,
@@ -3404,7 +3566,7 @@ async function exportProjectToFile(projectId) {
 
     const projects = getProjectsList();
     const project = projects.find(p => p.id === projectId);
-    const filename = ((project ? project.name : 'graph-notes').slice(0, 100)) + '.json';
+    const filename = ((project ? project.name : 'knotebook-notes').slice(0, 100)) + '.json';
 
     const exportData = {
         version: 1,
@@ -4994,6 +5156,16 @@ function initEventListeners() {
             hideSidebar();
         }
     }, { passive: true });
+
+    // Save status error click - show details
+    const saveStatus = document.getElementById('save-status');
+    if (saveStatus) {
+        saveStatus.addEventListener('click', () => {
+            if (state.saveStatus === 'error' && state.lastSaveError) {
+                alert(`Save failed: ${state.lastSaveError}\n\nConsider exporting your work to avoid data loss.`);
+            }
+        });
+    }
 }
 
 // ============================================================================
@@ -5022,11 +5194,17 @@ function init() {
 // Start the app when DOM is ready
 document.addEventListener('DOMContentLoaded', init);
 
-// Warn before closing if there are pending unsaved changes
+// Warn before closing if there are pending or in-progress saves
 window.addEventListener('beforeunload', (e) => {
-    if (state.autoSaveTimeout) {
-        // There's a pending auto-save, warn the user
+    // Block navigation if save is pending, in progress, or queued
+    if (state.saveInProgress ||
+        state.saveQueue.length > 0 ||
+        state.saveStatus === 'pending' ||
+        state.saveStatus === 'saving' ||
+        state.autoSaveTimeout) {
+        // Browser will show a generic warning dialog
         e.preventDefault();
-        e.returnValue = '';
+        e.returnValue = ''; // Chrome requires returnValue to be set
+        return ''; // Some browsers show this message
     }
 });
