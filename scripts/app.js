@@ -581,8 +581,11 @@ async function processSaveQueue() {
 
     // Empty queue
     if (state.saveQueue.length === 0) {
-        state.saveStatus = 'saved';
-        updateSaveStatus('saved');
+        // Only update status if not already saved (prevent flicker)
+        if (state.saveStatus !== 'saved') {
+            state.saveStatus = 'saved';
+            updateSaveStatus('saved');
+        }
         return;
     }
 
