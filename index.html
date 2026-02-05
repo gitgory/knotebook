@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>knotebook</title>
     <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
-    <link rel="stylesheet" href="styles/main.css?v=130">
+    <link rel="stylesheet" href="styles/main.css?v=137">
 </head>
 <body>
     <div id="app">
@@ -22,7 +22,7 @@
                     <h2>Your Notebooks</h2>
                     <div id="projects-list"></div>
                 </div>
-                <div id="version-info">CSS v130 | JS v133</div>
+                <div id="version-info">CSS v137 | JS v137</div>
             </div>
         </div>
 
@@ -286,8 +286,25 @@
         <div id="hashtag-autocomplete" class="hidden">
             <div id="hashtag-autocomplete-list"></div>
         </div>
+
+        <!-- Error Recovery Modal -->
+        <div id="error-modal" class="hidden">
+            <div id="error-content">
+                <h3>⚠️ Something went wrong</h3>
+                <p id="error-message">An unexpected error occurred. You can try to recover your work or reload the app.</p>
+                <details id="error-details">
+                    <summary>Technical details</summary>
+                    <pre id="error-stack"></pre>
+                </details>
+                <div id="error-buttons">
+                    <button id="error-export">Export Current Data</button>
+                    <button id="error-reload">Reload App</button>
+                    <button id="error-continue">Try to Continue</button>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <script src="scripts/app.js?v=133"></script>
+    <script src="scripts/app.js?v=137"></script>
 </body>
 </html>

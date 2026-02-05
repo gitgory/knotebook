@@ -4,6 +4,80 @@
  */
 
 // ============================================================================
+// ERROR HANDLING
+// ============================================================================
+
+// Global error boundary - catches all uncaught exceptions
+window.onerror = function(message, source, lineno, colno, error) {
+    console.error('Uncaught error:', error);
+    showErrorRecoveryUI(error || new Error(message));
+    return true; // Prevent default browser error handling
+};
+
+// Global promise rejection handler
+window.onunhandledrejection = function(event) {
+    console.error('Unhandled promise rejection:', event.reason);
+    showErrorRecoveryUI(event.reason);
+    event.preventDefault(); // Prevent default browser handling
+};
+
+// Show error recovery UI
+function showErrorRecoveryUI(error) {
+    const modal = document.getElementById('error-modal');
+    const messageEl = document.getElementById('error-message');
+    const stackEl = document.getElementById('error-stack');
+
+    if (!modal) {
+        // Fallback if modal doesn't exist yet
+        alert('A critical error occurred. Please refresh the page.\n\n' + (error?.message || error));
+        return;
+    }
+
+    // Set error message
+    const errorMessage = error?.message || String(error) || 'Unknown error';
+    messageEl.textContent = 'An unexpected error occurred: ' + errorMessage;
+
+    // Set stack trace
+    const stack = error?.stack || 'No stack trace available';
+    const browserInfo = `Browser: ${navigator.userAgent}\nTime: ${new Date().toISOString()}`;
+    stackEl.textContent = stack + '\n\n' + browserInfo;
+
+    // Show modal
+    modal.classList.remove('hidden');
+}
+
+// Hide error recovery UI
+function hideErrorRecoveryUI() {
+    const modal = document.getElementById('error-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+// Export current data for recovery
+function exportCurrentDataForRecovery() {
+    try {
+        // Try to export current project if one is open
+        if (state.currentProjectId) {
+            exportCurrentProject();
+        } else {
+            // Export all projects list
+            const projects = getProjectsList();
+            const data = {
+                projects: projects,
+                exportedAt: new Date().toISOString(),
+                note: 'Emergency export from error recovery'
+            };
+            downloadAsFile('knotebook-emergency-backup.json', JSON.stringify(data, null, 2));
+        }
+        showToast('Data exported successfully', { duration: 3000 });
+    } catch (exportError) {
+        console.error('Failed to export data:', exportError);
+        alert('Failed to export data. Please try manually copying localStorage.');
+    }
+}
+
+// ============================================================================
 // DATA STRUCTURES
 // ============================================================================
 
@@ -72,7 +146,10 @@ const state = {
     lastSaveTime: null,            // Timestamp of last successful save
     lastSaveError: null,           // Error message from last failed save
     lastSaveHash: null,            // Hash of last saved data to detect changes
-    savedFadeTimeout: null         // Timeout for fading out "Saved" status
+    savedFadeTimeout: null,        // Timeout for fading out "Saved" status
+
+    // Render throttling
+    renderScheduled: false         // True when render is scheduled for next frame
 };
 
 // Node dimensions
@@ -922,7 +999,8 @@ function generateId() {
 function parseHashtags(text) {
     const regex = /#[\w-]+/g;
     const matches = text.match(regex);
-    return matches ? [...new Set(matches)].sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase())) : [];
+    // Normalize to lowercase for consistent storage and comparison
+    return matches ? [...new Set(matches.map(tag => tag.toLowerCase()))].sort((a, b) => a.localeCompare(b)) : [];
 }
 
 function truncateText(text, maxLength) {
@@ -967,9 +1045,8 @@ function nodeMatchesFilter(node) {
     // Hashtag filter (OR logic)
     if (state.filterHashtags.length === 0) return true;
     if (!node.hashtags || node.hashtags.length === 0) return false;
-    return state.filterHashtags.some(tag =>
-        node.hashtags.some(nodeTag => nodeTag.toLowerCase() === tag.toLowerCase())
-    );
+    // Tags are already normalized to lowercase, so direct comparison is safe
+    return state.filterHashtags.some(tag => node.hashtags.includes(tag));
 }
 
 // Get IDs of all visible nodes (matching filter)
@@ -1119,6 +1196,9 @@ function renameHashtag(oldTag, newTag) {
         alert('Invalid tag format. Tags can only contain letters, numbers, underscores, and hyphens (no spaces or special characters).');
         return;
     }
+
+    // Normalize to lowercase
+    newTag = newTag.toLowerCase();
 
     // Don't rename if it's the same
     if (oldTag.toLowerCase() === newTag.toLowerCase()) {
@@ -1697,7 +1777,19 @@ function resetViewport() {
 // RENDERING
 // ============================================================================
 
+// Throttled render - schedules rendering for next frame (max 60 FPS)
 function render() {
+    if (state.renderScheduled) return; // Already scheduled, skip
+
+    state.renderScheduled = true;
+    requestAnimationFrame(() => {
+        renderImmediate();
+        state.renderScheduled = false;
+    });
+}
+
+// Immediate render - executes the actual rendering work
+function renderImmediate() {
     renderEdges();
     renderNodes();
     renderGhostNodes();
@@ -4699,7 +4791,13 @@ function initEventListeners() {
         // Ctrl+S - Export to file
         if (e.key === 's' && (e.ctrlKey || e.metaKey)) {
             e.preventDefault();
-            exportToFile();
+            const btn = document.getElementById('save-btn');
+            if (btn) {
+                btn.classList.add('loading');
+                exportToFile().finally(() => btn.classList.remove('loading'));
+            } else {
+                exportToFile();
+            }
         }
 
         // N - New note
@@ -4910,7 +5008,15 @@ function initEventListeners() {
         }
     });
 
-    document.getElementById('save-btn').addEventListener('click', exportToFile);
+    document.getElementById('save-btn').addEventListener('click', async () => {
+        const btn = document.getElementById('save-btn');
+        btn.classList.add('loading');
+        try {
+            await exportToFile();
+        } finally {
+            btn.classList.remove('loading');
+        }
+    });
 
     // Import modal buttons
     document.getElementById('import-new').addEventListener('click', handleImportAsNew);
@@ -4935,7 +5041,15 @@ function initEventListeners() {
 
     // Landing page buttons
     document.getElementById('new-project-btn').addEventListener('click', newProject);
-    document.getElementById('import-project-btn').addEventListener('click', importFromFile);
+    document.getElementById('import-project-btn').addEventListener('click', async () => {
+        const btn = document.getElementById('import-project-btn');
+        btn.classList.add('loading');
+        try {
+            await importFromFile();
+        } finally {
+            btn.classList.remove('loading');
+        }
+    });
 
     // New project modal
     document.getElementById('new-project-create').addEventListener('click', handleCreateProject);
@@ -5294,6 +5408,29 @@ function initEventListeners() {
             }
         });
     }
+
+    // Error recovery modal buttons
+    const errorExport = document.getElementById('error-export');
+    const errorReload = document.getElementById('error-reload');
+    const errorContinue = document.getElementById('error-continue');
+
+    if (errorExport) {
+        errorExport.addEventListener('click', () => {
+            exportCurrentDataForRecovery();
+        });
+    }
+
+    if (errorReload) {
+        errorReload.addEventListener('click', () => {
+            window.location.reload();
+        });
+    }
+
+    if (errorContinue) {
+        errorContinue.addEventListener('click', () => {
+            hideErrorRecoveryUI();
+        });
+    }
 }
 
 // ============================================================================
@@ -5301,26 +5438,38 @@ function initEventListeners() {
 // ============================================================================
 
 function init() {
-    // Check if localStorage is available
-    if (!isLocalStorageAvailable()) {
-        showStorageUnavailableWarning();
-    }
-
-    // Clear any stale pending move operations from browser refresh
     try {
-        sessionStorage.removeItem(MOVE_STORAGE_KEY);
-    } catch (e) {
-        console.warn('sessionStorage not available:', e);
-    }
+        // Check if localStorage is available
+        if (!isLocalStorageAvailable()) {
+            showStorageUnavailableWarning();
+        }
 
-    loadSavedTheme();
-    initThemeSelector();
-    initEventListeners();
-    showLandingPage();
+        // Clear any stale pending move operations from browser refresh
+        try {
+            sessionStorage.removeItem(MOVE_STORAGE_KEY);
+        } catch (e) {
+            console.warn('sessionStorage not available:', e);
+        }
+
+        loadSavedTheme();
+        initThemeSelector();
+        initEventListeners();
+        showLandingPage();
+    } catch (error) {
+        console.error('Failed to initialize app:', error);
+        showErrorRecoveryUI(error);
+    }
 }
 
 // Start the app when DOM is ready
-document.addEventListener('DOMContentLoaded', init);
+document.addEventListener('DOMContentLoaded', function() {
+    try {
+        init();
+    } catch (error) {
+        console.error('Critical error during initialization:', error);
+        showErrorRecoveryUI(error);
+    }
+});
 
 // Warn before closing if there are pending or in-progress saves
 window.addEventListener('beforeunload', (e) => {

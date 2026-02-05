@@ -3,11 +3,13 @@
 
 # Test plans (temporary documentation)
 TEST_*.md
+tests/*
 
 # Generated files
 scripts/*.txt
 scripts/*.bat
 scripts/*.py
+
 
 # OS files
 .DS_Store
@@ -24,3 +26,8 @@ desktop.ini
 # Logs
 *.log
 npm-debug.log*
+
+
+# Other
+GRIGRI.txt
+file_structure.txt
