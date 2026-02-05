@@ -677,6 +677,7 @@ function scheduleAutoSave() {
         timestamp: Date.now(),
         projectId: state.currentProjectId
     });
+    console.log('scheduleAutoSave: Added to queue, length now:', state.saveQueue.length, 'stack:', new Error().stack);
 
     // Update status to pending
     state.saveStatus = 'pending';
