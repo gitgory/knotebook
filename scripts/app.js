@@ -1092,6 +1092,12 @@ function renameHashtag(oldTag, newTag) {
         newTag = '#' + newTag;
     }
 
+    // Validate hashtag format (must be #word with alphanumeric, underscore, or hyphen)
+    if (!/^#[a-zA-Z0-9_-]+$/.test(newTag)) {
+        alert('Invalid tag format. Tags can only contain letters, numbers, underscores, and hyphens (no spaces or special characters).');
+        return;
+    }
+
     // Don't rename if it's the same
     if (oldTag.toLowerCase() === newTag.toLowerCase()) {
         return;
