@@ -709,7 +709,7 @@ body {
 }
 
 .save-status.pending {
-    color: var(--text-tertiary);
+    color: var(--text-secondary);
 }
 
 .save-status.saving {

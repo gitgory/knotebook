@@ -508,7 +508,12 @@ function updateSaveStatus(status, error = null) {
     const textEl = statusEl.querySelector('.save-text');
 
     // Remove all status classes
-    statusEl.classList.remove('saved', 'pending', 'saving', 'error', 'fade-out');
+    statusEl.classList.remove('saved', 'pending', 'saving', 'error');
+
+    // Only remove fade-out if we're changing to a non-saved state
+    if (status !== 'saved') {
+        statusEl.classList.remove('fade-out');
+    }
 
     // Add new status class
     statusEl.classList.add(status);
@@ -518,6 +523,8 @@ function updateSaveStatus(status, error = null) {
         case 'saved':
             iconEl.textContent = '✓';
             textEl.textContent = 'Saved';
+            // Remove fade-out first (make visible)
+            statusEl.classList.remove('fade-out');
             // Auto-fade after 2 seconds
             setTimeout(() => {
                 statusEl.classList.add('fade-out');
