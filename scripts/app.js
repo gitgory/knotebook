@@ -856,6 +856,14 @@ function handleCreateProject() {
     const name = input.value.trim();
 
     if (!name) {
+        alert('Notebook name cannot be empty.');
+        input.focus();
+        return;
+    }
+
+    // Validate: max length (low limit for testing - TODO: raise to 100)
+    if (name.length > 20) {
+        alert(`Notebook name is too long (${name.length} characters). Maximum: 20 characters.`);
         input.focus();
         return;
     }
@@ -871,10 +879,24 @@ function handleRenameProject(projectId) {
     if (!project) return;
 
     const newName = prompt('Rename notebook:', project.name);
-    if (newName && newName.trim()) {
-        renameProject(projectId, newName.trim());
-        populateProjectsList();
+    if (!newName) return; // User cancelled
+
+    const trimmed = newName.trim();
+
+    // Validate: not empty
+    if (!trimmed) {
+        alert('Notebook name cannot be empty.');
+        return;
     }
+
+    // Validate: max length (low limit for testing - TODO: raise to 100)
+    if (trimmed.length > 20) {
+        alert(`Notebook name is too long (${trimmed.length} characters). Maximum: 20 characters.`);
+        return;
+    }
+
+    renameProject(projectId, trimmed);
+    populateProjectsList();
 }
 
 async function handleDeleteProject(projectId) {
@@ -2794,6 +2816,19 @@ function saveEditor() {
         if (node) {
             const titleInput = document.getElementById('note-title');
             const textarea = document.getElementById('note-text');
+
+            // Validate title length (soft limit for testing - TODO: raise to 200)
+            if (titleInput.value.length > 20) {
+                const confirmSave = confirm(`Warning: Title is ${titleInput.value.length} characters (recommended max: 20). Save anyway?`);
+                if (!confirmSave) return;
+            }
+
+            // Validate content length (soft limit for testing - TODO: raise to 100k)
+            if (textarea.value.length > 100) {
+                const confirmSave = confirm(`Warning: Content is ${textarea.value.length} characters (recommended max: 100). Save anyway?`);
+                if (!confirmSave) return;
+            }
+
             node.title = titleInput.value;
             node.content = textarea.value;
             node.hashtags = parseHashtags(textarea.value);
