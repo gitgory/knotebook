@@ -3502,6 +3502,9 @@ function placeGhostNodes() {
     state.ghostDragging = false;
     state.pendingMove = null;
 
+    // Clear any selection box state
+    state.selectionBox = null;
+
     // Remove ghost drag cursor
     const canvas = document.getElementById('canvas');
     if (canvas) canvas.classList.remove('ghost-drag-mode');
