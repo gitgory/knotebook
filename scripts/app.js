@@ -3602,7 +3602,7 @@ function showToast(message, options = {}) {
     }
 
     // Enable pointer events if there's a link
-    const pointerEvents = options.hasLink ? 'auto' : 'none';
+    const pointerEvents = (options.linkText && options.linkOnClick) ? 'auto' : 'none';
 
     toast.style.cssText = `
         position: fixed;
