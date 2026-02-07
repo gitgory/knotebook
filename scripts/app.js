@@ -264,6 +264,7 @@ const FILENAME_MAX_LENGTH = 100; // Max length when generating filenames
 const AUTOCOMPLETE_MAX_RESULTS = 20; // Maximum number of autocomplete suggestions
 const AUTOCOMPLETE_DROPDOWN_WIDTH = 220; // Width of autocomplete dropdown (textarea)
 const AUTOCOMPLETE_DROPDOWN_MIN_WIDTH = 200; // Min width of autocomplete dropdown
+const AUTOCOMPLETE_DROPDOWN_ESTIMATED_HEIGHT = 200; // Estimated max height for boundary checks
 const AUTOCOMPLETE_DROPDOWN_OFFSET_Y = 20; // Offset below caret
 const AUTOCOMPLETE_DROPDOWN_FLIP_OFFSET = 210; // Height to flip dropdown above caret
 const AUTOCOMPLETE_VIEWPORT_MARGIN = 10; // Margin from viewport edge
@@ -3844,7 +3845,7 @@ function positionAutocomplete(inputElement) {
         const vh = window.innerHeight;
         if (left + AUTOCOMPLETE_DROPDOWN_MIN_WIDTH > vw) left = vw - AUTOCOMPLETE_DROPDOWN_FLIP_OFFSET;
         if (left < AUTOCOMPLETE_VIEWPORT_MARGIN) left = AUTOCOMPLETE_VIEWPORT_MARGIN;
-        if (top + AUTOCOMPLETE_DROPDOWN_MIN_WIDTH > vh) top = rect.top + coords.top - AUTOCOMPLETE_DROPDOWN_FLIP_OFFSET; // flip above
+        if (top + AUTOCOMPLETE_DROPDOWN_ESTIMATED_HEIGHT > vh) top = rect.top + coords.top - AUTOCOMPLETE_DROPDOWN_FLIP_OFFSET; // flip above
 
         dropdown.style.top = top + 'px';
         dropdown.style.left = left + 'px';
