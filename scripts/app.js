@@ -938,6 +938,12 @@ function scheduleAutoSave() {
 // PROJECT LIST UI
 // ============================================================================
 
+/**
+ * Populate the projects list in the landing page.
+ * Creates DOM elements for each project showing name, note count, and options menu.
+ * Shows empty state message if no projects exist. Attaches click handlers for opening
+ * projects and displaying the context menu.
+ */
 function populateProjectsList() {
     const list = document.getElementById('projects-list');
     const projects = getProjectsList();
@@ -997,6 +1003,16 @@ function populateProjectsList() {
         });
     });
 }
+
+/**
+ * Display the project context menu at a specific screen position.
+ * Menu provides options for rename, delete, export, and settings. Position is adjusted
+ * if menu would extend beyond screen boundaries.
+ *
+ * @param {string} projectId - The ID of the project to show menu for
+ * @param {number} x - Screen X coordinate for menu position
+ * @param {number} y - Screen Y coordinate for menu position
+ */
 function showProjectMenu(projectId, x, y) {
     const menu = document.getElementById('project-menu');
     state.activeMenuProjectId = projectId;
@@ -1016,11 +1032,18 @@ function showProjectMenu(projectId, x, y) {
     }
 }
 
+/**
+ * Hide the project context menu and clear the active project ID.
+ */
 function hideProjectMenu() {
     document.getElementById('project-menu').classList.add('hidden');
     state.activeMenuProjectId = null;
 }
 
+/**
+ * Display the new project modal and focus the name input field.
+ * Clears any previous input value.
+ */
 function showNewProjectModal() {
     const modal = document.getElementById('new-project-modal');
     const input = document.getElementById('new-project-name');
@@ -1029,11 +1052,21 @@ function showNewProjectModal() {
     input.focus();
 }
 
+/**
+ * Hide the new project modal.
+ */
 function hideNewProjectModal() {
     document.getElementById('new-project-modal').classList.add('hidden');
 }
 
-// Show confirmation modal and return a promise
+/**
+ * Display a confirmation modal with Yes/No buttons and return user's choice as a promise.
+ * Handles keyboard shortcuts (Enter for Yes, Escape for No) and cleans up event listeners
+ * after user responds.
+ *
+ * @param {string} message - The confirmation message to display
+ * @returns {Promise<boolean>} - Resolves to true if user confirms, false if user cancels
+ */
 function showConfirmation(message) {
     return new Promise((resolve) => {
         const modal = document.getElementById('confirm-modal');
@@ -1085,6 +1118,11 @@ function showConfirmation(message) {
     });
 }
 
+/**
+ * Handle creating a new project from the new project modal.
+ * Validates the project name (non-empty, max 100 chars), creates the project,
+ * hides the modal, and opens the newly created project.
+ */
 function handleCreateProject() {
     const input = document.getElementById('new-project-name');
     const name = input.value.trim();
@@ -1107,6 +1145,13 @@ function handleCreateProject() {
     openProject(projectId);
 }
 
+/**
+ * Handle renaming a project via a prompt dialog.
+ * Validates the new name (non-empty, max 100 chars), updates the project in storage,
+ * and refreshes the projects list.
+ *
+ * @param {string} projectId - The ID of the project to rename
+ */
 function handleRenameProject(projectId) {
     const projects = getProjectsList();
     const project = projects.find(p => p.id === projectId);
@@ -1133,6 +1178,12 @@ function handleRenameProject(projectId) {
     populateProjectsList();
 }
 
+/**
+ * Handle deleting a project after user confirmation.
+ * Shows confirmation dialog, deletes the project if confirmed, and refreshes the projects list.
+ *
+ * @param {string} projectId - The ID of the project to delete
+ */
 async function handleDeleteProject(projectId) {
     const projects = getProjectsList();
     const project = projects.find(p => p.id === projectId);
@@ -1149,10 +1200,24 @@ async function handleDeleteProject(projectId) {
 // UTILITY FUNCTIONS
 // ============================================================================
 
+/**
+ * Generate a unique ID for a new note node.
+ * Uses timestamp and incrementing counter to ensure uniqueness.
+ *
+ * @returns {string} - Unique node ID in format "note-{timestamp}-{counter}"
+ */
 function generateId() {
     return `note-${Date.now()}-${state.nextId++}`;
 }
 
+/**
+ * Extract and normalize hashtags from text.
+ * Finds all hashtags (e.g., #example), normalizes to lowercase, removes duplicates,
+ * and returns sorted array.
+ *
+ * @param {string} text - Text to parse for hashtags
+ * @returns {string[]} - Array of unique hashtags in lowercase, sorted alphabetically
+ */
 function parseHashtags(text) {
     const regex = /#[\w-]+/g;
     const matches = text.match(regex);
@@ -1160,12 +1225,26 @@ function parseHashtags(text) {
     return matches ? [...new Set(matches.map(tag => tag.toLowerCase()))].sort((a, b) => a.localeCompare(b)) : [];
 }
 
+/**
+ * Truncate text to a maximum length, taking only the first line.
+ * Adds ellipsis (...) if text exceeds maxLength.
+ *
+ * @param {string} text - Text to truncate
+ * @param {number} maxLength - Maximum length before truncation
+ * @returns {string} - Truncated text with ellipsis if needed
+ */
 function truncateText(text, maxLength) {
     const firstLine = text.split('\n')[0];
     if (firstLine.length <= maxLength) return firstLine;
     return firstLine.substring(0, maxLength - 3) + '...';
 }
 
+/**
+ * Calculate the center point coordinates of a node.
+ *
+ * @param {Object} node - The node object with position property
+ * @returns {Object} - Object with x and y coordinates of node center
+ */
 function getNodeCenter(node) {
     return {
         x: node.position.x + NODE_WIDTH / 2,
@@ -1173,14 +1252,26 @@ function getNodeCenter(node) {
     };
 }
 
-// Check if a node has body text beyond just hashtags
+/**
+ * Check if a node has body text beyond just hashtags.
+ * Used to determine if dog-ear indicator should be shown on node.
+ *
+ * @param {Object} node - The node object to check
+ * @returns {boolean} - True if node has content beyond hashtags
+ */
 function hasBodyText(node) {
     if (!node.content) return false;
     const stripped = node.content.replace(/#[\w-]+/g, '').trim();
     return stripped.length > 0;
 }
 
-// Cycle completion state: null → no → yes → partial → no → ...
+/**
+ * Cycle through completion states in order: null → no → partial → yes → cancelled → no → ...
+ * Used when user clicks the completion indicator on a node.
+ *
+ * @param {string|null} current - Current completion state
+ * @returns {string} - Next completion state in the cycle
+ */
 function cycleCompletion(current) {
     if (current === null || current === undefined) return 'no';
     if (current === 'no') return 'partial';
@@ -1189,7 +1280,14 @@ function cycleCompletion(current) {
     return 'no';
 }
 
-// Check if a node matches the current filter (OR logic for hashtags, AND with text search)
+/**
+ * Check if a node matches the current filter criteria.
+ * Applies text search (AND logic) and hashtag filter (OR logic). Both filters must
+ * pass if both are active.
+ *
+ * @param {Object} node - The node object to check
+ * @returns {boolean} - True if node matches all active filters
+ */
 function nodeMatchesFilter(node) {
     // Text search filter
     if (state.filterText) {
@@ -1206,12 +1304,19 @@ function nodeMatchesFilter(node) {
     return state.filterHashtags.some(tag => node.hashtags.includes(tag));
 }
 
-// Get IDs of all visible nodes (matching filter)
+/**
+ * Get IDs of all nodes that match the current filter.
+ *
+ * @returns {string[]} - Array of node IDs that pass the filter
+ */
 function getVisibleNodeIds() {
     return state.nodes.filter(nodeMatchesFilter).map(n => n.id);
 }
 
-// Update sidebar button to show active state when filters are applied
+/**
+ * Update sidebar button visual state to show when filters are active.
+ * Adds 'active' class if any hashtag filters are applied.
+ */
 function updateSidebarButtonState() {
     const sidebarBtn = document.getElementById('hashtag-sidebar-btn');
     if (state.filterHashtags.length > 0) {
@@ -1221,7 +1326,13 @@ function updateSidebarButtonState() {
     }
 }
 
-// Update filter from input
+/**
+ * Update the hashtag filter from input field value.
+ * Parses hashtags, updates state, shows/hides clear button, updates sidebar button state,
+ * and triggers re-render.
+ *
+ * @param {string} inputValue - Raw input value containing hashtags
+ */
 function updateFilter(inputValue) {
     const hashtags = parseHashtags(inputValue);
     state.filterHashtags = hashtags;
@@ -1242,7 +1353,11 @@ function updateFilter(inputValue) {
     render();
 }
 
-// Clear the filter
+/**
+ * Clear both hashtag and text search filters.
+ * Resets filter state, clears input fields, hides clear buttons, updates sidebar button,
+ * and triggers re-render.
+ */
 function clearFilter() {
     const input = document.getElementById('hashtag-input');
     input.value = '';
@@ -1263,14 +1378,24 @@ function clearFilter() {
     render();
 }
 
-// Set filter to a specific hashtag (used when clicking hashtag in editor)
+/**
+ * Set the filter to a specific hashtag.
+ * Used when clicking a hashtag pill in the editor.
+ *
+ * @param {string} hashtag - The hashtag to filter by (e.g., "#example")
+ */
 function setFilterHashtag(hashtag) {
     const input = document.getElementById('hashtag-input');
     input.value = hashtag;
     updateFilter(hashtag);
 }
 
-// Update text search filter
+/**
+ * Update the text search filter.
+ * Shows/hides clear button based on whether text is present, and triggers re-render.
+ *
+ * @param {string} text - Search text to filter notes by
+ */
 function updateTextFilter(text) {
     state.filterText = text.trim();
 
@@ -1288,7 +1413,10 @@ function updateTextFilter(text) {
     render();
 }
 
-// Clear text search filter
+/**
+ * Clear the text search filter.
+ * Resets filter state, clears input field, hides clear button, and triggers re-render.
+ */
 function clearTextFilter() {
     const input = document.getElementById('text-search-input');
     input.value = '';
@@ -1298,7 +1426,13 @@ function clearTextFilter() {
     render();
 }
 
-// Toggle a hashtag in the filter (used by sidebar)
+/**
+ * Toggle a hashtag in the filter on/off.
+ * Used when clicking hashtag pills in the sidebar. If hashtag is in filter, removes it;
+ * otherwise adds it.
+ *
+ * @param {string} hashtag - The hashtag to toggle in the filter
+ */
 function toggleFilterHashtag(hashtag) {
     const input = document.getElementById('hashtag-input');
     const currentTags = parseHashtags(input.value);
@@ -1318,7 +1452,13 @@ function toggleFilterHashtag(hashtag) {
     updateFilter(input.value);
 }
 
-// Toggle a hashtag's visibility on nodes
+/**
+ * Toggle a hashtag's visibility on nodes (hide/unhide).
+ * Hidden hashtags are not displayed as pills on nodes but remain in the data.
+ * Used via the "hide" button in the sidebar.
+ *
+ * @param {string} hashtag - The hashtag to hide or unhide
+ */
 function toggleHiddenHashtag(hashtag) {
     const tagLower = hashtag.toLowerCase();
     const index = state.hiddenHashtags.findIndex(t => t.toLowerCase() === tagLower);
@@ -1334,13 +1474,24 @@ function toggleHiddenHashtag(hashtag) {
     render();
 }
 
-// Show all hidden hashtags (unhide everything)
+/**
+ * Unhide all hidden hashtags.
+ * Clears the hiddenHashtags array and triggers re-render. Used via the "Show All Tags"
+ * button in the sidebar.
+ */
 function showAllHashtags() {
     state.hiddenHashtags = [];
     render();
 }
 
-// Rename a hashtag across all nodes
+/**
+ * Rename a hashtag across all nodes at the current level.
+ * Updates the tag in node content, filter state, hidden tags, and color assignments.
+ * Validates new tag format and handles case-insensitive replacement.
+ *
+ * @param {string} oldTag - Current hashtag name (e.g., "#old")
+ * @param {string} newTag - New hashtag name (e.g., "#new" or "new")
+ */
 function renameHashtag(oldTag, newTag) {
     // Validate new tag format
     newTag = newTag.trim();
@@ -1403,7 +1554,13 @@ function renameHashtag(oldTag, newTag) {
     render();
 }
 
-// Delete a hashtag from all nodes
+/**
+ * Delete a hashtag from all nodes at the current level.
+ * Removes the tag from node content, filter state, hidden tags, and color assignments.
+ * Uses case-insensitive matching.
+ *
+ * @param {string} tag - The hashtag to delete (e.g., "#example")
+ */
 function deleteHashtag(tag) {
     // Remove from all nodes at current level
     state.nodes.forEach(node => {
@@ -1428,7 +1585,15 @@ function deleteHashtag(tag) {
     render();
 }
 
-// Show hashtag context menu
+/**
+ * Display the hashtag context menu at a specific screen position.
+ * Menu provides options for rename, delete, and change color. Position is adjusted
+ * if menu would extend beyond screen boundaries.
+ *
+ * @param {string} tag - The hashtag to show menu for (e.g., "#example")
+ * @param {number} x - Screen X coordinate for menu position
+ * @param {number} y - Screen Y coordinate for menu position
+ */
 function showHashtagContextMenu(tag, x, y) {
     // Remove existing menu if any
     const existingMenu = document.getElementById('hashtag-context-menu');
@@ -1503,7 +1668,9 @@ function showHashtagContextMenu(tag, x, y) {
     });
 }
 
-// Hide hashtag context menu
+/**
+ * Hide the hashtag context menu and remove it from the DOM.
+ */
 function hideHashtagContextMenu() {
     const menu = document.getElementById('hashtag-context-menu');
     if (menu) {
@@ -1788,7 +1955,15 @@ function populateSidebar() {
     });
 }
 
-// Convert screen coordinates to canvas coordinates
+/**
+ * Convert screen coordinates to canvas coordinates.
+ * Takes mouse/touch screen position and converts to SVG canvas coordinates,
+ * accounting for viewport pan and zoom transformations.
+ *
+ * @param {number} screenX - Screen X coordinate (e.g., from mouse event)
+ * @param {number} screenY - Screen Y coordinate (e.g., from mouse event)
+ * @returns {Object} - Object with x and y canvas coordinates
+ */
 function screenToCanvas(screenX, screenY) {
     const canvas = document.getElementById('canvas');
     const rect = canvas.getBoundingClientRect();
@@ -1798,7 +1973,15 @@ function screenToCanvas(screenX, screenY) {
     };
 }
 
-// Convert canvas coordinates to screen coordinates (inverse of screenToCanvas)
+/**
+ * Convert canvas coordinates to screen coordinates.
+ * Inverse of screenToCanvas - takes SVG canvas position and converts to screen position,
+ * accounting for viewport pan and zoom transformations.
+ *
+ * @param {number} canvasX - Canvas X coordinate
+ * @param {number} canvasY - Canvas Y coordinate
+ * @returns {Object} - Object with x and y screen coordinates
+ */
 function canvasToScreen(canvasX, canvasY) {
     const canvas = document.getElementById('canvas');
     const rect = canvas.getBoundingClientRect();
@@ -1808,7 +1991,14 @@ function canvasToScreen(canvasX, canvasY) {
     };
 }
 
-// Get the bounding box of all nodes (optionally filtered to visible nodes only)
+/**
+ * Calculate the bounding box of all nodes or visible nodes only.
+ * Used by fitToView to calculate zoom level and center point. Returns default bounds
+ * if no nodes exist.
+ *
+ * @param {boolean} visibleOnly - If true, only include nodes that match current filters
+ * @returns {Object} - Object with minX, minY, maxX, maxY coordinates
+ */
 function getGraphBounds(visibleOnly = false) {
     // If visibleOnly is true, only include nodes that pass the current filters
     const nodesToBound = visibleOnly
@@ -1861,6 +2051,10 @@ function showGraphView() {
     updateViewport();
 }
 
+/**
+ * Show the new project modal.
+ * Wrapper function used by toolbar button to create a new project.
+ */
 function newProject() {
     // Show the new project modal instead of directly creating
     showNewProjectModal();
@@ -1926,6 +2120,15 @@ function updateViewport() {
     );
 }
 
+/**
+ * Zoom in or out at a specific screen point (mouse cursor position).
+ * Adjusts pan offset to keep the point under the cursor stationary during zoom.
+ * Clamps zoom between 0.5x and 2.5x.
+ *
+ * @param {number} delta - Positive to zoom in, negative to zoom out
+ * @param {number} screenX - Screen X coordinate to zoom towards
+ * @param {number} screenY - Screen Y coordinate to zoom towards
+ */
 function zoomAtPoint(delta, screenX, screenY) {
     const canvas = document.getElementById('canvas');
     const rect = canvas.getBoundingClientRect();
@@ -1950,6 +2153,11 @@ function zoomAtPoint(delta, screenX, screenY) {
     updateViewport();
 }
 
+/**
+ * Fit all nodes (or visible nodes if filters active) into the viewport.
+ * Calculates optimal zoom level and pan position to show all nodes with padding.
+ * Caps zoom at 2x maximum. If no nodes exist, resets to default view.
+ */
 function fitToView() {
     const container = document.getElementById('canvas-container');
     const rect = container.getBoundingClientRect();
@@ -2025,7 +2233,12 @@ function render() {
     });
 }
 
-// Immediate render - executes the actual rendering work
+/**
+ * Execute immediate rendering without throttling.
+ * Called by throttled render() function. Renders all canvas layers (edges, nodes, ghosts,
+ * selection box), updates breadcrumbs and viewport, refreshes sidebar if open, and
+ * schedules auto-save if project is open.
+ */
 function renderImmediate() {
     renderEdges();
     renderNodes();
@@ -2046,6 +2259,12 @@ function renderImmediate() {
     }
 }
 
+/**
+ * Render all nodes to the SVG canvas.
+ * Sorts nodes by zIndex for proper layering. Skips nodes that don't match current filters.
+ * Renders node body, title, hashtag pills, completion indicator, dog-ear fold, and stacked
+ * rectangles for nodes with children. Applies selection styling.
+ */
 function renderNodes() {
     const layer = document.getElementById('nodes-layer');
     layer.replaceChildren();
@@ -2227,6 +2446,11 @@ function renderNodes() {
     }
 }
 
+/**
+ * Render all edges (connections between nodes) to the SVG canvas.
+ * Skips edges where either endpoint is hidden by filters. Creates invisible wider
+ * hitbox for easier clicking, and visible edge line. Applies selection styling.
+ */
 function renderEdges() {
     const layer = document.getElementById('edges-layer');
     layer.replaceChildren();
@@ -2274,6 +2498,13 @@ function renderEdges() {
     }
 }
 
+/**
+ * Render a preview edge line while user is creating a new edge.
+ * Shows line from edge start node to current mouse cursor position.
+ *
+ * @param {number} x - Canvas X coordinate of cursor
+ * @param {number} y - Canvas Y coordinate of cursor
+ */
 function renderEdgePreview(x, y) {
     // Remove existing preview
     const existing = document.querySelector('.edge-preview');
@@ -2297,12 +2528,20 @@ function renderEdgePreview(x, y) {
     layer.appendChild(line);
 }
 
+/**
+ * Remove the edge preview line from the canvas.
+ * Called when edge creation is cancelled or completed.
+ */
 function clearEdgePreview() {
     const existing = document.querySelector('.edge-preview');
     if (existing) existing.remove();
 }
 
-// Render selection box overlay
+/**
+ * Render the selection box rectangle overlay.
+ * Shows visual feedback during drag-to-select. Box style (solid vs dashed border)
+ * indicates selection mode (enclosed vs intersecting).
+ */
 function renderSelectionBox() {
     const overlay = document.getElementById('selection-box-overlay');
     if (!state.selectionBox) {
@@ -2328,14 +2567,21 @@ function renderSelectionBox() {
     overlay.appendChild(rect);
 }
 
-// Clear selection box
+/**
+ * Clear the selection box from state and remove from canvas.
+ * Called when drag-to-select operation completes or is cancelled.
+ */
 function clearSelectionBox() {
     state.selectionBox = null;
     const overlay = document.getElementById('selection-box-overlay');
     if (overlay) overlay.replaceChildren();
 }
 
-// Render ghost nodes for move operation
+/**
+ * Render ghost nodes during "Move to Notebook" operation.
+ * Shows semi-transparent preview of nodes being moved, following cursor position
+ * with relative offsets preserved. Only renders when ghostDragging is active.
+ */
 function renderGhostNodes() {
     const layer = document.getElementById('ghost-layer');
     layer.replaceChildren();
@@ -2417,7 +2663,14 @@ function renderGhostNodes() {
     }
 }
 
-// Get nodes within selection box
+/**
+ * Get all node IDs within the selection box bounds.
+ * Respects selection box mode: "enclosed" requires full containment, "intersecting"
+ * includes any overlap. Only includes nodes that match current filters.
+ *
+ * @param {Object} box - Selection box with start, end coordinates and mode
+ * @returns {string[]} - Array of node IDs within the selection box
+ */
 function getNodesInSelectionBox(box) {
     const x1 = Math.min(box.start.x, box.end.x);
     const y1 = Math.min(box.start.y, box.end.y);
@@ -2442,6 +2695,11 @@ function getNodesInSelectionBox(box) {
     }).map(n => n.id);
 }
 
+/**
+ * Update the breadcrumb navigation display.
+ * Shows "Root" at top level, or "Root > Parent > Child" when nested.
+ * Adds 'active' class when nested (clickable to go back).
+ */
 function updateBreadcrumbs() {
     const el = document.getElementById('breadcrumbs');
     if (state.currentPath.length === 0) {
@@ -2458,6 +2716,14 @@ function updateBreadcrumbs() {
 // NODE OPERATIONS
 // ============================================================================
 
+/**
+ * Create a new node at specified canvas coordinates.
+ * Initializes node with default values, adds to state.nodes array, and triggers render.
+ *
+ * @param {number} x - Canvas X coordinate for new node
+ * @param {number} y - Canvas Y coordinate for new node
+ * @returns {Object} - The newly created node object
+ */
 function createNode(x, y) {
     const node = {
         id: generateId(),
@@ -2477,6 +2743,16 @@ function createNode(x, y) {
     return node;
 }
 
+/**
+ * Create a deep copy of a node with new IDs and optional position offset.
+ * Recursively copies children and remaps child edge IDs. Used for duplicate and
+ * move-to-notebook operations. Creates new timestamps.
+ *
+ * @param {Object} node - Node to copy
+ * @param {number} offsetX - X offset for copied node position
+ * @param {number} offsetY - Y offset for copied node position
+ * @returns {Object} - Deep copy of node with new IDs
+ */
 function deepCopyNode(node, offsetX = 0, offsetY = 0) {
     const newNode = {
         id: generateId(),
@@ -2516,6 +2792,14 @@ function deepCopyNode(node, offsetX = 0, offsetY = 0) {
     return newNode;
 }
 
+/**
+ * Delete a node and promote its children to the current level.
+ * Children are positioned below the deleted parent with slight vertical stagger.
+ * Child edges are promoted to current level. Removes all edges connected to the node.
+ * Updates selection state and triggers render.
+ *
+ * @param {string} nodeId - ID of node to delete
+ */
 function deleteNode(nodeId) {
     // Find the node being deleted
     const node = state.nodes.find(n => n.id === nodeId);
@@ -2551,6 +2835,14 @@ function deleteNode(nodeId) {
     render();
 }
 
+/**
+ * Select a node, either replacing current selection or adding to it.
+ * If addToSelection is true, toggles the node in selection (add if not selected,
+ * remove if already selected). Clears edge selection and updates visuals.
+ *
+ * @param {string} nodeId - ID of node to select
+ * @param {boolean} addToSelection - If true, add to selection; if false, replace selection
+ */
 function selectNode(nodeId, addToSelection = false) {
     if (addToSelection) {
         // Toggle: add if not selected, remove if already selected
@@ -2568,6 +2860,10 @@ function selectNode(nodeId, addToSelection = false) {
     updateSelectionVisuals();
 }
 
+/**
+ * Clear all selections (nodes, edges, edge creation mode).
+ * Clears edge preview and updates visuals without full render.
+ */
 function clearSelection() {
     state.selectedNodes = [];
     state.selectedEdge = null;
@@ -2576,6 +2872,11 @@ function clearSelection() {
     updateSelectionVisuals();
 }
 
+/**
+ * Update node and edge selection visuals without full re-render.
+ * Adds/removes 'selected' class on DOM elements based on current selection state.
+ * Updates selection action bar visibility and button states.
+ */
 function updateSelectionVisuals() {
     // Update node selection visuals without full re-render
     document.querySelectorAll('.node').forEach(el => {
@@ -2601,6 +2902,12 @@ function updateSelectionVisuals() {
     updateSelectionActionBar();
 }
 
+/**
+ * Update the selection action bar (mobile toolbar) visibility and button states.
+ * Shows all buttons (connect, duplicate, delete) for node selection, only delete for
+ * edge selection, and hides bar when nothing is selected. Automatically shows on mobile
+ * when edge is selected.
+ */
 function updateSelectionActionBar() {
     const actionBar = document.getElementById('selection-action-bar');
     if (!actionBar) return;
@@ -2661,7 +2968,11 @@ function hideActionBar() {
     }, 200);
 }
 
-// Bring selected node(s) to front (highest zIndex)
+/**
+ * Bring selected node(s) to front (highest zIndex).
+ * Finds current max zIndex and sets selected nodes to maxZ + 1.
+ * Triggers render to update visual stacking order.
+ */
 function bringToFront() {
     if (state.selectedNodes.length === 0) return;
 
@@ -2677,7 +2988,11 @@ function bringToFront() {
     render();
 }
 
-// Send selected node(s) to back (lowest zIndex)
+/**
+ * Send selected node(s) to back (lowest zIndex).
+ * Finds current min zIndex and sets selected nodes to minZ - 1.
+ * Triggers render to update visual stacking order.
+ */
 function sendToBack() {
     if (state.selectedNodes.length === 0) return;
 
@@ -2693,7 +3008,16 @@ function sendToBack() {
     render();
 }
 
-// Show context menu for node operations
+/**
+ * Display the node context menu at a specific screen position.
+ * Menu items vary based on selection count (multi-select shows "Connect to...").
+ * Provides options for bring to front, send to back, move to notebook, and batch connect.
+ * Position is adjusted if menu would extend beyond screen boundaries.
+ *
+ * @param {string} nodeId - ID of node that was right-clicked
+ * @param {number} x - Screen X coordinate for menu position
+ * @param {number} y - Screen Y coordinate for menu position
+ */
 function showNodeContextMenu(nodeId, x, y) {
     // Remove existing menu if any
     hideNodeContextMenu();
@@ -2761,6 +3085,13 @@ function hideNodeContextMenu() {
 // EDGE OPERATIONS
 // ============================================================================
 
+/**
+ * Start edge creation mode from a node or batch of selected nodes.
+ * If nodeId provided, starts single-edge mode from that node. Otherwise, uses current
+ * selection for batch connect mode (multiple sources to one target).
+ *
+ * @param {string} nodeId - Optional ID of starting node; if omitted, uses selection
+ */
 function startEdgeCreation(nodeId) {
     // If nodeId provided, use it; otherwise use current selection (for batch connect)
     if (nodeId) {
@@ -2772,6 +3103,14 @@ function startEdgeCreation(nodeId) {
     }
 }
 
+/**
+ * Complete edge creation by connecting to target node.
+ * In batch mode, creates edges from all source nodes to target. Toggles edges (removes
+ * if exists, creates if not). Prevents self-connections. Clears edge creation state
+ * and triggers render.
+ *
+ * @param {string} targetNodeId - ID of node to connect to
+ */
 function completeEdgeCreation(targetNodeId) {
     if (!state.edgeStartNode || state.edgeStartNode === targetNodeId) {
         state.edgeStartNode = null;
@@ -2835,6 +3174,13 @@ function deleteSelectedEdge() {
 // NAVIGATION (NESTING)
 // ============================================================================
 
+/**
+ * Navigate into a node to view/edit its children (nested graph).
+ * Saves current level state to parent node, pushes node to navigation path, loads
+ * node's children and edges, clears selection and filters, resets viewport.
+ *
+ * @param {string} nodeId - ID of node to enter
+ */
 function enterNode(nodeId) {
     const node = state.nodes.find(n => n.id === nodeId);
     if (!node) return;
@@ -2865,6 +3211,11 @@ function enterNode(nodeId) {
     render();
 }
 
+/**
+ * Navigate back up one level in the node hierarchy.
+ * Saves current level state to node, pops from path, restores parent level (or root),
+ * clears selection and filters, resets viewport, schedules auto-save.
+ */
 function goBack() {
     if (state.currentPath.length === 0) return;
 
@@ -2918,6 +3269,14 @@ function saveRootState() {
 // EDITOR
 // ============================================================================
 
+/**
+ * Open the editor modal for a single node or batch of selected nodes.
+ * In batch mode, disables title field and shows aggregate tag counts. In single mode,
+ * shows full node content. Snapshots state for cancel/revert, updates UI based on
+ * node content (children count, completion status, hashtags).
+ *
+ * @param {string} nodeId - ID of node to edit (ignored in batch mode)
+ */
 function openEditor(nodeId) {
     // Check if we're in batch edit mode (multiple nodes selected)
     const isBatchMode = state.selectedNodes.length > 1;
@@ -3048,6 +3407,12 @@ function closeEditor() {
     state.removedTagsInSession.clear();
 }
 
+/**
+ * Cancel editor and revert all changes.
+ * In batch mode, restores hashtags and completion for all edited nodes. In single mode,
+ * restores node to snapshot state and deletes empty nodes (never filled in). Closes
+ * editor and triggers render.
+ */
 function cancelEditor() {
     const modal = document.getElementById('editor-modal');
 
@@ -3084,6 +3449,12 @@ function cancelEditor() {
     render();
 }
 
+/**
+ * Save editor changes and close.
+ * In batch mode, adds/removes hashtags and updates completion for all selected nodes.
+ * In single mode, validates and saves title/content/hashtags/completion. Updates
+ * modified timestamp, deletes empty nodes, closes editor, and triggers render.
+ */
 function saveEditor() {
     const modal = document.getElementById('editor-modal');
 
@@ -3180,6 +3551,17 @@ function saveEditor() {
     render();
 }
 
+/**
+ * Update the hashtag pill display in the editor.
+ * In batch mode, shows counts (e.g., "(3/5)" for tag in 3 of 5 nodes). Removed tags
+ * shown with outlined style. Click handlers toggle add/remove state. Suppresses
+ * autocomplete during synthetic updates.
+ *
+ * @param {string[]} hashtags - Array of hashtags to display
+ * @param {boolean} isBatchMode - If true, show tag counts
+ * @param {number} totalNodes - Total number of nodes being edited (batch mode)
+ * @param {Object} tagCounts - Map of tag to count (how many nodes have it)
+ */
 function updateHashtagDisplay(hashtags, isBatchMode = false, totalNodes = 1, tagCounts = {}) {
     const display = document.getElementById('hashtag-display');
     const modal = document.getElementById('editor-modal');
@@ -3279,6 +3661,14 @@ function updateCompletionButtons(value) {
 // HASHTAG AUTOCOMPLETE
 // ============================================================================
 
+/**
+ * Get autocomplete suggestions for a hashtag query.
+ * Filters existing tags by query prefix, sorts by usage count (descending) then
+ * alphabetically, limits to 20 results. Returns objects with tag, color, and count.
+ *
+ * @param {string} query - Query text after '#' (without the hash)
+ * @returns {Object[]} - Array of suggestion objects with tag, color, count
+ */
 function getAutocompleteSuggestions(query) {
     const counts = getHashtagCounts();
     const tags = Object.keys(counts);
@@ -3297,6 +3687,13 @@ function getAutocompleteSuggestions(query) {
     }));
 }
 
+/**
+ * Display the autocomplete dropdown with hashtag suggestions.
+ * Creates list items with colored pills, tag text, and usage counts. Positions
+ * dropdown relative to input element. Sets up click handlers for item selection.
+ *
+ * @param {HTMLElement} inputElement - Input or textarea element to attach autocomplete to
+ */
 function showAutocomplete(inputElement) {
     const suggestions = getAutocompleteSuggestions(autocomplete.query);
     autocomplete.items = suggestions;
@@ -3348,6 +3745,13 @@ function showAutocomplete(inputElement) {
     autocomplete.targetInput = inputElement;
 }
 
+/**
+ * Position the autocomplete dropdown relative to input element.
+ * For filter input, positions below. For textarea, positions near caret using
+ * coordinate calculation. Clamps to viewport bounds to prevent off-screen rendering.
+ *
+ * @param {HTMLElement} inputElement - Input or textarea element
+ */
 function positionAutocomplete(inputElement) {
     const dropdown = document.getElementById('hashtag-autocomplete');
     const isTextarea = inputElement.id === 'note-text';
@@ -3378,6 +3782,15 @@ function positionAutocomplete(inputElement) {
     }
 }
 
+/**
+ * Calculate pixel coordinates of caret position in textarea.
+ * Creates hidden mirror div with same styling, measures caret position using DOM layout.
+ * Used to position autocomplete dropdown near caret in multi-line text.
+ *
+ * @param {HTMLTextAreaElement} textarea - Textarea element
+ * @param {number} position - Character position (index) in textarea value
+ * @returns {Object} - Object with top and left pixel coordinates
+ */
 function getTextareaCaretCoords(textarea, position) {
     const div = document.createElement('div');
     const style = window.getComputedStyle(textarea);
@@ -3409,6 +3822,10 @@ function getTextareaCaretCoords(textarea, position) {
     return { top, left };
 }
 
+/**
+ * Hide the autocomplete dropdown and reset autocomplete state.
+ * Clears query, hash position, items, and selection index.
+ */
 function hideAutocomplete() {
     const dropdown = document.getElementById('hashtag-autocomplete');
     dropdown.classList.add('hidden');
@@ -3420,6 +3837,13 @@ function hideAutocomplete() {
     autocomplete.selectedIndex = -1;
 }
 
+/**
+ * Insert selected autocomplete suggestion into input at cursor position.
+ * Replaces text from hash start to end of current word with selected tag plus space.
+ * Auto-assigns color to tag when committed. Triggers input event and hides autocomplete.
+ *
+ * @param {number} index - Index of selected item in autocomplete.items
+ */
 function selectAutocompleteItem(index) {
     if (index < 0 || index >= autocomplete.items.length) return;
     const item = autocomplete.items[index];
@@ -3455,6 +3879,14 @@ function selectAutocompleteItem(index) {
     hideAutocomplete();
 }
 
+/**
+ * Update autocomplete dropdown based on current input value and cursor position.
+ * Scans backwards from cursor to find '#' at word boundary, extracts query, and shows
+ * suggestions. Hides autocomplete if no valid hashtag context found. Respects suppress
+ * flag for synthetic events.
+ *
+ * @param {HTMLElement} inputElement - Input or textarea element
+ */
 function updateAutocompleteFromInput(inputElement) {
     // Skip if autocomplete is suppressed (synthetic event from tag pill clicks)
     if (autocomplete.suppress) {
@@ -3489,6 +3921,14 @@ function updateAutocompleteFromInput(inputElement) {
     }
 }
 
+/**
+ * Handle keyboard navigation in autocomplete dropdown.
+ * ArrowDown/Up navigates items, Enter/Tab selects highlighted item or auto-selects if
+ * only one suggestion, Escape closes. Returns true if event was handled.
+ *
+ * @param {KeyboardEvent} e - Keyboard event
+ * @returns {boolean} - True if autocomplete handled the event
+ */
 function handleAutocompleteKeydown(e) {
     if (!autocomplete.active) return false;
 
@@ -3572,6 +4012,11 @@ function hideHelp() {
 // MOVE TO NOTEBOOK MODAL
 // ============================================================================
 
+/**
+ * Display the "Move to Notebook" modal with list of destination notebooks.
+ * Shows all projects except current one. Displays toast if no other notebooks exist.
+ * Populates list with project names and note counts.
+ */
 function showMoveToModal() {
     if (state.selectedNodes.length === 0) return;
 
@@ -3609,11 +4054,22 @@ function showMoveToModal() {
     modal.classList.remove('hidden');
 }
 
+/**
+ * Hide the "Move to Notebook" modal.
+ */
 function hideMoveToModal() {
     const modal = document.getElementById('move-to-modal');
     modal.classList.add('hidden');
 }
 
+/**
+ * Initiate move operation to transfer selected nodes to another notebook.
+ * Creates deep copies with new IDs, preserves edges between moved nodes, calculates
+ * bounding box and relative offsets for cursor following, stores pending move in
+ * sessionStorage, and switches to target project.
+ *
+ * @param {string} targetProjectId - ID of destination notebook
+ */
 function initiateMoveToNotebook(targetProjectId) {
     // Store original IDs for source cleanup
     const originalIds = [...state.selectedNodes];
@@ -3676,6 +4132,11 @@ function initiateMoveToNotebook(targetProjectId) {
     openProject(targetProjectId);
 }
 
+/**
+ * Check for pending move operation in sessionStorage on project open.
+ * Restores ghost nodes and move state, sets up ghost drag mode, shows toast notification,
+ * and renders ghosts. Called when opening a project after initiating move.
+ */
 function checkForPendingMove() {
     const pendingData = sessionStorage.getItem(MOVE_STORAGE_KEY);
     if (!pendingData) return;
@@ -3708,6 +4169,12 @@ function checkForPendingMove() {
     }
 }
 
+/**
+ * Place ghost nodes in target notebook and remove from source.
+ * Adds ghost nodes to current notebook as real nodes, adds edges, selects placed nodes,
+ * removes originals from source notebook, shows toast with return link, clears ghost
+ * state, and saves immediately.
+ */
 function placeGhostNodes() {
     if (!state.ghostDragging || state.ghostNodes.length === 0) return;
 
@@ -3766,6 +4233,11 @@ function placeGhostNodes() {
     processSaveQueue(); // Start immediately but don't await (async operation)
 }
 
+/**
+ * Cancel ghost drag operation without placing nodes.
+ * Clears ghost state, removes drag cursor, shows toast with return link to source
+ * notebook, and triggers render.
+ */
 function cancelGhostDrag() {
     if (!state.ghostDragging) return;
 
@@ -3794,6 +4266,14 @@ function cancelGhostDrag() {
     render();
 }
 
+/**
+ * Remove moved nodes from source notebook after successful move.
+ * Loads source project data, filters out moved nodes and their edges, saves back to
+ * localStorage, and updates note count in projects index.
+ *
+ * @param {string} sourceProjectId - ID of source notebook
+ * @param {string[]} nodeIds - Array of original node IDs to remove
+ */
 function removeNodesFromSourceNotebook(sourceProjectId, nodeIds) {
     // Load source project data
     const sourceData = localStorage.getItem(STORAGE_KEY_PREFIX + sourceProjectId);
@@ -3825,6 +4305,15 @@ function removeNodesFromSourceNotebook(sourceProjectId, nodeIds) {
     }
 }
 
+/**
+ * Display a toast notification with optional link.
+ * Positioned at top center, auto-removes after duration (4s default, 6s with link).
+ * Supports ESC key to dismiss. Link enables pointer events and cancels auto-remove
+ * for certain messages.
+ *
+ * @param {string} message - Notification message text
+ * @param {Object} options - Optional config: linkText, linkOnClick, duration, hasLink
+ */
 function showToast(message, options = {}) {
     // Toast notification with optional link
     const existingToast = document.getElementById('toast-notification');
@@ -3901,6 +4390,13 @@ function showToast(message, options = {}) {
 // SETTINGS MODAL
 // ============================================================================
 
+/**
+ * Display the settings modal for a project.
+ * Loads settings for target project (current or from context menu), updates toggle
+ * UI to reflect current defaultCompletion setting.
+ *
+ * @param {string} projectId - ID of project to show settings for
+ */
 function showSettings(projectId) {
     const modal = document.getElementById('settings-modal');
     const toggle = document.getElementById('settings-task-toggle');
@@ -3920,17 +4416,32 @@ function showSettings(projectId) {
     modal.classList.remove('hidden');
 }
 
+/**
+ * Hide the settings modal and clear project ID.
+ */
 function hideSettings() {
     const modal = document.getElementById('settings-modal');
     modal.classList.add('hidden');
     delete modal.dataset.projectId;
 }
 
+/**
+ * Update the task toggle button UI.
+ * Sets text to "On"/"Off" and adds/removes 'active' class.
+ *
+ * @param {HTMLElement} toggle - Toggle button element
+ * @param {boolean} isOn - Whether toggle is on
+ */
 function updateSettingsToggle(toggle, isOn) {
     toggle.textContent = isOn ? 'On' : 'Off';
     toggle.classList.toggle('active', isOn);
 }
 
+/**
+ * Toggle the task mode setting (defaultCompletion).
+ * Updates in-memory settings for current project or directly in localStorage for
+ * non-open project. Sets defaultCompletion to 'no' when on, null when off.
+ */
 function toggleSettingsTask() {
     const modal = document.getElementById('settings-modal');
     const toggle = document.getElementById('settings-task-toggle');
@@ -3959,7 +4470,13 @@ function toggleSettingsTask() {
 // FILE OPERATIONS
 // ============================================================================
 
-// Fallback download using data URL (for mobile/unsupported browsers)
+/**
+ * Fallback download function using data URL for browsers without File System Access API.
+ * Creates blob from JSON data, generates temporary URL, triggers download via anchor click.
+ *
+ * @param {string} filename - Suggested filename for download
+ * @param {Object} data - Data object to serialize to JSON
+ */
 function downloadAsFile(filename, data) {
     const json = JSON.stringify(data, null, 2);
     const blob = new Blob([json], { type: 'application/json' });
@@ -3974,7 +4491,11 @@ function downloadAsFile(filename, data) {
     URL.revokeObjectURL(url);
 }
 
-// Export current project to file
+/**
+ * Export current project to JSON file.
+ * Captures root state, creates export data with version/name/nodes/edges/colors/settings,
+ * uses File System Access API if available, otherwise falls back to data URL download.
+ */
 async function exportToFile() {
     if (!state.currentProjectId) {
         alert('No notebook open to export');
@@ -4026,7 +4547,13 @@ async function exportToFile() {
     }
 }
 
-// Export a specific project (from project menu)
+/**
+ * Export a specific project from the project menu (not currently open).
+ * Loads project from storage, creates export data, uses File System Access API if
+ * available, otherwise falls back to data URL download.
+ *
+ * @param {string} projectId - ID of project to export
+ */
 async function exportProjectToFile(projectId) {
     const data = loadProjectFromStorage(projectId);
     if (!data) {
@@ -4075,7 +4602,12 @@ async function exportProjectToFile(projectId) {
     }
 }
 
-// Import from file (landing page)
+/**
+ * Import project from JSON file (from landing page).
+ * Uses File System Access API if available, otherwise falls back to file input.
+ * Parses file, stores in pendingImportData, and shows import modal with options
+ * (create new or overwrite existing).
+ */
 async function importFromFile() {
     // Try File System Access API first, fall back to file input
     if (window.showOpenFilePicker) {
@@ -4122,7 +4654,11 @@ async function importFromFile() {
     }
 }
 
-// Fallback import using hidden file input
+/**
+ * Fallback import function using hidden file input for browsers without File System Access API.
+ * Creates hidden input element, reads file on change, parses JSON, stores in pendingImportData,
+ * and shows import modal.
+ */
 function importFromFileFallback() {
     const input = document.createElement('input');
     input.type = 'file';
@@ -4169,6 +4705,11 @@ function hideImportModal() {
     state.pendingImportData = null;
 }
 
+/**
+ * Handle "Create New Notebook" import option.
+ * Creates new project with imported data name, saves imported nodes/edges/colors/settings,
+ * updates note count, and opens the new project.
+ */
 function handleImportAsNew() {
     if (!state.pendingImportData) return;
 
@@ -4199,6 +4740,11 @@ function handleImportAsNew() {
     openProject(projectId);
 }
 
+/**
+ * Handle "Overwrite Existing" import option.
+ * Shows prompt to select project to overwrite, confirms with user, replaces project
+ * data with imported data, updates note count and modified time, and opens the project.
+ */
 async function handleImportOverwrite() {
     if (!state.pendingImportData) return;
 
@@ -5687,6 +6233,12 @@ function initEventListeners() {
 // INITIALIZATION
 // ============================================================================
 
+/**
+ * Initialize the application.
+ * Checks localStorage availability, clears stale session data, loads saved theme,
+ * initializes theme selector and event listeners, and shows landing page. Catches
+ * and handles initialization errors with recovery UI.
+ */
 function init() {
     try {
         // Check if localStorage is available
