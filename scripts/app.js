@@ -21,7 +21,14 @@ window.onunhandledrejection = function(event) {
     event.preventDefault(); // Prevent default browser handling
 };
 
-// Show error recovery UI
+/**
+ * Displays the error recovery modal with error details and recovery options.
+ * Provides three actions: export data, reload app, or try to continue.
+ * Falls back to alert() if modal doesn't exist yet (early initialization errors).
+ *
+ * @param {Error|string} error - The error object or message to display
+ * @returns {void}
+ */
 function showErrorRecoveryUI(error) {
     const modal = document.getElementById('error-modal');
     const messageEl = document.getElementById('error-message');
@@ -46,7 +53,12 @@ function showErrorRecoveryUI(error) {
     modal.classList.remove('hidden');
 }
 
-// Hide error recovery UI
+/**
+ * Hides the error recovery modal, allowing user to continue using the app.
+ * Called when user clicks "Try to Continue" button.
+ *
+ * @returns {void}
+ */
 function hideErrorRecoveryUI() {
     const modal = document.getElementById('error-modal');
     if (modal) {
@@ -54,7 +66,13 @@ function hideErrorRecoveryUI() {
     }
 }
 
-// Export current data for recovery
+/**
+ * Exports current notebook data as emergency backup during error recovery.
+ * If a notebook is open, exports that notebook. Otherwise exports all projects list.
+ * Provides last-resort data recovery when app is in error state.
+ *
+ * @returns {void}
+ */
 function exportCurrentDataForRecovery() {
     try {
         // Try to export current project if one is open
@@ -192,7 +210,13 @@ const AUTOSAVE_DELAY = 1500; // 1.5 seconds
 const STORAGE_KEY_PREFIX = 'knotebook-project-';
 const PROJECTS_INDEX_KEY = 'knotebook-projects';
 
-// Check if localStorage is available
+/**
+ * Tests if localStorage is available and writable.
+ * Returns false in private browsing modes or when storage is disabled/full.
+ * Used to detect storage issues before attempting to save data.
+ *
+ * @returns {boolean} - True if localStorage is available and writable, false otherwise
+ */
 function isLocalStorageAvailable() {
     try {
         const test = '__localStorage_test__';
@@ -204,7 +228,13 @@ function isLocalStorageAvailable() {
     }
 }
 
-// Show persistent warning about localStorage unavailability
+/**
+ * Displays a persistent red banner warning when localStorage is unavailable.
+ * Warns user that changes won't be saved (private browsing or storage disabled).
+ * Called on app initialization if isLocalStorageAvailable() returns false.
+ *
+ * @returns {void}
+ */
 function showStorageUnavailableWarning() {
     const warning = document.createElement('div');
     warning.id = 'storage-warning';
@@ -231,11 +261,25 @@ const MOVE_STORAGE_KEY = 'knotebook-pending-move';
 // THEME
 // ============================================================================
 
+/**
+ * Gets the currently active theme name from the document root element.
+ * Returns 'midnight' if no theme is set (midnight is the default).
+ *
+ * @returns {string} - The current theme name (e.g., 'midnight', 'neon', 'ocean')
+ */
 function getCurrentTheme() {
     const themeAttr = document.documentElement.getAttribute('data-theme');
     return themeAttr || 'midnight';
 }
 
+/**
+ * Sets the active theme by updating the data-theme attribute on document root.
+ * Validates theme name, updates UI state, saves to localStorage, and schedules
+ * notebook save if one is open (notebooks remember their own theme).
+ *
+ * @param {string} themeName - Theme name to apply (e.g., 'midnight', 'neon', 'ocean')
+ * @returns {void}
+ */
 function setTheme(themeName) {
     // Validate theme exists (in case of deleted/renamed themes)
     const validThemes = ['midnight', 'slate', 'neon', 'mint', 'ocean', 'sky', 'obsidian', 'aurora', 'graphite', 'sunset'];
@@ -265,11 +309,24 @@ function setTheme(themeName) {
     }
 }
 
+/**
+ * Loads and applies the user's saved theme preference from localStorage.
+ * Called on app initialization. Defaults to 'midnight' if no theme is saved.
+ *
+ * @returns {void}
+ */
 function loadSavedTheme() {
     const savedTheme = localStorage.getItem('knotebook-theme') || 'midnight';
     setTheme(savedTheme);
 }
 
+/**
+ * Initializes the theme selector dropdown in the toolbar.
+ * Sets up event listeners for opening/closing dropdown and selecting themes.
+ * Called once during app initialization.
+ *
+ * @returns {void}
+ */
 function initThemeSelector() {
     const toggle = document.getElementById('theme-toggle');
     const dropdown = document.getElementById('theme-dropdown');
@@ -298,7 +355,13 @@ function initThemeSelector() {
 // PROJECT STORAGE (localStorage)
 // ============================================================================
 
-// Get list of all saved projects (metadata only)
+/**
+ * Retrieves the list of all saved projects (metadata only, not full content).
+ * Returns project index from localStorage with id, name, noteCount, created, modified.
+ * Handles corrupted index gracefully by clearing and returning empty array.
+ *
+ * @returns {Array<Object>} - Array of project metadata objects
+ */
 function getProjectsList() {
     const index = localStorage.getItem(PROJECTS_INDEX_KEY);
     if (!index) return [];
@@ -313,7 +376,13 @@ function getProjectsList() {
     }
 }
 
-// Save projects index
+/**
+ * Saves the projects index (list of all project metadata) to localStorage.
+ * Handles quota exceeded errors and other storage failures with user alerts.
+ *
+ * @param {Array<Object>} projects - Array of project metadata objects to save
+ * @returns {void}
+ */
 function saveProjectsIndex(projects) {
     try {
         localStorage.setItem(PROJECTS_INDEX_KEY, JSON.stringify(projects));
@@ -327,12 +396,23 @@ function saveProjectsIndex(projects) {
     }
 }
 
-// Generate unique project ID
+/**
+ * Generates a unique project ID using timestamp.
+ * Format: 'project-{timestamp}' ensures chronological ordering.
+ *
+ * @returns {string} - Unique project ID
+ */
 function generateProjectId() {
     return 'project-' + Date.now();
 }
 
-// Count all notes in a project (including nested)
+/**
+ * Recursively counts all notes in a project, including nested notes.
+ * Used to update project metadata's noteCount field.
+ *
+ * @param {Array<Object>} nodes - Array of node objects to count
+ * @returns {number} - Total count of notes including all nested children
+ */
 function countNotes(nodes) {
     let count = 0;
     for (const node of nodes) {
@@ -344,7 +424,14 @@ function countNotes(nodes) {
     return count;
 }
 
-// Helper: Stringify JSON asynchronously to avoid blocking UI
+/**
+ * Asynchronously stringifies JSON data without blocking the UI thread.
+ * Uses requestIdleCallback when available (Chrome/Firefox), falls back to setTimeout (Safari).
+ * Prevents UI freezing on large graphs (100+ nodes) during save operations.
+ *
+ * @param {Object} data - Data object to stringify
+ * @returns {Promise<string>} - Promise resolving to JSON string
+ */
 function stringifyAsync(data) {
     return new Promise((resolve, reject) => {
         // Use requestIdleCallback if available, otherwise fallback to immediate execution
@@ -366,7 +453,14 @@ function stringifyAsync(data) {
     });
 }
 
-// Save current project to localStorage (async to prevent race conditions)
+/**
+ * Saves the current project to localStorage asynchronously.
+ * Uses async stringification to prevent UI blocking on large projects.
+ * Updates project metadata (noteCount, modified timestamp) in index.
+ * Handles quota errors and stores error state for UI display.
+ *
+ * @returns {Promise<boolean>} - Promise resolving to true on success, throws on failure
+ */
 async function saveProjectToStorage() {
     if (!state.currentProjectId) return;
 
@@ -425,7 +519,14 @@ async function saveProjectToStorage() {
     }
 }
 
-// Load project from localStorage
+/**
+ * Loads project data from localStorage by project ID.
+ * Returns null if project doesn't exist or JSON parsing fails.
+ * Preserves corrupted data for potential manual recovery.
+ *
+ * @param {string} projectId - The project ID to load
+ * @returns {Object|null} - Project data object or null if not found/corrupted
+ */
 function loadProjectFromStorage(projectId) {
     const data = localStorage.getItem(STORAGE_KEY_PREFIX + projectId);
     if (!data) return null;
@@ -440,7 +541,14 @@ function loadProjectFromStorage(projectId) {
     }
 }
 
-// Create a new project
+/**
+ * Creates a new empty project with the given name.
+ * Adds project to index and initializes empty project data in localStorage.
+ * Handles storage errors and rolls back index changes on failure.
+ *
+ * @param {string} name - The name for the new project
+ * @returns {string|null} - Project ID on success, null on failure
+ */
 function createProject(name) {
     const projectId = generateProjectId();
     const projects = getProjectsList();
@@ -484,7 +592,14 @@ function createProject(name) {
     return projectId;
 }
 
-// Rename a project
+/**
+ * Renames a project by updating its name in the projects index.
+ * Changes are saved immediately to localStorage.
+ *
+ * @param {string} projectId - The ID of the project to rename
+ * @param {string} newName - The new name for the project
+ * @returns {void}
+ */
 function renameProject(projectId, newName) {
     const projects = getProjectsList();
     const project = projects.find(p => p.id === projectId);
@@ -494,7 +609,13 @@ function renameProject(projectId, newName) {
     }
 }
 
-// Delete a project
+/**
+ * Deletes a project by removing it from the index and localStorage.
+ * Index update happens first to ensure UI consistency even if storage removal fails.
+ *
+ * @param {string} projectId - The ID of the project to delete
+ * @returns {void}
+ */
 function deleteProject(projectId) {
     const projects = getProjectsList();
     const filtered = projects.filter(p => p.id !== projectId);
@@ -508,7 +629,14 @@ function deleteProject(projectId) {
     }
 }
 
-// Open a project
+/**
+ * Opens a project by loading its data into the application state.
+ * Resets navigation, applies theme, clears filters, and switches to graph view.
+ * Checks for pending "Move to Notebook" operations after loading.
+ *
+ * @param {string} projectId - The ID of the project to open
+ * @returns {void}
+ */
 function openProject(projectId) {
     const data = loadProjectFromStorage(projectId);
     if (!data) {
@@ -578,7 +706,15 @@ function openProject(projectId) {
     render();
 }
 
-// Update save status UI indicator
+/**
+ * Updates the save status indicator in the toolbar.
+ * Shows "Saved" (auto-fades after 2s), "Pending...", "Saving...", or "Error".
+ * Manages fade timeouts to prevent flicker during rapid status changes.
+ *
+ * @param {string} status - Status to display: 'saved', 'pending', 'saving', or 'error'
+ * @param {string|null} error - Optional error message to show in tooltip when status is 'error'
+ * @returns {void}
+ */
 function updateSaveStatus(status, error = null) {
     const statusEl = document.getElementById('save-status');
     if (!statusEl) return;
@@ -651,7 +787,14 @@ function updateSaveStatus(status, error = null) {
     }
 }
 
-// Process the save queue sequentially (prevents race conditions)
+/**
+ * Processes the save queue sequentially to prevent race conditions.
+ * Executes one save at a time, updating status and hash after successful saves.
+ * Automatically processes next queued save after completion or failure.
+ * Skips "Saving..." status display (saves are too fast, goes directly to "Saved").
+ *
+ * @returns {Promise<void>}
+ */
 async function processSaveQueue() {
     // Already processing
     if (state.saveInProgress) return;
@@ -714,7 +857,14 @@ async function processSaveQueue() {
     }
 }
 
-// Simple hash function for change detection
+/**
+ * Generates a simple integer hash of data for change detection.
+ * Used to determine if project data has changed since last save.
+ * Fast computation suitable for frequent calls during user interactions.
+ *
+ * @param {Object} data - Data object to hash
+ * @returns {number} - 32-bit integer hash value
+ */
 function hashData(data) {
     const str = JSON.stringify(data);
     let hash = 0;
@@ -726,7 +876,14 @@ function hashData(data) {
     return hash;
 }
 
-// Schedule auto-save (debounced with queue to prevent race conditions)
+/**
+ * Schedules an auto-save operation with debouncing and change detection.
+ * Only queues save if data has changed since last save (via hash comparison).
+ * Debounces rapid changes (1.5s delay) to avoid excessive saves during typing/dragging.
+ * Limits queue to one pending item to prevent infinite loop scenarios.
+ *
+ * @returns {void}
+ */
 function scheduleAutoSave() {
     if (!state.currentProjectId) return;
 
@@ -1358,6 +1515,12 @@ function hideHashtagContextMenu() {
 // HASHTAG SIDEBAR
 // ============================================================================
 
+/**
+ * Toggles the hashtag sidebar visibility.
+ * Refreshes sidebar content when opening.
+ *
+ * @returns {void}
+ */
 function toggleSidebar() {
     const sidebar = document.getElementById('hashtag-sidebar');
     sidebar.classList.toggle('hidden');
@@ -1366,24 +1529,44 @@ function toggleSidebar() {
     }
 }
 
+/**
+ * Shows the hashtag sidebar and refreshes its content.
+ *
+ * @returns {void}
+ */
 function showSidebar() {
     const sidebar = document.getElementById('hashtag-sidebar');
     sidebar.classList.remove('hidden');
     populateSidebar();
 }
 
+/**
+ * Hides the hashtag sidebar and closes any open color pickers.
+ *
+ * @returns {void}
+ */
 function hideSidebar() {
     document.getElementById('hashtag-sidebar').classList.add('hidden');
     closeAllColorPickers();
 }
 
+/**
+ * Closes all open color picker dropdowns in the sidebar.
+ *
+ * @returns {void}
+ */
 function closeAllColorPickers() {
     document.querySelectorAll('.color-picker-dropdown').forEach(el => {
         el.classList.add('hidden');
     });
 }
 
-// Get all unique hashtags with counts from current level
+/**
+ * Calculates hashtag usage counts for all nodes at the current level.
+ * Returns object mapping hashtag -> count for sidebar display.
+ *
+ * @returns {Object} - Object with hashtags as keys and counts as values
+ */
 function getHashtagCounts() {
     const counts = {};
     for (const node of state.nodes) {
@@ -1396,7 +1579,15 @@ function getHashtagCounts() {
     return counts;
 }
 
-// Get color for a hashtag (assigns default if not set and autoAssign is true)
+/**
+ * Gets the assigned color for a hashtag.
+ * Auto-assigns a color based on hashtag name hash if autoAssign is true and no color is set.
+ * Returns default slate color (#64748b) if no color assigned and autoAssign is false.
+ *
+ * @param {string} hashtag - The hashtag to get color for
+ * @param {boolean} autoAssign - Whether to auto-assign color if not set (default: true)
+ * @returns {string} - Hex color code
+ */
 function getHashtagColor(hashtag, autoAssign = true) {
     if (!state.hashtagColors[hashtag] && autoAssign) {
         // Assign a color based on hash of the hashtag name
@@ -1406,7 +1597,14 @@ function getHashtagColor(hashtag, autoAssign = true) {
     return state.hashtagColors[hashtag] || '#64748b'; // Default slate color if not assigned
 }
 
-// Set color for a hashtag
+/**
+ * Sets the color for a hashtag and updates UI.
+ * Refreshes sidebar and re-renders canvas to show updated colors.
+ *
+ * @param {string} hashtag - The hashtag to set color for
+ * @param {string} color - Hex color code to assign
+ * @returns {void}
+ */
 function setHashtagColor(hashtag, color) {
     state.hashtagColors[hashtag] = color;
     populateSidebar();
@@ -1638,6 +1836,12 @@ function getGraphBounds(visibleOnly = false) {
 // VIEW SWITCHING
 // ============================================================================
 
+/**
+ * Switches to the landing page view (project list).
+ * Clears current project ID and refreshes project list.
+ *
+ * @returns {void}
+ */
 function showLandingPage() {
     document.getElementById('landing-page').classList.remove('hidden');
     document.getElementById('graph-view').classList.add('hidden');
@@ -1645,6 +1849,12 @@ function showLandingPage() {
     populateProjectsList();
 }
 
+/**
+ * Switches to the graph view (canvas where notes are displayed).
+ * Updates viewport to apply any pan/zoom state.
+ *
+ * @returns {void}
+ */
 function showGraphView() {
     document.getElementById('landing-page').classList.add('hidden');
     document.getElementById('graph-view').classList.remove('hidden');
@@ -1656,6 +1866,13 @@ function newProject() {
     showNewProjectModal();
 }
 
+/**
+ * Returns to the landing page (home/project list).
+ * Saves current project before leaving and resets all state.
+ * Called when user clicks the home button in the toolbar.
+ *
+ * @returns {Promise<void>}
+ */
 async function goHome() {
     // Save current project before leaving
     if (state.currentProjectId) {
@@ -1688,6 +1905,13 @@ async function goHome() {
 // VIEWPORT (PAN/ZOOM)
 // ============================================================================
 
+/**
+ * Updates the SVG canvas viewBox based on current viewport state (pan/zoom).
+ * Called after any viewport changes (panning, zooming, resetting).
+ * Translates viewport.x/y and viewport.zoom into SVG viewBox coordinates.
+ *
+ * @returns {void}
+ */
 function updateViewport() {
     const canvas = document.getElementById('canvas');
     const container = document.getElementById('canvas-container');
@@ -1766,6 +1990,12 @@ function fitToView() {
     updateViewport();
 }
 
+/**
+ * Resets viewport to default position (0,0) and zoom level (1x).
+ * Called when opening a new project or resetting view.
+ *
+ * @returns {void}
+ */
 function resetViewport() {
     state.viewport.x = 0;
     state.viewport.y = 0;
@@ -1777,7 +2007,14 @@ function resetViewport() {
 // RENDERING
 // ============================================================================
 
-// Throttled render - schedules rendering for next frame (max 60 FPS)
+/**
+ * Throttled render function - schedules rendering for next animation frame (max 60 FPS).
+ * Prevents excessive rendering during rapid events like mousemove during drag.
+ * Uses requestAnimationFrame to sync with browser refresh cycle.
+ * Skips if render is already scheduled to avoid queueing multiple renders.
+ *
+ * @returns {void}
+ */
 function render() {
     if (state.renderScheduled) return; // Already scheduled, skip
 
@@ -3313,10 +3550,20 @@ function highlightAutocompleteItem(index) {
 // HELP MODAL
 // ============================================================================
 
+/**
+ * Shows the help/keyboard shortcuts modal.
+ *
+ * @returns {void}
+ */
 function showHelp() {
     document.getElementById('help-modal').classList.remove('hidden');
 }
 
+/**
+ * Hides the help/keyboard shortcuts modal.
+ *
+ * @returns {void}
+ */
 function hideHelp() {
     document.getElementById('help-modal').classList.add('hidden');
 }
