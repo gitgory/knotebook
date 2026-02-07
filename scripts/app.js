@@ -88,7 +88,7 @@ function exportCurrentDataForRecovery() {
             };
             downloadAsFile('knotebook-emergency-backup.json', JSON.stringify(data, null, 2));
         }
-        showToast('Data exported successfully', { duration: 3000 });
+        showToast('Data exported successfully', { duration: EXPORT_SUCCESS_TOAST });
     } catch (exportError) {
         console.error('Failed to export data:', exportError);
         alert('Failed to export data. Please try manually copying localStorage.');
@@ -205,8 +205,78 @@ const autocomplete = {
 };
 
 // Constants
+// Timing (milliseconds)
 const HOVER_DELAY = 500; // milliseconds before expanding title on hover
 const AUTOSAVE_DELAY = 1500; // 1.5 seconds
+const SAVE_FADE_DELAY = 2000; // How long "Saved" status shows before fading
+const SAVE_RETRY_DELAY = 100; // Delay between save queue retries
+const LONG_PRESS_DURATION = 500; // Mobile long-press duration
+const DOUBLE_TAP_THRESHOLD = 300; // Max time between taps for double-tap
+const TOAST_DURATION_DEFAULT = 4000; // Default toast notification duration
+const TOAST_DURATION_WITH_LINK = 6000; // Toast duration when link is present
+const EXPORT_SUCCESS_TOAST = 3000; // Toast duration for export success
+const IDLE_CALLBACK_TIMEOUT = 1000; // Timeout for requestIdleCallback fallback
+
+// Zoom & Viewport
+const ZOOM_FACTOR_IN = 0.9; // Zoom in multiplier
+const ZOOM_FACTOR_OUT = 1.1; // Zoom out multiplier
+const ZOOM_MIN = 0.5; // Minimum zoom level (50%)
+const ZOOM_MAX = 2.5; // Maximum zoom level (250%)
+const ZOOM_MAX_FIT_TO_VIEW = 2; // Maximum zoom when fitting to view
+const ZOOM_MOBILE_MAX = 5; // Maximum zoom on mobile (pinch)
+const VIEWPORT_PADDING = 50; // Padding around graph when fitting to view
+const DEFAULT_VIEWPORT_WIDTH = 800; // Default viewport width when no nodes
+const DEFAULT_VIEWPORT_HEIGHT = 600; // Default viewport height when no nodes
+
+// UI Layout & Spacing
+const TITLE_TRUNCATE_LENGTH = 20; // Max characters before truncating node titles
+const BREADCRUMB_TRUNCATE_LENGTH = 15; // Max characters for breadcrumb names
+const HASHTAG_PILL_SPACING = 4; // Space between hashtag pills
+const HASHTAG_PILL_PADDING_X = 6; // Horizontal padding inside pill
+const HASHTAG_PILL_PADDING_Y = 10; // Vertical padding inside pill
+const HASHTAG_PILL_RADIUS = 8; // Border radius for hashtag pills
+const HASHTAG_PILL_CHAR_WIDTH = 6.5; // Approximate width per character in pill
+const HASHTAG_TRUNCATE_LENGTH = 10; // Max hashtag length before truncating
+const NODE_CONTENT_PADDING_X = 10; // Horizontal padding inside node
+const NODE_CONTENT_PADDING_TOP = 25; // Top padding for node title
+const NODE_HASHTAG_OFFSET_X = 8; // Starting X offset for hashtag pills
+const NODE_HASHTAG_OFFSET_Y = 44; // Y offset for hashtag pills
+const NODE_COMPLETION_OFFSET_X = 20; // Offset from right edge for completion indicator
+const NODE_COMPLETION_OFFSET_Y = 22; // Y offset for completion indicator
+const NODE_STACK_OFFSET_1 = 3; // First stack layer offset
+const NODE_STACK_OFFSET_2 = 6; // Second stack layer offset
+const CHILD_NODE_VERTICAL_OFFSET = 20; // Vertical space below parent when promoting children
+const CHILD_NODE_STAGGER = 10; // Vertical stagger between promoted children
+
+// Animation & Interaction
+const ACTION_BAR_HIDE_DELAY = 200; // Delay before hiding action bar
+const DRAG_DETECTION_THRESHOLD = 5; // Pixels moved before counting as drag (touch)
+const SELECTION_MODE_LOCK_DISTANCE = 15; // Distance before locking drag/selection mode
+const NODE_CREATE_RANDOM_OFFSET = 100; // Random offset when creating node at cursor
+
+// Text Limits & Validation
+const PROJECT_NAME_MAX_LENGTH = 100; // Maximum project name length
+const TITLE_SOFT_LIMIT = 200; // Soft limit for node title (warns but allows)
+const CONTENT_SOFT_LIMIT = 100000; // Soft limit for node content (warns but allows)
+const FILENAME_MAX_LENGTH = 100; // Max length when generating filenames
+
+// Autocomplete
+const AUTOCOMPLETE_MAX_RESULTS = 20; // Maximum number of autocomplete suggestions
+const AUTOCOMPLETE_DROPDOWN_WIDTH = 220; // Width of autocomplete dropdown (textarea)
+const AUTOCOMPLETE_DROPDOWN_MIN_WIDTH = 200; // Min width of autocomplete dropdown
+const AUTOCOMPLETE_DROPDOWN_OFFSET_Y = 20; // Offset below caret
+const AUTOCOMPLETE_DROPDOWN_FLIP_OFFSET = 210; // Height to flip dropdown above caret
+const AUTOCOMPLETE_VIEWPORT_MARGIN = 10; // Margin from viewport edge
+
+// Z-Index Layers
+const CONTEXT_MENU_Z_INDEX = 300; // Z-index for context menus
+const TOAST_Z_INDEX = 1000; // Z-index for toast notifications
+const MODAL_Z_INDEX = 10000; // Z-index for modals
+
+// Responsive Breakpoints
+const MOBILE_BREAKPOINT = 600; // Max width considered mobile (pixels)
+
+// Storage Keys
 const STORAGE_KEY_PREFIX = 'knotebook-project-';
 const PROJECTS_INDEX_KEY = 'knotebook-projects';
 
@@ -445,7 +515,7 @@ function stringifyAsync(data) {
         };
 
         if (typeof requestIdleCallback !== 'undefined') {
-            requestIdleCallback(callback, { timeout: 1000 }); // Fallback after 1s if browser busy
+            requestIdleCallback(callback, { timeout: IDLE_CALLBACK_TIMEOUT }); // Fallback after 1s if browser busy
         } else {
             // Fallback for browsers without requestIdleCallback (like Safari)
             setTimeout(callback, 0);
@@ -752,7 +822,7 @@ function updateSaveStatus(status, error = null) {
             state.savedFadeTimeout = setTimeout(() => {
                 statusEl.classList.add('fade-out');
                 state.savedFadeTimeout = null;
-            }, 2000);
+            }, SAVE_FADE_DELAY);
             break;
         case 'pending':
             iconEl.textContent = '●';
@@ -852,7 +922,7 @@ async function processSaveQueue() {
         // Process next in queue (if any)
         if (state.saveQueue.length > 0) {
             // Small delay to avoid tight loop
-            setTimeout(() => processSaveQueue(), 100);
+            setTimeout(() => processSaveQueue(), SAVE_RETRY_DELAY);
         }
     }
 }
@@ -1134,8 +1204,8 @@ function handleCreateProject() {
     }
 
     // Validate: max length
-    if (name.length > 100) {
-        alert(`Notebook name is too long (${name.length} characters). Maximum: 100 characters.`);
+    if (name.length > PROJECT_NAME_MAX_LENGTH) {
+        alert(`Notebook name is too long (${name.length} characters). Maximum: ${PROJECT_NAME_MAX_LENGTH} characters.`);
         input.focus();
         return;
     }
@@ -1169,8 +1239,8 @@ function handleRenameProject(projectId) {
     }
 
     // Validate: max length
-    if (trimmed.length > 100) {
-        alert(`Notebook name is too long (${trimmed.length} characters). Maximum: 100 characters.`);
+    if (trimmed.length > PROJECT_NAME_MAX_LENGTH) {
+        alert(`Notebook name is too long (${trimmed.length} characters). Maximum: ${PROJECT_NAME_MAX_LENGTH} characters.`);
         return;
     }
 
@@ -2006,7 +2076,7 @@ function getGraphBounds(visibleOnly = false) {
         : state.nodes;
 
     if (nodesToBound.length === 0) {
-        return { minX: 0, minY: 0, maxX: 800, maxY: 600 };
+        return { minX: 0, minY: 0, maxX: DEFAULT_VIEWPORT_WIDTH, maxY: DEFAULT_VIEWPORT_HEIGHT };
     }
 
     let minX = Infinity, minY = Infinity;
@@ -2138,8 +2208,8 @@ function zoomAtPoint(delta, screenX, screenY) {
     const beforeY = (screenY - rect.top) / state.viewport.zoom + state.viewport.y;
 
     // Apply zoom
-    const zoomFactor = delta > 0 ? 0.9 : 1.1;
-    const newZoom = Math.max(0.5, Math.min(2.5, state.viewport.zoom * zoomFactor));
+    const zoomFactor = delta > 0 ? ZOOM_FACTOR_IN : ZOOM_FACTOR_OUT;
+    const newZoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, state.viewport.zoom * zoomFactor));
     state.viewport.zoom = newZoom;
 
     // Get canvas coordinates after zoom
@@ -2175,14 +2245,14 @@ function fitToView() {
     }
 
     // Add padding around the graph
-    const padding = 50;
+    const padding = VIEWPORT_PADDING;
     const graphWidth = bounds.maxX - bounds.minX + padding * 2;
     const graphHeight = bounds.maxY - bounds.minY + padding * 2;
 
     // Calculate zoom to fit
     const zoomX = rect.width / graphWidth;
     const zoomY = rect.height / graphHeight;
-    const newZoom = Math.min(zoomX, zoomY, 2); // Cap at 2x zoom
+    const newZoom = Math.min(zoomX, zoomY, ZOOM_MAX_FIT_TO_VIEW); // Cap at 2x zoom
 
     state.viewport.zoom = newZoom;
 
@@ -2294,8 +2364,8 @@ function renderNodes() {
                 // Second stack layer for 3+ children
                 const stack2 = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
                 stack2.setAttribute('class', 'node-stack');
-                stack2.setAttribute('x', 6);
-                stack2.setAttribute('y', 6);
+                stack2.setAttribute('x', NODE_STACK_OFFSET_2);
+                stack2.setAttribute('y', NODE_STACK_OFFSET_2);
                 stack2.setAttribute('width', NODE_WIDTH);
                 stack2.setAttribute('height', NODE_HEIGHT);
                 stack2.setAttribute('rx', 8);
@@ -2304,8 +2374,8 @@ function renderNodes() {
             // First stack layer
             const stack1 = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
             stack1.setAttribute('class', 'node-stack');
-            stack1.setAttribute('x', 3);
-            stack1.setAttribute('y', 3);
+            stack1.setAttribute('x', NODE_STACK_OFFSET_1);
+            stack1.setAttribute('y', NODE_STACK_OFFSET_1);
             stack1.setAttribute('width', NODE_WIDTH);
             stack1.setAttribute('height', NODE_HEIGHT);
             stack1.setAttribute('rx', 8);
@@ -2330,10 +2400,10 @@ function renderNodes() {
         // Node title
         const title = document.createElementNS('http://www.w3.org/2000/svg', 'text');
         title.setAttribute('class', 'node-title');
-        title.setAttribute('x', 10);
-        title.setAttribute('y', 25);
+        title.setAttribute('x', NODE_CONTENT_PADDING_X);
+        title.setAttribute('y', NODE_CONTENT_PADDING_TOP);
         const fullTitle = node.title || 'Untitled';
-        title.textContent = truncateText(fullTitle, 20);
+        title.textContent = truncateText(fullTitle, TITLE_TRUNCATE_LENGTH);
         // Store full title for hover expansion
         title.setAttribute('data-full-title', fullTitle);
         g.appendChild(title);
@@ -2343,8 +2413,8 @@ function renderNodes() {
             const hashtagGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
             hashtagGroup.setAttribute('class', 'node-hashtags-group');
 
-            let xOffset = 8;
-            const y = 44;
+            let xOffset = NODE_HASHTAG_OFFSET_X;
+            const y = NODE_HASHTAG_OFFSET_Y;
             const maxWidth = NODE_WIDTH - 16;
 
             // Filter out hidden hashtags
@@ -2353,8 +2423,8 @@ function renderNodes() {
 
             for (const tag of visibleTags) {
                 const color = getHashtagColor(tag);
-                const displayTag = tag.length > 10 ? tag.substring(0, 9) + '…' : tag;
-                const pillWidth = displayTag.length * 6.5 + 12;
+                const displayTag = tag.length > HASHTAG_TRUNCATE_LENGTH ? tag.substring(0, HASHTAG_TRUNCATE_LENGTH - 1) + '…' : tag;
+                const pillWidth = displayTag.length * HASHTAG_PILL_CHAR_WIDTH + (HASHTAG_PILL_PADDING_X * 2);
 
                 // Stop if we'd overflow the node
                 if (xOffset + pillWidth > maxWidth) {
@@ -2371,22 +2441,22 @@ function renderNodes() {
                 // Pill background
                 const pill = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
                 pill.setAttribute('x', xOffset);
-                pill.setAttribute('y', y - 10);
+                pill.setAttribute('y', y - HASHTAG_PILL_PADDING_Y);
                 pill.setAttribute('width', pillWidth);
                 pill.setAttribute('height', 16);
-                pill.setAttribute('rx', 8);
+                pill.setAttribute('rx', HASHTAG_PILL_RADIUS);
                 pill.setAttribute('fill', color);
                 hashtagGroup.appendChild(pill);
 
                 // Pill text
                 const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                text.setAttribute('x', xOffset + 6);
+                text.setAttribute('x', xOffset + HASHTAG_PILL_PADDING_X);
                 text.setAttribute('y', y + 1);
                 text.setAttribute('class', 'node-hashtag-text');
                 text.textContent = displayTag;
                 hashtagGroup.appendChild(text);
 
-                xOffset += pillWidth + 4;
+                xOffset += pillWidth + HASHTAG_PILL_SPACING;
             }
 
             g.appendChild(hashtagGroup);
@@ -2400,7 +2470,7 @@ function renderNodes() {
 
             // Background circle for click target
             const bg = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-            bg.setAttribute('cx', NODE_WIDTH - 20);
+            bg.setAttribute('cx', NODE_WIDTH - NODE_COMPLETION_OFFSET_X);
             bg.setAttribute('cy', 22);
             bg.setAttribute('r', 12);
             bg.setAttribute('class', 'node-completion-bg');
@@ -2408,7 +2478,7 @@ function renderNodes() {
 
             if (node.completion === 'yes') {
                 const icon = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                icon.setAttribute('x', NODE_WIDTH - 20);
+                icon.setAttribute('x', NODE_WIDTH - NODE_COMPLETION_OFFSET_X);
                 icon.setAttribute('y', 28);
                 icon.setAttribute('text-anchor', 'middle');
                 icon.setAttribute('class', 'node-completion-icon completion-yes');
@@ -2416,7 +2486,7 @@ function renderNodes() {
                 comp.appendChild(icon);
             } else if (node.completion === 'partial') {
                 const icon = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                icon.setAttribute('x', NODE_WIDTH - 20);
+                icon.setAttribute('x', NODE_WIDTH - NODE_COMPLETION_OFFSET_X);
                 icon.setAttribute('y', 29);
                 icon.setAttribute('text-anchor', 'middle');
                 icon.setAttribute('class', 'node-completion-icon completion-partial');
@@ -2424,7 +2494,7 @@ function renderNodes() {
                 comp.appendChild(icon);
             } else if (node.completion === 'cancelled') {
                 const icon = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                icon.setAttribute('x', NODE_WIDTH - 20);
+                icon.setAttribute('x', NODE_WIDTH - NODE_COMPLETION_OFFSET_X);
                 icon.setAttribute('y', 28);
                 icon.setAttribute('text-anchor', 'middle');
                 icon.setAttribute('class', 'node-completion-icon completion-cancelled');
@@ -2432,7 +2502,7 @@ function renderNodes() {
                 comp.appendChild(icon);
             } else {
                 const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                circle.setAttribute('cx', NODE_WIDTH - 20);
+                circle.setAttribute('cx', NODE_WIDTH - NODE_COMPLETION_OFFSET_X);
                 circle.setAttribute('cy', 22);
                 circle.setAttribute('r', 7);
                 circle.setAttribute('class', 'node-completion-circle completion-no');
@@ -2617,43 +2687,43 @@ function renderGhostNodes() {
         // Node title
         const title = document.createElementNS('http://www.w3.org/2000/svg', 'text');
         title.setAttribute('class', 'node-title');
-        title.setAttribute('x', 10);
-        title.setAttribute('y', 25);
+        title.setAttribute('x', NODE_CONTENT_PADDING_X);
+        title.setAttribute('y', NODE_CONTENT_PADDING_TOP);
         title.textContent = truncateText(node.title || 'Untitled', 20);
         g.appendChild(title);
 
         // Hashtags as colored pills (simplified)
         if (node.hashtags && node.hashtags.length > 0) {
             const hashtagGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-            let xOffset = 8;
-            const y = 44;
+            let xOffset = NODE_HASHTAG_OFFSET_X;
+            const y = NODE_HASHTAG_OFFSET_Y;
             const maxWidth = NODE_WIDTH - 16;
 
             for (const tag of node.hashtags) {
                 const color = getHashtagColor(tag, false);
-                const displayTag = tag.length > 10 ? tag.substring(0, 9) + '…' : tag;
-                const pillWidth = displayTag.length * 6.5 + 12;
+                const displayTag = tag.length > HASHTAG_TRUNCATE_LENGTH ? tag.substring(0, HASHTAG_TRUNCATE_LENGTH - 1) + '…' : tag;
+                const pillWidth = displayTag.length * HASHTAG_PILL_CHAR_WIDTH + (HASHTAG_PILL_PADDING_X * 2);
 
                 if (xOffset + pillWidth > maxWidth) break;
 
                 const pill = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
                 pill.setAttribute('class', 'hashtag-pill');
                 pill.setAttribute('x', xOffset);
-                pill.setAttribute('y', y - 10);
+                pill.setAttribute('y', y - HASHTAG_PILL_PADDING_Y);
                 pill.setAttribute('width', pillWidth);
                 pill.setAttribute('height', 16);
-                pill.setAttribute('rx', 8);
+                pill.setAttribute('rx', HASHTAG_PILL_RADIUS);
                 pill.setAttribute('fill', color);
                 hashtagGroup.appendChild(pill);
 
                 const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
                 text.setAttribute('class', 'node-hashtag-text');
-                text.setAttribute('x', xOffset + 6);
+                text.setAttribute('x', xOffset + HASHTAG_PILL_PADDING_X);
                 text.setAttribute('y', y + 1);
                 text.textContent = displayTag;
                 hashtagGroup.appendChild(text);
 
-                xOffset += pillWidth + 4;
+                xOffset += pillWidth + HASHTAG_PILL_SPACING;
             }
 
             g.appendChild(hashtagGroup);
@@ -2706,7 +2776,7 @@ function updateBreadcrumbs() {
         el.textContent = 'Root';
         el.classList.remove('active');
     } else {
-        const names = state.currentPath.map(p => truncateText(p.title || 'Untitled', 15));
+        const names = state.currentPath.map(p => truncateText(p.title || 'Untitled', BREADCRUMB_TRUNCATE_LENGTH));
         el.textContent = 'Root > ' + names.join(' > ');
         el.classList.add('active');
     }
@@ -2808,12 +2878,12 @@ function deleteNode(nodeId) {
     if (node && node.children && node.children.length > 0) {
         // Offset children positions relative to parent's position
         const offsetX = node.position.x;
-        const offsetY = node.position.y + NODE_HEIGHT + 20; // Place below parent
+        const offsetY = node.position.y + NODE_HEIGHT + CHILD_NODE_VERTICAL_OFFSET; // Place below parent
 
         node.children.forEach((child, index) => {
             // Adjust position so children appear near where parent was
             child.position.x += offsetX;
-            child.position.y += offsetY + (index * 10); // Slight stagger to avoid overlap
+            child.position.y += offsetY + (index * CHILD_NODE_STAGGER); // Slight stagger to avoid overlap
             state.nodes.push(child);
         });
 
@@ -2965,7 +3035,7 @@ function hideActionBar() {
         if (!actionBar.classList.contains('visible')) {
             actionBar.classList.add('hidden');
         }
-    }, 200);
+    }, ACTION_BAR_HIDE_DELAY);
 }
 
 /**
@@ -3027,7 +3097,7 @@ function showNodeContextMenu(nodeId, x, y) {
     menu.style.position = 'fixed';
     menu.style.left = x + 'px';
     menu.style.top = y + 'px';
-    menu.style.zIndex = '300';
+    menu.style.zIndex = CONTEXT_MENU_Z_INDEX;
 
     // Build menu items based on selection count
     const menuItems = [];
@@ -3518,14 +3588,14 @@ function saveEditor() {
             const textarea = document.getElementById('note-text');
 
             // Validate title length (soft limit)
-            if (titleInput.value.length > 200) {
-                const confirmSave = confirm(`Warning: Title is ${titleInput.value.length} characters (recommended max: 200). Save anyway?`);
+            if (titleInput.value.length > TITLE_SOFT_LIMIT) {
+                const confirmSave = confirm(`Warning: Title is ${titleInput.value.length} characters (recommended max: ${TITLE_SOFT_LIMIT}). Save anyway?`);
                 if (!confirmSave) return;
             }
 
             // Validate content length (soft limit)
             if (textarea.value.length > 100000) {
-                const confirmSave = confirm(`Warning: Content is ${textarea.value.length} characters (recommended max: 100,000). Save anyway?`);
+                const confirmSave = confirm(`Warning: Content is ${textarea.value.length} characters (recommended max: ${CONTENT_SOFT_LIMIT.toLocaleString()}). Save anyway?`);
                 if (!confirmSave) return;
             }
 
@@ -3679,7 +3749,7 @@ function getAutocompleteSuggestions(query) {
             const diff = counts[b] - counts[a];
             return diff !== 0 ? diff : a.toLowerCase().localeCompare(b.toLowerCase());
         })
-        .slice(0, 20);
+        .slice(0, AUTOCOMPLETE_MAX_RESULTS);
     return filtered.map(tag => ({
         tag,
         color: getHashtagColor(tag, false), // Don't auto-assign colors during autocomplete typing
@@ -3761,24 +3831,24 @@ function positionAutocomplete(inputElement) {
         const rect = inputElement.getBoundingClientRect();
         dropdown.style.top = (rect.bottom + 4) + 'px';
         dropdown.style.left = rect.left + 'px';
-        dropdown.style.width = Math.max(rect.width, 200) + 'px';
+        dropdown.style.width = Math.max(rect.width, AUTOCOMPLETE_DROPDOWN_MIN_WIDTH) + 'px';
     } else {
         // Textarea: position near caret
         const rect = inputElement.getBoundingClientRect();
         const coords = getTextareaCaretCoords(inputElement, autocomplete.hashStart);
-        let top = rect.top + coords.top + 20; // below caret line
+        let top = rect.top + coords.top + AUTOCOMPLETE_DROPDOWN_OFFSET_Y; // below caret line
         let left = rect.left + coords.left;
 
         // Viewport clamping
         const vw = window.innerWidth;
         const vh = window.innerHeight;
-        if (left + 200 > vw) left = vw - 210;
-        if (left < 10) left = 10;
-        if (top + 200 > vh) top = rect.top + coords.top - 210; // flip above
+        if (left + AUTOCOMPLETE_DROPDOWN_MIN_WIDTH > vw) left = vw - AUTOCOMPLETE_DROPDOWN_FLIP_OFFSET;
+        if (left < AUTOCOMPLETE_VIEWPORT_MARGIN) left = AUTOCOMPLETE_VIEWPORT_MARGIN;
+        if (top + AUTOCOMPLETE_DROPDOWN_MIN_WIDTH > vh) top = rect.top + coords.top - AUTOCOMPLETE_DROPDOWN_FLIP_OFFSET; // flip above
 
         dropdown.style.top = top + 'px';
         dropdown.style.left = left + 'px';
-        dropdown.style.width = '220px';
+        dropdown.style.width = AUTOCOMPLETE_DROPDOWN_WIDTH + 'px';
     }
 }
 
@@ -4371,7 +4441,7 @@ function showToast(message, options = {}) {
     document.addEventListener('keydown', escHandler);
 
     // Auto-remove after duration (default 4s, or longer if has link)
-    const duration = options.duration || (options.hasLink ? 6000 : 4000);
+    const duration = options.duration || (options.hasLink ? TOAST_DURATION_WITH_LINK : TOAST_DURATION_DEFAULT);
     const autoRemoveTimer = !message.includes('Click to place') ? setTimeout(() => {
         toast.remove();
         document.removeEventListener('keydown', escHandler);
@@ -4508,7 +4578,7 @@ async function exportToFile() {
     // Get project name for filename
     const projects = getProjectsList();
     const project = projects.find(p => p.id === state.currentProjectId);
-    const filename = ((project ? project.name : 'knotebook-notes').slice(0, 100)) + '.json';
+    const filename = ((project ? project.name : 'knotebook-notes').slice(0, FILENAME_MAX_LENGTH)) + '.json';
 
     const data = {
         version: 1,
@@ -4563,7 +4633,7 @@ async function exportProjectToFile(projectId) {
 
     const projects = getProjectsList();
     const project = projects.find(p => p.id === projectId);
-    const filename = ((project ? project.name : 'knotebook-notes').slice(0, 100)) + '.json';
+    const filename = ((project ? project.name : 'knotebook-notes').slice(0, FILENAME_MAX_LENGTH)) + '.json';
 
     const exportData = {
         version: 1,
@@ -4991,7 +5061,7 @@ function initEventListeners() {
                 const distance = Math.sqrt(dx * dx + dy * dy);
 
                 // Lock mode after moving at least 15 pixels
-                if (distance >= 15) {
+                if (distance >= SELECTION_MODE_LOCK_DISTANCE) {
                     // Determine mode based on horizontal direction
                     if (dx > 0) {
                         box.mode = 'enclosed';  // Drag left-to-right = fully enclosed
@@ -5275,7 +5345,7 @@ function initEventListeners() {
                     }
                 }
                 longPressTimer = null;
-            }, 500); // 500ms for long press
+            }, LONG_PRESS_DURATION); // 500ms for long press
         } else if (edgeEl) {
             // Touch on edge - select it and show action bar
             e.preventDefault();
@@ -5336,7 +5406,7 @@ function initEventListeners() {
             hideActionBar();
             const currentDist = getTouchDistance(e.touches);
             const scale = currentDist / pinchStartDist;
-            const newZoom = Math.max(0.5, Math.min(5, pinchStartZoom * scale));
+            const newZoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MOBILE_MAX, pinchStartZoom * scale));
 
             // Zoom toward center of pinch
             const center = getTouchCenter(e.touches);
@@ -5505,7 +5575,7 @@ function initEventListeners() {
         // If we didn't move, treat as a tap
         if (!touchMoved && touchStartNode) {
             const now = Date.now();
-            const isDoubleTap = (now - lastTapTime < 300) && (lastTapNode === touchStartNode);
+            const isDoubleTap = (now - lastTapTime < DOUBLE_TAP_THRESHOLD) && (lastTapNode === touchStartNode);
 
             if (isDoubleTap) {
                 // Double-tap on node - open editor
@@ -5605,8 +5675,8 @@ function initEventListeners() {
                 y: rect.top + rect.height / 2
             };
             const canvasPos = screenToCanvas(centerScreen.x, centerScreen.y);
-            const x = canvasPos.x - NODE_WIDTH / 2 + (Math.random() - 0.5) * 100;
-            const y = canvasPos.y - NODE_HEIGHT / 2 + (Math.random() - 0.5) * 100;
+            const x = canvasPos.x - NODE_WIDTH / 2 + (Math.random() - 0.5) * NODE_CREATE_RANDOM_OFFSET;
+            const y = canvasPos.y - NODE_HEIGHT / 2 + (Math.random() - 0.5) * NODE_CREATE_RANDOM_OFFSET;
             const node = createNode(x, y);
             selectNode(node.id);
             openEditor(node.id);
@@ -5628,14 +5698,14 @@ function initEventListeners() {
         if (e.key === '+' || e.key === '=') {
             e.preventDefault();
             const rect = container.getBoundingClientRect();
-            zoomAtPoint(-100, rect.left + rect.width / 2, rect.top + rect.height / 2);
+            zoomAtPoint(-NODE_CREATE_RANDOM_OFFSET, rect.left + rect.width / 2, rect.top + rect.height / 2);
         }
 
         // - - Zoom out
         if (e.key === '-') {
             e.preventDefault();
             const rect = container.getBoundingClientRect();
-            zoomAtPoint(100, rect.left + rect.width / 2, rect.top + rect.height / 2);
+            zoomAtPoint(NODE_CREATE_RANDOM_OFFSET, rect.left + rect.width / 2, rect.top + rect.height / 2);
         }
 
         // 0 - Reset zoom to 100%
@@ -5945,7 +6015,7 @@ function initEventListeners() {
     document.getElementById('note-text').addEventListener('keydown', (e) => {
         if (handleAutocompleteKeydown(e)) return;
         // On desktop: Enter saves (unless Shift). On mobile: Enter always inserts newline
-        const isMobile = window.innerWidth <= 600;
+        const isMobile = window.innerWidth <= MOBILE_BREAKPOINT;
         if (e.key === 'Enter' && !e.shiftKey && !isMobile) {
             e.preventDefault();
             saveEditor();

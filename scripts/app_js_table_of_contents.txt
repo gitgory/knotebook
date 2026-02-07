@@ -36,33 +36,42 @@ function exportCurrentDataForRecovery()  // line 76
     // Preset color palette for hashtags (works across all dark themes)
     // Autocomplete state (kept separate as it's transient UI state)
     // Constants
-function isLocalStorageAvailable()  // line 220
-function showStorageUnavailableWarning()  // line 238
+    // Timing (milliseconds)
+    // Zoom & Viewport
+    // UI Layout & Spacing
+    // Animation & Interaction
+    // Text Limits & Validation
+    // Autocomplete
+    // Z-Index Layers
+    // Responsive Breakpoints
+    // Storage Keys
+function isLocalStorageAvailable()  // line 290
+function showStorageUnavailableWarning()  // line 308
         // Move to notebook constant
 // ============================================================================
-// THEME (line 260)
+// THEME (line 330)
 // ============================================================================
-function getCurrentTheme()  // line 270
-function setTheme(themeName)  // line 283
+function getCurrentTheme()  // line 340
+function setTheme(themeName)  // line 353
         // Validate theme exists (in case of deleted/renamed themes)
         // Remove theme from root if it's 'midnight' (default), otherwise set it
         // Update active option state
         // Save to localStorage (global default)
         // Save to current notebook if one is open
-function loadSavedTheme()  // line 318
-function initThemeSelector()  // line 330
+function loadSavedTheme()  // line 388
+function initThemeSelector()  // line 400
         // Toggle dropdown
         // Select theme option
         // Close dropdown when clicking elsewhere
 // ============================================================================
-// PROJECT STORAGE (localStorage) (line 354)
+// PROJECT STORAGE (localStorage) (line 424)
 // ============================================================================
-function getProjectsList()  // line 365
+function getProjectsList()  // line 435
         // Clear corrupted data and return empty list
-function saveProjectsIndex(projects)  // line 386
-function generateProjectId()  // line 405
-function countNotes(nodes)  // line 416
-function stringifyAsync(data)  // line 435
+function saveProjectsIndex(projects)  // line 456
+function generateProjectId()  // line 475
+function countNotes(nodes)  // line 486
+function stringifyAsync(data)  // line 505
         // Use requestIdleCallback if available, otherwise fallback to immediate execution
         // Fallback for browsers without requestIdleCallback (like Safari)
         // Ensure root state is captured
@@ -72,16 +81,16 @@ function stringifyAsync(data)  // line 435
         // Success
         // Store error for UI display
         // Re-throw to allow queue to handle failure
-function loadProjectFromStorage(projectId)  // line 530
+function loadProjectFromStorage(projectId)  // line 600
         // Don't remove corrupted project data automatically - user may want to recover it
         // Just return null so app doesn't crash
-function createProject(name)  // line 552
+function createProject(name)  // line 622
         // Save empty project data
         // Remove from index if storage failed
-function renameProject(projectId, newName)  // line 603
-function deleteProject(projectId)  // line 619
+function renameProject(projectId, newName)  // line 673
+function deleteProject(projectId)  // line 689
         // Non-critical - index is already updated
-function openProject(projectId)  // line 640
+function openProject(projectId)  // line 710
         // Reset navigation
         // Load data
         // Apply notebook's theme (or use current global theme if not set)
@@ -89,7 +98,7 @@ function openProject(projectId)  // line 640
         // Update sidebar button state
         // Close sidebar
         // Check for pending move operation
-function updateSaveStatus(status, error = null)  // line 718
+function updateSaveStatus(status, error = null)  // line 788
         // Remove all status classes
         // Only remove fade-out if we're changing to a non-saved state
         // Add new status class
@@ -113,8 +122,8 @@ function updateSaveStatus(status, error = null)  // line 718
         // Remove failed item (don't retry infinitely)
         // Process next in queue (if any)
         // Small delay to avoid tight loop
-function hashData(data)  // line 868
-function scheduleAutoSave()  // line 887
+function hashData(data)  // line 938
+function scheduleAutoSave()  // line 957
         // Calculate hash of current data to detect changes
         // Skip if nothing changed since last save
         // Don't add to queue if we already have a pending save
@@ -124,60 +133,60 @@ function scheduleAutoSave()  // line 887
         // Update status to pending
         // Debounce: set timer
 // ============================================================================
-// PROJECT LIST UI (line 937)
+// PROJECT LIST UI (line 1007)
 // ============================================================================
-function populateProjectsList()  // line 947
+function populateProjectsList()  // line 1017
         // Click on project to open
         // Click on menu button
-function showProjectMenu(projectId, x, y)  // line 1016
+function showProjectMenu(projectId, x, y)  // line 1086
         // Position menu
         // Adjust if menu goes off screen
-function hideProjectMenu()  // line 1038
-function showNewProjectModal()  // line 1047
-function hideNewProjectModal()  // line 1058
-function showConfirmation(message)  // line 1070
+function hideProjectMenu()  // line 1108
+function showNewProjectModal()  // line 1117
+function hideNewProjectModal()  // line 1128
+function showConfirmation(message)  // line 1140
         // Focus Yes button by default
         // Handle Yes
         // Handle No/Cancel
         // Handle keyboard
         // Cleanup function
         // Attach listeners
-function handleCreateProject()  // line 1126
+function handleCreateProject()  // line 1196
         // Validate: max length
-function handleRenameProject(projectId)  // line 1155
+function handleRenameProject(projectId)  // line 1225
         // Validate: not empty
         // Validate: max length
 // ============================================================================
-// UTILITY FUNCTIONS (line 1199)
+// UTILITY FUNCTIONS (line 1269)
 // ============================================================================
-function generateId()  // line 1209
-function parseHashtags(text)  // line 1221
+function generateId()  // line 1279
+function parseHashtags(text)  // line 1291
         // Normalize to lowercase for consistent storage and comparison
-function truncateText(text, maxLength)  // line 1236
-function getNodeCenter(node)  // line 1248
-function hasBodyText(node)  // line 1262
-function cycleCompletion(current)  // line 1275
-function nodeMatchesFilter(node)  // line 1291
+function truncateText(text, maxLength)  // line 1306
+function getNodeCenter(node)  // line 1318
+function hasBodyText(node)  // line 1332
+function cycleCompletion(current)  // line 1345
+function nodeMatchesFilter(node)  // line 1361
         // Text search filter
         // Hashtag filter (OR logic)
         // Tags are already normalized to lowercase, so direct comparison is safe
-function getVisibleNodeIds()  // line 1312
-function updateSidebarButtonState()  // line 1320
-function updateFilter(inputValue)  // line 1336
+function getVisibleNodeIds()  // line 1382
+function updateSidebarButtonState()  // line 1390
+function updateFilter(inputValue)  // line 1406
         // Update visual state
-function clearFilter()  // line 1361
+function clearFilter()  // line 1431
         // Also clear text search
-function setFilterHashtag(hashtag)  // line 1387
-function updateTextFilter(text)  // line 1399
-function clearTextFilter()  // line 1420
-function toggleFilterHashtag(hashtag)  // line 1436
+function setFilterHashtag(hashtag)  // line 1457
+function updateTextFilter(text)  // line 1469
+function clearTextFilter()  // line 1490
+function toggleFilterHashtag(hashtag)  // line 1506
         // Remove it
         // Add it
-function toggleHiddenHashtag(hashtag)  // line 1462
+function toggleHiddenHashtag(hashtag)  // line 1532
         // Unhide it
         // Hide it
-function showAllHashtags()  // line 1482
-function renameHashtag(oldTag, newTag)  // line 1495
+function showAllHashtags()  // line 1552
+function renameHashtag(oldTag, newTag)  // line 1565
         // Validate new tag format
         // Validate hashtag format (must be #word with alphanumeric, underscore, or hyphen)
         // Normalize to lowercase
@@ -190,30 +199,30 @@ function renameHashtag(oldTag, newTag)  // line 1495
         // Update the filter input to show the new tag
         // Update hidden tags if this tag was hidden
         // Transfer color to new tag name
-function deleteHashtag(tag)  // line 1564
+function deleteHashtag(tag)  // line 1634
         // Remove from all nodes at current level
         // Remove from content text (case-insensitive, match whole hashtag)
         // Re-parse hashtags from updated content
         // Clear from filter if active
         // Clear from hidden tags
         // Remove color assignment
-function showHashtagContextMenu(tag, x, y)  // line 1597
+function showHashtagContextMenu(tag, x, y)  // line 1667
         // Remove existing menu if any
         // Adjust position if menu goes off screen
         // Handle menu actions
-function hideHashtagContextMenu()  // line 1674
+function hideHashtagContextMenu()  // line 1744
 // ============================================================================
-// HASHTAG SIDEBAR (line 1681)
+// HASHTAG SIDEBAR (line 1751)
 // ============================================================================
-function toggleSidebar()  // line 1691
-function showSidebar()  // line 1704
-function hideSidebar()  // line 1715
-function closeAllColorPickers()  // line 1725
-function getHashtagCounts()  // line 1737
-function getHashtagColor(hashtag, autoAssign = true)  // line 1758
+function toggleSidebar()  // line 1761
+function showSidebar()  // line 1774
+function hideSidebar()  // line 1785
+function closeAllColorPickers()  // line 1795
+function getHashtagCounts()  // line 1807
+function getHashtagColor(hashtag, autoAssign = true)  // line 1828
         // Assign a color based on hash of the hashtag name
-function setHashtagColor(hashtag, color)  // line 1775
-function populateSidebar()  // line 1781
+function setHashtagColor(hashtag, color)  // line 1845
+function populateSidebar()  // line 1851
         // Check which hashtags are currently active in the filter and which are hidden
         // Clear list
         // Add "Show All Tags" button (always visible, grayed out when not needed)
@@ -232,45 +241,45 @@ function populateSidebar()  // line 1781
         // Context menu handlers (right-click on hashtag row)
         // Desktop: right-click
         // Mobile: long-press (500ms)
-function screenToCanvas(screenX, screenY)  // line 1967
-function canvasToScreen(canvasX, canvasY)  // line 1985
-function getGraphBounds(visibleOnly = false)  // line 2002
+function screenToCanvas(screenX, screenY)  // line 2037
+function canvasToScreen(canvasX, canvasY)  // line 2055
+function getGraphBounds(visibleOnly = false)  // line 2072
         // If visibleOnly is true, only include nodes that pass the current filters
 // ============================================================================
-// VIEW SWITCHING (line 2025)
+// VIEW SWITCHING (line 2095)
 // ============================================================================
-function showLandingPage()  // line 2035
-function showGraphView()  // line 2048
-function newProject()  // line 2058
+function showLandingPage()  // line 2105
+function showGraphView()  // line 2118
+function newProject()  // line 2128
         // Show the new project modal instead of directly creating
         // Save current project before leaving
         // Force immediate save before navigation
         // Reset state
 // ============================================================================
-// VIEWPORT (PAN/ZOOM) (line 2098)
+// VIEWPORT (PAN/ZOOM) (line 2168)
 // ============================================================================
-function updateViewport()  // line 2109
+function updateViewport()  // line 2179
         // Calculate viewBox based on viewport state
-function zoomAtPoint(delta, screenX, screenY)  // line 2132
+function zoomAtPoint(delta, screenX, screenY)  // line 2202
         // Get canvas coordinates before zoom
         // Apply zoom
         // Get canvas coordinates after zoom
         // Adjust pan to keep the point under cursor stationary
-function fitToView()  // line 2161
+function fitToView()  // line 2231
         // Use visible nodes only when filters are active
         // No nodes, reset to default view
         // Add padding around the graph
         // Calculate zoom to fit
         // Center the graph
-function resetViewport()  // line 2207
+function resetViewport()  // line 2277
 // ============================================================================
-// RENDERING (line 2214)
+// RENDERING (line 2284)
 // ============================================================================
-function render()  // line 2226
-function renderImmediate()  // line 2242
+function render()  // line 2296
+function renderImmediate()  // line 2312
         // Refresh sidebar if open
         // Auto-save if we have a current project (only saves if data changed)
-function renderNodes()  // line 2268
+function renderNodes()  // line 2338
         // Skip nodes that don't match filter
         // Stacked rectangles for children (rendered first so they appear behind)
         // First stack layer
@@ -282,35 +291,35 @@ function renderNodes()  // line 2268
         // Filter out hidden hashtags
         // Completion indicator (clickable status icon)
         // Background circle for click target
-function renderEdges()  // line 2454
+function renderEdges()  // line 2524
         // Get visible node IDs for filtering edges
         // Skip edges where either node is hidden by filter
         // Create a group to hold hitbox and visible line
         // Invisible wider hitbox for easier clicking
         // Visible edge line
-function renderEdgePreview(x, y)  // line 2508
+function renderEdgePreview(x, y)  // line 2578
         // Remove existing preview
-function clearEdgePreview()  // line 2535
-function renderSelectionBox()  // line 2545
-function clearSelectionBox()  // line 2574
-function renderGhostNodes()  // line 2585
+function clearEdgePreview()  // line 2605
+function renderSelectionBox()  // line 2615
+function clearSelectionBox()  // line 2644
+function renderGhostNodes()  // line 2655
         // Update ghost node positions to follow cursor
         // Render each ghost node
         // Node body
         // Node title
         // Hashtags as colored pills (simplified)
-function getNodesInSelectionBox(box)  // line 2674
+function getNodesInSelectionBox(box)  // line 2744
         // Drag left-to-right: fully enclosed only
         // Drag right-to-left: fully enclosed OR intersecting
-function updateBreadcrumbs()  // line 2703
+function updateBreadcrumbs()  // line 2773
 // ============================================================================
-// NODE OPERATIONS (line 2715)
+// NODE OPERATIONS (line 2785)
 // ============================================================================
-function createNode(x, y)  // line 2727
-function deepCopyNode(node, offsetX = 0, offsetY = 0)  // line 2756
+function createNode(x, y)  // line 2797
+function deepCopyNode(node, offsetX = 0, offsetY = 0)  // line 2826
         // Deep copy children recursively and create ID mapping
         // Copy child edges and remap IDs to new child IDs
-function deleteNode(nodeId)  // line 2803
+function deleteNode(nodeId)  // line 2873
         // Find the node being deleted
         // Promote children to current level before deleting
         // Offset children positions relative to parent's position
@@ -319,64 +328,64 @@ function deleteNode(nodeId)  // line 2803
         // Remove edges connected to this node
         // Remove the node
         // Remove from selection
-function selectNode(nodeId, addToSelection = false)  // line 2846
+function selectNode(nodeId, addToSelection = false)  // line 2916
         // Toggle: add if not selected, remove if already selected
         // Replace selection with single node
-function clearSelection()  // line 2867
-function updateSelectionVisuals()  // line 2880
+function clearSelection()  // line 2937
+function updateSelectionVisuals()  // line 2950
         // Update node selection visuals without full re-render
         // Update edge selection visuals
         // Update selection action bar
-function updateSelectionActionBar()  // line 2911
+function updateSelectionActionBar()  // line 2981
         // Node(s) selected - show all buttons (Connect now works for batch connect)
         // Action bar is only shown on mobile via long-press
         // Edge selected - show only delete
         // On mobile, show action bar for edge deletion (hard to long-press edges)
         // Nothing selected
-function positionActionBar()  // line 2940
+function positionActionBar()  // line 3010
         // Mobile: Fixed position at top handled by CSS
         // Desktop: Keep default CSS positioning (centered at bottom)
         // No dynamic repositioning needed anymore
-function showActionBar()  // line 2946
+function showActionBar()  // line 3016
         // Position above the selected node on mobile before animation
         // Trigger reflow for animation
-function hideActionBar()  // line 2958
+function hideActionBar()  // line 3028
         // Hide after animation completes
-function bringToFront()  // line 2976
+function bringToFront()  // line 3046
         // Find the current max zIndex
         // Set selected nodes to maxZ + 1
-function sendToBack()  // line 2996
+function sendToBack()  // line 3066
         // Find the current min zIndex
         // Set selected nodes to minZ - 1
-function showNodeContextMenu(nodeId, x, y)  // line 3021
+function showNodeContextMenu(nodeId, x, y)  // line 3091
         // Remove existing menu if any
         // Build menu items based on selection count
         // Adjust position if menu goes off screen
         // Handle menu actions
         // Start batch connect mode
-function hideNodeContextMenu()  // line 3079
+function hideNodeContextMenu()  // line 3149
 // ============================================================================
-// EDGE OPERATIONS (line 3084)
+// EDGE OPERATIONS (line 3154)
 // ============================================================================
-function startEdgeCreation(nodeId)  // line 3095
+function startEdgeCreation(nodeId)  // line 3165
         // If nodeId provided, use it; otherwise use current selection (for batch connect)
         // Batch connect mode: store all selected nodes
-function completeEdgeCreation(targetNodeId)  // line 3114
+function completeEdgeCreation(targetNodeId)  // line 3184
         // Batch connect mode: create edges from all source nodes to target
         // Toggle edge: remove if exists, create if not
         // Single edge creation
-function selectEdge(index)  // line 3159
-function deleteSelectedEdge()  // line 3165
+function selectEdge(index)  // line 3229
+function deleteSelectedEdge()  // line 3235
 // ============================================================================
-// NAVIGATION (NESTING) (line 3173)
+// NAVIGATION (NESTING) (line 3243)
 // ============================================================================
-function enterNode(nodeId)  // line 3184
+function enterNode(nodeId)  // line 3254
         // Save current state to the node we're leaving
         // Push current node to path
         // Load children
         // Clear filter when navigating
         // Reset viewport for the new level
-function goBack()  // line 3219
+function goBack()  // line 3289
         // Save current state
         // Go to parent level
         // Back to root - need to restore root state
@@ -384,13 +393,13 @@ function goBack()  // line 3219
         // Reset viewport for the new level
         // Save after navigation to persist the updated tree
         // Root state storage (saved when entering first node)
-function getRootNodes()  // line 3253
-function getRootEdges()  // line 3257
-function saveRootState()  // line 3261
+function getRootNodes()  // line 3323
+function getRootEdges()  // line 3327
+function saveRootState()  // line 3331
 // ============================================================================
-// EDITOR (line 3268)
+// EDITOR (line 3338)
 // ============================================================================
-function openEditor(nodeId)  // line 3280
+function openEditor(nodeId)  // line 3350
         // Check if we're in batch edit mode (multiple nodes selected)
         // Clear removed tags from previous session
         // Batch edit mode
@@ -406,13 +415,13 @@ function openEditor(nodeId)  // line 3280
         // Snapshot current state for cancel/revert
         // Enable all fields
         // Update enter button based on whether node has children
-function closeEditor()  // line 3401
-function cancelEditor()  // line 3416
+function closeEditor()  // line 3471
+function cancelEditor()  // line 3486
         // Batch mode: restore all nodes from snapshot
         // Single node mode
         // Restore node from snapshot
         // Delete empty nodes (new node that was never filled in)
-function saveEditor()  // line 3458
+function saveEditor()  // line 3528
         // Batch mode: apply changes to all selected nodes
         // Parse hashtags from textarea (these are tags to add)
         // Get completion state
@@ -424,7 +433,7 @@ function saveEditor()  // line 3458
         // Validate content length (soft limit)
         // Save completion state
         // Delete empty nodes (created but never filled in)
-function updateHashtagDisplay(hashtags, isBatchMode = false, totalNodes = 1, tagCounts = {})  // line 3565
+function updateHashtagDisplay(hashtags, isBatchMode = false, totalNodes = 1, tagCounts = {})  // line 3635
         // If tag is removed, count is 0 (will be deleted from all notes)
         // Solid pill: background color, white text
         // Outlined pill: transparent background, colored border, white text
@@ -432,52 +441,52 @@ function updateHashtagDisplay(hashtags, isBatchMode = false, totalNodes = 1, tag
         // Save cursor position
         // Restore cursor position (clamped to new content length)
         // Helper function to remove a tag from content textarea
-function removeTagFromContent(tag)  // line 3635
+function removeTagFromContent(tag)  // line 3705
         // Remove tag + optional trailing space, preserving leading space (unless at start)
         // Clean up multiple spaces
-function updateCompletionButtons(value)  // line 3647
+function updateCompletionButtons(value)  // line 3717
         // In batch mode with mixed completion states, show all buttons as inactive
 // ============================================================================
-// HASHTAG AUTOCOMPLETE (line 3660)
+// HASHTAG AUTOCOMPLETE (line 3730)
 // ============================================================================
-function getAutocompleteSuggestions(query)  // line 3672
-function showAutocomplete(inputElement)  // line 3697
-function positionAutocomplete(inputElement)  // line 3755
+function getAutocompleteSuggestions(query)  // line 3742
+function showAutocomplete(inputElement)  // line 3767
+function positionAutocomplete(inputElement)  // line 3825
         // Filter input: position below the input
         // Textarea: position near caret
         // Viewport clamping
-function getTextareaCaretCoords(textarea, position)  // line 3794
-function hideAutocomplete()  // line 3829
-function selectAutocompleteItem(index)  // line 3847
+function getTextareaCaretCoords(textarea, position)  // line 3864
+function hideAutocomplete()  // line 3899
+function selectAutocompleteItem(index)  // line 3917
         // Assign color when user commits a tag via autocomplete selection
         // Scan forward from cursor to skip any remaining word characters
         // Set cursor after inserted text
         // Dispatch input event to trigger existing handlers
-function updateAutocompleteFromInput(inputElement)  // line 3890
+function updateAutocompleteFromInput(inputElement)  // line 3960
         // Skip if autocomplete is suppressed (synthetic event from tag pill clicks)
         // Scan backwards from cursor to find '#'
         // Check if we found a '#' at a word boundary
         // Word boundary check: '#' must be at position 0 or preceded by whitespace
         // No valid '#' found — hide
-function handleAutocompleteKeydown(e)  // line 3932
+function handleAutocompleteKeydown(e)  // line 4002
         // If an item is highlighted, insert it
         // If only one suggestion remains, insert it automatically
         // Otherwise, let Enter/Tab pass through
-function highlightAutocompleteItem(index)  // line 3976
+function highlightAutocompleteItem(index)  // line 4046
         // Scroll into view
 // ============================================================================
-// HELP MODAL (line 3989)
+// HELP MODAL (line 4059)
 // ============================================================================
-function showHelp()  // line 3998
-function hideHelp()  // line 4007
+function showHelp()  // line 4068
+function hideHelp()  // line 4077
 // ============================================================================
-// MOVE TO NOTEBOOK MODAL (line 4011)
+// MOVE TO NOTEBOOK MODAL (line 4081)
 // ============================================================================
-function showMoveToModal()  // line 4020
+function showMoveToModal()  // line 4090
         // Get all projects except the current one
         // Populate the list
-function hideMoveToModal()  // line 4060
-function initiateMoveToNotebook(targetProjectId)  // line 4073
+function hideMoveToModal()  // line 4130
+function initiateMoveToNotebook(targetProjectId)  // line 4143
         // Store original IDs for source cleanup
         // Create a mapping from old IDs to new IDs for edge updates
         // Get selected nodes and create deep copies with new IDs
@@ -487,14 +496,14 @@ function initiateMoveToNotebook(targetProjectId)  // line 4073
         // Get source project name for toast message
         // Store pending move in sessionStorage
         // Switch to target notebook
-function checkForPendingMove()  // line 4140
+function checkForPendingMove()  // line 4210
         // Set up ghost nodes
         // Store pending move data for later use
         // Remove from sessionStorage
         // Add ghost drag cursor
         // Show toast notification
         // Initial render with ghosts
-function placeGhostNodes()  // line 4178
+function placeGhostNodes()  // line 4248
         // Add ghost nodes to current notebook as real nodes
         // Add edges
         // Select the newly placed nodes
@@ -504,17 +513,17 @@ function placeGhostNodes()  // line 4178
         // Clear any selection box state
         // Remove ghost drag cursor
         // Save immediately to target notebook (don't wait for auto-save)
-function cancelGhostDrag()  // line 4241
+function cancelGhostDrag()  // line 4311
         // Store source info before clearing state
         // Remove ghost drag cursor
         // Show toast with link back to source notebook
-function removeNodesFromSourceNotebook(sourceProjectId, nodeIds)  // line 4277
+function removeNodesFromSourceNotebook(sourceProjectId, nodeIds)  // line 4347
         // Load source project data
         // Remove nodes by ID
         // Remove edges that reference removed nodes
         // Save back to localStorage
         // Update note count in projects index
-function showToast(message, options = {})  // line 4317
+function showToast(message, options = {})  // line 4387
         // Toast notification with optional link
         // Always use textContent for base message
         // If a link is needed, append it programmatically
@@ -523,20 +532,20 @@ function showToast(message, options = {})  // line 4317
         // Auto-remove after duration (default 4s, or longer if has link)
         // Override toast.remove to clean up listener
 // ============================================================================
-// SETTINGS MODAL (line 4389)
+// SETTINGS MODAL (line 4459)
 // ============================================================================
-function showSettings(projectId)  // line 4400
+function showSettings(projectId)  // line 4470
         // Opened from context menu for a non-open project
         // Opened from toolbar for the current project
-function hideSettings()  // line 4422
-function updateSettingsToggle(toggle, isOn)  // line 4435
-function toggleSettingsTask()  // line 4445
+function hideSettings()  // line 4492
+function updateSettingsToggle(toggle, isOn)  // line 4505
+function toggleSettingsTask()  // line 4515
         // Update in-memory settings for the currently open project
         // Update localStorage directly for a non-open project
 // ============================================================================
-// FILE OPERATIONS (line 4469)
+// FILE OPERATIONS (line 4539)
 // ============================================================================
-function downloadAsFile(filename, data)  // line 4480
+function downloadAsFile(filename, data)  // line 4550
         // Ensure root state is captured
         // Get project name for filename
         // Try File System Access API first, fall back to data URL download
@@ -548,21 +557,21 @@ function downloadAsFile(filename, data)  // line 4480
         // Show import modal
         // Hide overwrite button if no projects exist
         // Fallback for mobile/unsupported browsers
-function importFromFileFallback()  // line 4662
+function importFromFileFallback()  // line 4732
         // Store for import flow
         // Show import modal
         // Hide overwrite button if no projects exist
-function hideImportModal()  // line 4703
-function handleImportAsNew()  // line 4713
+function hideImportModal()  // line 4773
+function handleImportAsNew()  // line 4783
         // Save imported data to the new project
         // Update note count
         // Show a simple selection
         // Save imported data to the existing project
         // Update note count
 // ============================================================================
-// EVENT HANDLERS (line 4796)
+// EVENT HANDLERS (line 4866)
 // ============================================================================
-function initEventListeners()  // line 4800
+function initEventListeners()  // line 4870
         // Mouse down on canvas
         // Click on children indicator - enter the node
         // Click on completion indicator - cycle state
@@ -593,9 +602,9 @@ function initEventListeners()  // line 4800
         // Mouse wheel for zooming
         // Touch state for mobile
         // Helper to get distance between two touches
-function getTouchDistance(touches)  // line 5194
+function getTouchDistance(touches)  // line 5264
         // Helper to get center point between two touches
-function getTouchCenter(touches)  // line 5201
+function getTouchCenter(touches)  // line 5271
         // Touch start (for mobile drag and pan)
         // Close hashtag sidebar on touch (mobile UX)
         // Handle pinch zoom (2 fingers)
@@ -699,9 +708,9 @@ function getTouchCenter(touches)  // line 5201
         // Save status error click - show details
         // Error recovery modal buttons
 // ============================================================================
-// INITIALIZATION (line 6232)
+// INITIALIZATION (line 6302)
 // ============================================================================
-function init()  // line 6242
+function init()  // line 6312
         // Check if localStorage is available
         // Clear any stale pending move operations from browser refresh
         // Start the app when DOM is ready
