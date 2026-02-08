@@ -1,0 +1,156 @@
+================================================================================
+GRAPH NOTES - DESIGN SPECIFICATION
+================================================================================
+Created: 2026-01-21
+Updated: 2026-01-25
+Status: Phase 8 (Tier 1/2 features in progress)
+
+================================================================================
+PROJECT OVERVIEW
+================================================================================
+
+A browser-based note-taking application where notes form a cyclic graph
+structure. Notes are nodes, relationships are edges. Notes can contain
+nested sub-graphs of other notes, creating a hierarchical/fractal structure.
+
+================================================================================
+KEY DECISIONS
+================================================================================
+
+1. VISUALIZATION
+   - Visual graph canvas interface using SVG
+   - Notes displayed as rounded rectangles (220x60 px)
+   - Relationships displayed as lines (1px thickness)
+   - Point-and-click interaction for manipulating nodes and edges
+   - Drag-and-drop repositioning of nodes
+   - Infinite canvas with pan (drag empty space) and zoom (scroll wheel)
+
+2. NOTE CONTENT
+   - Title field (displayed on node)
+   - Basic text content (no rich formatting)
+   - User-generated hashtags (e.g., #idea, #project), sorted alphabetically
+   - Completion status (opt-in): null | 'no' | 'yes' | 'partial'
+
+3. EDGES
+   - Simple, undirected connections
+   - No relationship types or labels
+   - No directionality (A-B is same as B-A)
+
+4. DATA STORAGE
+   - Projects stored in browser localStorage (works on mobile)
+   - Auto-save: debounced, 1-2 seconds after last change
+   - File export uses monolithic JSON format for portability
+   - Each note contains:
+     * ID, title, content
+     * Hashtags
+     * Canvas position (x, y)
+     * Child notes and child edges (for nesting)
+     * Creation/modification timestamps
+
+5. NESTING STRUCTURE
+   - Notes can contain their own sub-graph (canvas within a canvas)
+   - Nesting is unlimited in depth
+   - Edges only connect sibling notes (same parent)
+   - No cross-branch connections ("cousins" cannot connect)
+   - Visual indicator: stacked rectangles behind node (click to enter)
+     * 1 offset rect for 1-2 children, 2 offset rects for 3+ children
+   - Deletion behavior:
+     * Deleting a node promotes its children to the current level
+     * Child positions are adjusted to appear near the deleted parent
+     * Edges between promoted children are preserved
+     * Edges connected to the deleted node are removed
+
+6. USER INTERFACE
+   - Landing page with New Project / Load Project options
+   - Compact toolbar with icon buttons:
+     * ⌂ Home (return to landing page)
+     * + Add Note (appears at center of viewport with slight random offset)
+     * ⬇ Export to file
+     * ⛶ Fit to View
+     * ◐ Theme selector (dropdown)
+     * ? Keyboard shortcuts help
+     * [search field] Search notes by title/content
+     * # Hashtag sidebar toggle
+     * [search field] Filter by hashtag(s)
+   - Breadcrumb navigation for nested notes
+   - Node visual indicators:
+     * Dog-ear fold (top-left): note has body text beyond hashtags
+     * Completion icon (top-right): clickable status (To do / Done / Partial)
+     * Stacked rectangles (behind node): note has children (clickable to enter)
+
+7. THEMING
+   - 5 dark color themes: Midnight, Obsidian, Forest, Ember, Slate
+   - Theme selection persists in localStorage
+   - CSS custom properties for easy theming
+
+8. HASHTAG SEARCH/FILTER
+   - Toolbar input field, always visible
+   - Type one or more hashtags (e.g., #idea #project)
+   - OR logic: shows notes matching ANY entered hashtag
+   - Non-matching nodes and their edges are hidden
+   - Searches current navigation level only
+   - Clear filter: X button in field or clear text
+   - Clicking hashtag in editor populates search field
+   - Keyboard shortcut: / to focus search field
+   - Visual feedback: accent border on input when filter active
+
+9. HASHTAG SIDEBAR
+   - Right-side panel, toggled via # button or H key
+   - Shows all hashtags at current level with counts
+   - Click hashtag to filter by it
+   - Color picker for each hashtag (12-color preset palette)
+   - Hashtags displayed as colored pills
+   - Colors saved per-project in JSON file
+
+10. PROJECT STORAGE (localStorage + File Export)
+    - Projects stored in browser localStorage (works on mobile)
+    - Auto-save: debounced, 1-2 seconds after last change
+    - Landing page shows project list:
+      * Each project shows name and note count
+      * ⋮ menu button for actions (rename, delete, export)
+      * "New Project" button prompts for name
+      * "Import" button to load from file
+    - Import behavior: prompt to create new project or overwrite existing
+    - Delete always requires confirmation
+    - Toolbar ⬇ button repurposed as "Export to file"
+    - File export uses existing JSON format for portability
+
+11. TEXT SEARCH FILTER
+    - Toolbar "Search..." input, always visible alongside hashtag filter
+    - Matches against note title and content (case-insensitive)
+    - AND logic with hashtag filter (both must match if both active)
+    - Current level only (same scope as hashtag filter)
+    - Keyboard shortcut: S to focus search field
+    - Visual feedback: highlight border when filter active
+    - Clears on navigation, project switch, and going home
+
+12. COMPLETION STATUS
+    - Optional per-note status field for task management
+    - States: null (not set) → 'no' (To do) → 'yes' (Done) → 'partial' (Partial)
+    - Editor: row of status buttons (None / To do / Done / Partial)
+    - Node display: clickable icon in top-right area
+      * 'no': empty gray circle
+      * 'yes': green checkmark
+      * 'partial': orange half-circle
+    - Click indicator on node to cycle states (mouse and touch)
+    - Not set by default — opt-in via editor
+
+13. SECURITY
+    - XSS PROTECTION (CRITICAL)
+      * NEVER use innerHTML with user-generated content
+      * ALWAYS use textContent for user data (titles, content, hashtags, names)
+      * Build DOM elements programmatically with createElement/createElementNS
+      * Data attributes set via .dataset are automatically escaped
+      * This applies to: project names, note titles, hashtags, note content
+
+      Pattern:
+      ✅ GOOD: element.textContent = userInput
+      ✅ GOOD: element.dataset.tag = userHashtag
+      ❌ BAD:  element.innerHTML = `<div>${userInput}</div>`
+
+    - INPUT VALIDATION
+      * Sanitize on output, not input (preserve original user data)
+      * Trust browser's automatic escaping in textContent and setAttribute
+      * No manual HTML escaping needed when using safe DOM APIs
+
+================================================================================

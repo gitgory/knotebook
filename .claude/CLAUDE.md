@@ -3,6 +3,16 @@
 ## Initiating a New Session
 Display for the user, "I read your PROJECT-level claude.md file"
 
+## Documentation Organization
+
+Project documentation is organized into folders:
+- `docs-project/` - Project-level documentation (SESSION_NOTES.md, decision-history.md, design-spec.txt, ROADMAP.txt, file_structure.txt, GRIGRI.txt)
+- `docs-app/` - App-specific technical reference (app-controls-reference.md, json-schema.md)
+- `knowledge/` - Conceptual articles and explorations
+- `tests/` - Test plans and testing documentation
+- `scripts/app_js_table_of_contents.txt` - Code structure reference
+- Root level - Code reviews and feature-specific design specs
+
 ## Project Overview
 
 knotebook is a browser-based note-taking app with interactive graph visualization. Notes ("knotes") are nodes on an infinite SVG canvas; relationships are edges. Supports unlimited nesting (notes contain sub-graphs) and hashtag organization.
@@ -50,3 +60,7 @@ CSS and JS are versioned in index.html via query params:
   - Build complex structures with `createElement()` / `createElementNS()`
   - Use `.dataset.*` for data attributes (auto-escaped)
   - Use `replaceChildren()` for clearing DOM (modern, safer than `innerHTML = ''`)
+  - All functions should have documentation in the comments, including:
+    - What it does
+    - Parameters and their types
+    - Return value and type
