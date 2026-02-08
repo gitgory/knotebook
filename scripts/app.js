@@ -1136,9 +1136,10 @@ function hideNewProjectModal() {
  * after user responds.
  *
  * @param {string} message - The confirmation message to display
+ * @param {number} [delay=0] - Optional delay in seconds before Yes button becomes enabled
  * @returns {Promise<boolean>} - Resolves to true if user confirms, false if user cancels
  */
-function showConfirmation(message) {
+function showConfirmation(message, delay = 0) {
     return new Promise((resolve) => {
         const modal = document.getElementById('confirm-modal');
         const messageEl = document.getElementById('confirm-message');
@@ -1148,8 +1149,34 @@ function showConfirmation(message) {
         messageEl.textContent = message;
         modal.classList.remove('hidden');
 
-        // Focus Yes button by default
-        yesBtn.focus();
+        // Handle delay if specified
+        let countdown = delay;
+        let intervalId = null;
+        const originalYesText = yesBtn.textContent;
+
+        if (delay > 0) {
+            yesBtn.disabled = true;
+            yesBtn.textContent = `Yes (${countdown})`;
+            yesBtn.style.opacity = '0.5';
+            yesBtn.style.cursor = 'not-allowed';
+
+            intervalId = setInterval(() => {
+                countdown--;
+                if (countdown > 0) {
+                    yesBtn.textContent = `Yes (${countdown})`;
+                } else {
+                    yesBtn.disabled = false;
+                    yesBtn.textContent = originalYesText;
+                    yesBtn.style.opacity = '';
+                    yesBtn.style.cursor = '';
+                    clearInterval(intervalId);
+                    yesBtn.focus();
+                }
+            }, 1000);
+        } else {
+            // Focus Yes button by default if no delay
+            yesBtn.focus();
+        }
 
         // Handle Yes
         const handleYes = () => {
@@ -1176,6 +1203,11 @@ function showConfirmation(message) {
 
         // Cleanup function
         const cleanup = () => {
+            if (intervalId) clearInterval(intervalId);
+            yesBtn.disabled = false;
+            yesBtn.textContent = originalYesText;
+            yesBtn.style.opacity = '';
+            yesBtn.style.cursor = '';
             modal.classList.add('hidden');
             yesBtn.removeEventListener('click', handleYes);
             noBtn.removeEventListener('click', handleNo);
@@ -4924,8 +4956,8 @@ async function handleImportAsNew() {
 
 /**
  * Handle "Overwrite Existing" import option.
- * Shows prompt to select project to overwrite, confirms with user, replaces project
- * data with imported data, updates note count and modified time, and opens the project.
+ * Shows prompt to select project to overwrite, confirms with user (with 3-second delay),
+ * replaces project data with imported data, updates note count and modified time, and opens the project.
  */
 async function handleImportOverwrite() {
     if (!state.pendingImportData) return;
@@ -4937,8 +4969,8 @@ async function handleImportOverwrite() {
     }
 
     // Show a simple selection
-    const names = projects.map((p, i) => `${i + 1}. ${p.name}`).join('\n');
-    const choice = await showPrompt(`Enter the number of the project to overwrite:\n\n${names}`, '', 'Select Project');
+    const names = projects.map((p, i) => `${i + 1}. ${p.name} (${p.noteCount || 0} note${(p.noteCount || 0) === 1 ? '' : 's'})`).join('\n');
+    const choice = await showPrompt(`Enter the number of the notebook to overwrite:\n\n${names}`, '', 'Select Notebook');
 
     if (!choice) return;
 
@@ -4949,7 +4981,11 @@ async function handleImportOverwrite() {
     }
 
     const targetProject = projects[index];
-    const confirmed = await showConfirmation(`Overwrite "${targetProject.name}"? This cannot be undone.`);
+    const noteCountText = `${targetProject.noteCount || 0} note${(targetProject.noteCount || 0) === 1 ? '' : 's'}`;
+    const confirmed = await showConfirmation(
+        `Are you sure you want to overwrite "${targetProject.name}" (${noteCountText})?\n\nThis cannot be undone.`,
+        3  // 3 second delay
+    );
     if (!confirmed) {
         return;
     }
