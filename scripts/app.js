@@ -223,7 +223,7 @@ const ZOOM_FACTOR_OUT = 1.1; // Zoom out multiplier
 const ZOOM_MIN = 0.5; // Minimum zoom level (50%)
 const ZOOM_MAX = 2.5; // Maximum zoom level (250%)
 const ZOOM_MAX_FIT_TO_VIEW = 2; // Maximum zoom when fitting to view
-const ZOOM_MOBILE_MAX = 3; // Maximum zoom on mobile (pinch)
+const ZOOM_MOBILE_MAX = 1.5; // Maximum zoom on mobile (pinch)
 const VIEWPORT_PADDING = 50; // Padding around graph when fitting to view
 const DEFAULT_VIEWPORT_WIDTH = 800; // Default viewport width when no nodes
 const DEFAULT_VIEWPORT_HEIGHT = 600; // Default viewport height when no nodes
@@ -270,8 +270,8 @@ const AUTOCOMPLETE_DROPDOWN_FLIP_OFFSET = 210; // Height to flip dropdown above 
 const AUTOCOMPLETE_VIEWPORT_MARGIN = 10; // Margin from viewport edge
 
 // Z-Index Layers
-const CONTEXT_MENU_Z_INDEX = 300; // Z-index for context menus
-const TOAST_Z_INDEX = 1000; // Z-index for toast notifications
+const CONTEXT_MENU_Z_INDEX = 100; // Z-index for context menus (below modals)
+const TOAST_Z_INDEX = 10001; // Z-index for toast notifications (above modals)
 const MODAL_Z_INDEX = 10000; // Z-index for modals
 
 // Responsive Breakpoints
@@ -3008,19 +3008,11 @@ function updateSelectionActionBar() {
     }
 }
 
-function positionActionBar() {
-    // Mobile: Fixed position at top handled by CSS
-    // Desktop: Keep default CSS positioning (centered at bottom)
-    // No dynamic repositioning needed anymore
-}
-
 function showActionBar() {
     const actionBar = document.getElementById('selection-action-bar');
     if (!actionBar) return;
 
     actionBar.classList.remove('hidden');
-    // Position above the selected node on mobile before animation
-    positionActionBar();
     // Trigger reflow for animation
     actionBar.offsetHeight;
     actionBar.classList.add('visible');

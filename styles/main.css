@@ -2058,18 +2058,18 @@ body {
         z-index: 250;
     }
 
-    /* Action bar fixed to top on mobile (below toolbar) */
+    /* Action bar slides up from bottom on mobile */
     #selection-action-bar {
         position: fixed !important;
-        top: 110px !important; /* Below 3-row toolbar on mobile (buttons + search + breadcrumbs) */
+        top: auto !important;
         left: 0 !important;
         right: 0 !important;
-        bottom: auto !important;
+        bottom: 0 !important;
         height: auto !important;
         width: 100% !important; /* Full width on mobile */
         max-width: 100% !important; /* Override base 90vw */
         min-width: unset !important;
-        transform: translateY(-100px) !important; /* No X translation needed with full width */
+        transform: translateY(100%) !important; /* Start hidden below viewport */
         z-index: 200;
         justify-content: center;
         opacity: 1 !important;
@@ -2078,7 +2078,7 @@ body {
     }
 
     #selection-action-bar.visible {
-        transform: translateY(0) !important; /* No X translation needed with full width */
+        transform: translateY(0) !important; /* Slide up into view */
     }
 
     #selection-action-bar.hidden {
