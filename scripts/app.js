@@ -4956,7 +4956,7 @@ async function handleImportAsNew() {
 
 /**
  * Handle "Overwrite Existing" import option.
- * Shows prompt to select project to overwrite, confirms with user (with 3-second delay),
+ * Shows modal to select project to overwrite, confirms with user (with 3-second delay),
  * replaces project data with imported data, updates note count and modified time, and opens the project.
  */
 async function handleImportOverwrite() {
@@ -4968,19 +4968,17 @@ async function handleImportOverwrite() {
         return;
     }
 
-    // Show a simple selection
-    const names = projects.map((p, i) => `${i + 1}. ${p.name} (${p.noteCount || 0} note${(p.noteCount || 0) === 1 ? '' : 's'})`).join('\n');
-    const choice = await showPrompt(`Enter the number of the notebook to overwrite:\n\n${names}`, '', 'Select Notebook');
+    // Hide import modal and show overwrite selection modal
+    hideImportModal();
 
-    if (!choice) return;
+    // Show the selection modal and wait for user to pick a project
+    const selectedProjectId = await showOverwriteSelectModal(projects);
+    if (!selectedProjectId) return; // User cancelled
 
-    const index = parseInt(choice) - 1;
-    if (isNaN(index) || index < 0 || index >= projects.length) {
-        await showAlert('Invalid selection', 'Invalid Selection');
-        return;
-    }
+    const targetProject = projects.find(p => p.id === selectedProjectId);
+    if (!targetProject) return;
 
-    const targetProject = projects[index];
+    // Confirm with 3-second delay
     const noteCountText = `${targetProject.noteCount || 0} note${(targetProject.noteCount || 0) === 1 ? '' : 's'}`;
     const confirmed = await showConfirmation(
         `Are you sure you want to overwrite "${targetProject.name}" (${noteCountText})?\n\nThis cannot be undone.`,
@@ -5007,8 +5005,81 @@ async function handleImportOverwrite() {
     targetProject.modified = new Date().toISOString();
     await saveProjectsIndex(projects);
 
-    hideImportModal();
     await openProject(targetProject.id);
+}
+
+/**
+ * Show modal to select a notebook to overwrite.
+ * Returns a Promise that resolves to the selected project ID, or null if cancelled.
+ *
+ * @param {Array<Object>} projects - List of projects to display
+ * @returns {Promise<string|null>} - Selected project ID or null
+ */
+function showOverwriteSelectModal(projects) {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('overwrite-select-modal');
+        const list = document.getElementById('overwrite-select-list');
+        const cancelBtn = document.getElementById('overwrite-select-cancel');
+
+        // Populate the list
+        list.replaceChildren();
+        projects.forEach(project => {
+            const item = document.createElement('div');
+            item.className = 'overwrite-select-item';
+            item.dataset.projectId = project.id;
+
+            const name = document.createElement('span');
+            name.className = 'overwrite-select-item-name';
+            name.textContent = project.name;
+
+            const count = document.createElement('span');
+            count.className = 'overwrite-select-item-count';
+            count.textContent = `${project.noteCount || 0} note${(project.noteCount || 0) === 1 ? '' : 's'}`;
+
+            item.appendChild(name);
+            item.appendChild(count);
+            list.appendChild(item);
+        });
+
+        modal.classList.remove('hidden');
+
+        // Handle item selection
+        const handleSelect = (e) => {
+            const item = e.target.closest('.overwrite-select-item');
+            if (item) {
+                const projectId = item.dataset.projectId;
+                cleanup();
+                resolve(projectId);
+            }
+        };
+
+        // Handle cancel
+        const handleCancel = () => {
+            cleanup();
+            resolve(null);
+        };
+
+        // Handle Escape key
+        const handleKey = (e) => {
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                handleCancel();
+            }
+        };
+
+        // Cleanup
+        const cleanup = () => {
+            modal.classList.add('hidden');
+            list.removeEventListener('click', handleSelect);
+            cancelBtn.removeEventListener('click', handleCancel);
+            document.removeEventListener('keydown', handleKey);
+        };
+
+        // Attach listeners
+        list.addEventListener('click', handleSelect);
+        cancelBtn.addEventListener('click', handleCancel);
+        document.addEventListener('keydown', handleKey);
+    });
 }
 
 // ============================================================================
@@ -5930,13 +6001,14 @@ function initEventListeners() {
 
             const alertModal = document.getElementById('alert-modal');
             const promptModal = document.getElementById('prompt-modal');
+            const overwriteSelectModal = document.getElementById('overwrite-select-modal');
             const editorModal = document.getElementById('editor-modal');
             const helpModal = document.getElementById('help-modal');
             const settingsModal = document.getElementById('settings-modal');
             const moveToModal = document.getElementById('move-to-modal');
 
-            // Alert and prompt modals handle Escape in their own handlers
-            if (!alertModal.classList.contains('hidden') || !promptModal.classList.contains('hidden')) {
+            // Alert, prompt, and overwrite select modals handle Escape in their own handlers
+            if (!alertModal.classList.contains('hidden') || !promptModal.classList.contains('hidden') || !overwriteSelectModal.classList.contains('hidden')) {
                 return; // Let modal's own handler deal with it
             }
 

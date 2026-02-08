@@ -1493,6 +1493,95 @@ body {
 }
 
 /* ============================================================================
+   OVERWRITE SELECT MODAL (reuses move-to-modal styles)
+   ============================================================================ */
+
+#overwrite-select-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+}
+
+#overwrite-select-modal.hidden {
+    display: none;
+}
+
+#overwrite-select-content {
+    background: var(--bg-secondary);
+    border: 2px solid var(--accent);
+    border-radius: 12px;
+    padding: 30px;
+    width: 500px;
+    max-width: 90%;
+}
+
+#overwrite-select-content h3 {
+    margin: 0 0 20px 0;
+    color: var(--text-primary);
+    font-size: 20px;
+}
+
+#overwrite-select-list {
+    max-height: 400px;
+    overflow-y: auto;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    background: var(--bg-primary);
+}
+
+.overwrite-select-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 15px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--surface);
+    transition: background 0.2s;
+}
+
+.overwrite-select-item:last-child {
+    border-bottom: none;
+}
+
+.overwrite-select-item:hover {
+    background: var(--surface);
+}
+
+.overwrite-select-item-name {
+    flex: 1;
+    color: var(--text-primary);
+    font-size: 16px;
+}
+
+.overwrite-select-item-count {
+    color: var(--text-secondary);
+    font-size: 14px;
+    margin-left: 10px;
+}
+
+#overwrite-select-cancel {
+    width: 100%;
+    padding: 10px;
+    background: var(--surface);
+    border: none;
+    border-radius: 6px;
+    color: var(--text-primary);
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s;
+}
+
+#overwrite-select-cancel:hover {
+    background: var(--surface-hover);
+}
+
+/* ============================================================================
    CONFIRMATION MODAL
    ============================================================================ */
 
