@@ -446,3 +446,85 @@ Edge cases handled:
 - Tab close: Browser shows warning dialog if save pending/in-progress
 
 ---
+
+## 2026-02-07: Function Refactoring - Extract Method Pattern
+
+DECISION: Refactor large monolithic functions into smaller, focused helper functions
+CHOSE: Extract helper functions following Single Responsibility Principle
+NOT: Keep large functions with multiple responsibilities
+NOT: Over-engineer with unnecessary abstractions
+
+Reasoning:
+- Readability: 70-line functions reduced to 12-18 lines
+- Testability: Each helper can be unit tested independently
+- Maintainability: Each concern isolated in one location
+- Reusability: Helpers usable across multiple contexts
+- Patterns applied: Factory Pattern, Command Pattern, Event Delegation
+
+Functions refactored:
+- `updateHashtagDisplay()`: 70 → 15 lines, 9 helpers extracted, event delegation (1 listener vs N)
+- `showNodeContextMenu()`: 57 → 18 lines, 11 helpers extracted, Command Pattern for action dispatch
+
+---
+
+## 2026-02-07: Event Delegation vs Individual Listeners
+
+DECISION: Use event delegation for hashtag pills, not for context menus
+CHOSE: Event delegation for hashtag pills (AbortController cleanup), individual listeners for context menus
+NOT: Event delegation everywhere (over-engineering)
+NOT: Individual listeners everywhere (memory inefficient)
+
+Reasoning:
+- Hashtag pills: Many pills (1-20+), frequently re-rendered, benefits from delegation
+- Context menus: Short-lived, created/destroyed on each use, handler removed with menu
+- Memory management: AbortController for clean listener cleanup on modal close
+- Performance: 1 listener vs N listeners reduces memory footprint for hashtag pills
+- Simplicity: Context menu handler lifecycle matches menu lifecycle (no global handler needed)
+
+---
+
+## 2026-02-07: Command Pattern for Menu Actions
+
+DECISION: Use Command Pattern with registry lookup instead of if/else chains
+CHOSE: Command registry mapping action strings to command functions
+NOT: Long if/else chains for action dispatch
+NOT: Switch statements (similar problems to if/else)
+
+Reasoning:
+- Extensibility: Add new commands without modifying dispatcher
+- Testability: Each command function independently testable
+- Reusability: Commands can be invoked from keyboard shortcuts, toolbar, etc.
+- Readability: Action names map directly to command functions
+- Maintainability: Single location for command registry
+
+Implementation:
+```javascript
+const commands = {
+  'bring-front': commandBringToFront,
+  'send-back': commandSendToBack,
+  'move-to': commandMoveTo,
+  'connect-to': commandConnectTo
+};
+```
+
+---
+
+## 2026-02-08: Mobile Detection - Pointer/Hover Instead of Screen Width
+
+DECISION: Use pointer type and hover capability instead of screen width for mobile detection
+CHOSE: `@media (pointer: coarse) and (hover: none)` + JavaScript `isMobileDevice()` function
+NOT: `@media (max-width: 600px)` and `window.innerWidth <= 600` (width-based detection)
+NOT: User agent detection (unreliable, easily spoofed)
+NOT: Touch support only (laptops with touchscreens would be detected as mobile)
+
+Reasoning:
+- User request: Allow desktop features on small browser windows
+- Accuracy: Detects actual input capability (touch without hover = mobile)
+- Flexibility: Small desktop windows retain desktop keyboard shortcuts and behaviors
+- CSS consistency: All three `@media` queries updated to use pointer/hover
+- JavaScript: Single `isMobileDevice()` function checks both conditions
+- Desktop features: Enter key saves note, desktop action bar hidden, full zoom range
+- Mobile features: Touch interactions, simplified UI, mobile-optimized layouts
+- Testing: Laptops with touchscreens correctly detected as desktop (can hover)
+
+---

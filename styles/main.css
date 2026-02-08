@@ -1901,7 +1901,9 @@ body {
 }
 
 /* On mobile: hide desktop help, show mobile help, show mobile-only elements */
-@media (max-width: 600px) {
+/* Use pointer and hover detection instead of screen width for better desktop experience */
+/* Check: device does NOT have fine pointer (mouse) AND does NOT have hover capability */
+@media (hover: none) and (pointer: coarse) {
     #help-desktop {
         display: none;
     }
@@ -2288,7 +2290,7 @@ body {
 }
 
 /* Mobile sidebar positioning */
-@media (max-width: 600px) {
+@media (hover: none) and (pointer: coarse) {
     #hashtag-sidebar {
         width: 220px; /* Narrower on mobile */
     }
@@ -2475,7 +2477,7 @@ body {
     text-align: center;
 }
 
-@media (max-width: 600px) {
+@media (hover: none) and (pointer: coarse) {
     #hashtag-autocomplete {
         left: 10px !important;
         right: 10px !important;

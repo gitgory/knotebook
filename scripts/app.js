@@ -274,8 +274,18 @@ const CONTEXT_MENU_Z_INDEX = 100; // Z-index for context menus (below modals)
 const TOAST_Z_INDEX = 10001; // Z-index for toast notifications (above modals)
 const MODAL_Z_INDEX = 10000; // Z-index for modals
 
-// Responsive Breakpoints
-const MOBILE_BREAKPOINT = 600; // Max width considered mobile (pixels)
+// Mobile Detection
+// Use pointer type (coarse = touch) and hover capability instead of screen width
+// This allows small desktop windows to keep desktop features
+function isMobileDevice() {
+    // Check if device has coarse pointer (touch) and cannot hover
+    const hasCoarsePointer = window.matchMedia('(pointer: coarse)').matches;
+    const cannotHover = window.matchMedia('(hover: none)').matches;
+
+    // Both conditions should be true for mobile devices
+    // This avoids treating small desktop windows as mobile
+    return hasCoarsePointer && cannotHover;
+}
 
 // Storage Keys
 const STORAGE_KEY_PREFIX = 'knotebook-project-';
@@ -3252,71 +3262,197 @@ function sendToBack() {
 }
 
 /**
- * Display the node context menu at a specific screen position.
- * Menu items vary based on selection count (multi-select shows "Connect to...").
- * Provides options for bring to front, send to back, move to notebook, and batch connect.
- * Position is adjusted if menu would extend beyond screen boundaries.
+ * Gets menu items for node context menu based on selection state.
+ * Items vary based on whether single or multiple nodes selected.
  *
- * @param {string} nodeId - ID of node that was right-clicked
- * @param {number} x - Screen X coordinate for menu position
- * @param {number} y - Screen Y coordinate for menu position
+ * @param {number} selectionCount - Number of selected nodes
+ * @returns {Array<{action: string, text: string}>} - Menu item definitions
  */
-function showNodeContextMenu(nodeId, x, y) {
-    // Remove existing menu if any
-    hideNodeContextMenu();
+function getNodeContextMenuItems(selectionCount) {
+    const items = [];
 
+    // Multi-selection specific items
+    if (selectionCount > 1) {
+        items.push({ action: 'connect-to', text: 'Connect to...' });
+    }
+
+    // Common items (always available)
+    items.push({ action: 'bring-front', text: 'Bring to Front' });
+    items.push({ action: 'send-back', text: 'Send to Back' });
+    items.push({ action: 'move-to', text: 'Move to...' });
+
+    return items;
+}
+
+/**
+ * Creates a context menu item element.
+ * Factory pattern for consistent menu item creation.
+ *
+ * @param {string} action - Action identifier (e.g., 'bring-front')
+ * @param {string} text - Display text for menu item
+ * @returns {HTMLElement} - Menu item element
+ */
+function createContextMenuItem(action, text) {
+    const div = document.createElement('div');
+    div.className = 'context-menu-item';
+    div.dataset.action = action;
+    div.textContent = text;
+    return div;
+}
+
+/**
+ * Creates the context menu container element with base styles.
+ * Container positioned fixed at specified coordinates with proper z-index.
+ *
+ * @param {string} menuId - ID for the menu element
+ * @param {number} x - Initial X coordinate (px)
+ * @param {number} y - Initial Y coordinate (px)
+ * @returns {HTMLElement} - Menu container element
+ */
+function createContextMenuContainer(menuId, x, y) {
     const menu = document.createElement('div');
-    menu.id = 'node-context-menu';
+    menu.id = menuId;
     menu.style.position = 'fixed';
     menu.style.left = x + 'px';
     menu.style.top = y + 'px';
     menu.style.zIndex = CONTEXT_MENU_Z_INDEX;
+    return menu;
+}
 
-    // Build menu items based on selection count
-    const menuItems = [];
-
-    if (state.selectedNodes.length > 1) {
-        menuItems.push({ action: 'connect-to', text: 'Connect to...' });
-    }
-
-    menuItems.push({ action: 'bring-front', text: 'Bring to Front' });
-    menuItems.push({ action: 'send-back', text: 'Send to Back' });
-    menuItems.push({ action: 'move-to', text: 'Move to...' });
-
-    menuItems.forEach(item => {
-        const div = document.createElement('div');
-        div.className = 'context-menu-item';
-        div.dataset.action = item.action;
-        div.textContent = item.text;
-        menu.appendChild(div);
+/**
+ * Populates context menu with items.
+ * Creates menu item elements and appends to container.
+ *
+ * @param {HTMLElement} menu - Menu container element
+ * @param {Array<{action: string, text: string}>} items - Menu item definitions
+ */
+function populateContextMenu(menu, items) {
+    items.forEach(item => {
+        const menuItem = createContextMenuItem(item.action, item.text);
+        menu.appendChild(menuItem);
     });
+}
 
-    // Adjust position if menu goes off screen
-    document.body.appendChild(menu);
+/**
+ * Adjusts context menu position to keep it within viewport bounds.
+ * Flips menu to left/top if it would extend beyond right/bottom edges.
+ * MUST be called after menu is appended to DOM (requires getBoundingClientRect).
+ *
+ * @param {HTMLElement} menu - Menu element to adjust
+ * @param {number} originalX - Original X coordinate
+ * @param {number} originalY - Original Y coordinate
+ */
+function adjustContextMenuPosition(menu, originalX, originalY) {
     const rect = menu.getBoundingClientRect();
+
+    // Flip to left if extending beyond right edge
     if (rect.right > window.innerWidth) {
-        menu.style.left = (x - rect.width) + 'px';
-    }
-    if (rect.bottom > window.innerHeight) {
-        menu.style.top = (y - rect.height) + 'px';
+        menu.style.left = (originalX - rect.width) + 'px';
     }
 
-    // Handle menu actions
+    // Flip to top if extending beyond bottom edge
+    if (rect.bottom > window.innerHeight) {
+        menu.style.top = (originalY - rect.height) + 'px';
+    }
+}
+
+/**
+ * Command: Bring selected nodes to front.
+ * Increases z-order of selected nodes.
+ */
+function commandBringToFront() {
+    bringToFront();
+}
+
+/**
+ * Command: Send selected nodes to back.
+ * Decreases z-order of selected nodes.
+ */
+function commandSendToBack() {
+    sendToBack();
+}
+
+/**
+ * Command: Open move-to modal.
+ * Allows moving nodes to different parent/level.
+ */
+function commandMoveTo() {
+    showMoveToModal();
+}
+
+/**
+ * Command: Start batch connect mode.
+ * Initiates edge creation from selected nodes.
+ */
+function commandConnectTo() {
+    startEdgeCreation();
+}
+
+/**
+ * Executes context menu action based on action identifier.
+ * Maps action strings to command functions using Command Pattern.
+ *
+ * @param {string} action - Action identifier from menu item
+ */
+function executeContextMenuAction(action) {
+    const commands = {
+        'bring-front': commandBringToFront,
+        'send-back': commandSendToBack,
+        'move-to': commandMoveTo,
+        'connect-to': commandConnectTo
+    };
+
+    const command = commands[action];
+    if (command) {
+        command();
+    }
+}
+
+/**
+ * Attaches click handler to context menu.
+ * Handles action execution and menu cleanup.
+ *
+ * @param {HTMLElement} menu - Menu element
+ * @param {Function} onAction - Callback for action execution
+ */
+function attachContextMenuHandler(menu, onAction) {
     menu.addEventListener('mousedown', (e) => {
-        e.stopPropagation();
+        e.stopPropagation(); // Prevent event bubbling
         const action = e.target.dataset.action;
-        if (action === 'bring-front') {
-            bringToFront();
-        } else if (action === 'send-back') {
-            sendToBack();
-        } else if (action === 'move-to') {
-            showMoveToModal();
-        } else if (action === 'connect-to') {
-            // Start batch connect mode
-            startEdgeCreation();
+        if (action) {
+            onAction(action);
+            hideNodeContextMenu();
         }
-        hideNodeContextMenu();
     });
+}
+
+/**
+ * Shows node context menu at specified screen coordinates.
+ * Menu items vary based on selection count (multi-select adds "Connect to...").
+ * Position adjusted to keep menu within viewport bounds.
+ *
+ * @param {string} nodeId - ID of node (currently unused, for future features)
+ * @param {number} x - Screen X coordinate for menu position
+ * @param {number} y - Screen Y coordinate for menu position
+ */
+function showNodeContextMenu(nodeId, x, y) {
+    hideNodeContextMenu(); // Guard: cleanup existing menu
+
+    // 1. Get menu configuration based on selection state
+    const items = getNodeContextMenuItems(state.selectedNodes.length);
+
+    // 2. Create menu structure
+    const menu = createContextMenuContainer('node-context-menu', x, y);
+    populateContextMenu(menu, items);
+
+    // 3. Add to DOM (required for position adjustment)
+    document.body.appendChild(menu);
+
+    // 4. Adjust position to prevent off-screen rendering
+    adjustContextMenuPosition(menu, x, y);
+
+    // 5. Attach event handler
+    attachContextMenuHandler(menu, executeContextMenuAction);
 }
 
 function hideNodeContextMenu() {
@@ -3643,6 +3779,7 @@ function openEditor(nodeId) {
 
 function closeEditor() {
     hideAutocomplete();
+    cleanupHashtagPillHandlers();
     const modal = document.getElementById('editor-modal');
     modal.classList.add('hidden');
     delete modal.dataset.nodeId;
@@ -3796,6 +3933,178 @@ async function saveEditor() {
 }
 
 /**
+ * Calculates badge text for hashtag pill in batch edit mode.
+ * Shows count format "(n/total)" where n is nodes with this tag.
+ * Removed tags show as "(0/total)".
+ *
+ * @param {string} tag - Hashtag to get badge for
+ * @param {boolean} isBatchMode - Whether in batch edit mode
+ * @param {boolean} isRemoved - Whether tag is marked for removal
+ * @param {Object} tagCounts - Map of tag to count (may be null/undefined)
+ * @param {number} totalNodes - Total number of nodes being edited
+ * @returns {string} - Badge text (empty string if not batch mode)
+ */
+function getHashtagBadgeText(tag, isBatchMode, isRemoved, tagCounts, totalNodes) {
+    if (!isBatchMode) return '';
+    const count = isRemoved ? 0 : (tagCounts?.[tag] || 0);
+    return ` (${count}/${totalNodes})`;
+}
+
+/**
+ * Applies styling to hashtag pill element.
+ * Solid pills: colored background, white text (normal state)
+ * Outlined pills: transparent background, colored border (removed state)
+ *
+ * @param {HTMLElement} element - Pill element to style
+ * @param {string} color - Color to apply
+ * @param {boolean} isRemoved - Whether tag is in removed state
+ */
+function applyHashtagPillStyle(element, color, isRemoved) {
+    if (isRemoved) {
+        // Outlined pill: transparent background, colored border
+        element.style.background = 'transparent';
+        element.style.border = `2px solid ${color}`;
+        element.style.color = '#fff';
+    } else {
+        // Solid pill: background color, white text
+        element.style.background = color;
+        element.style.color = '#fff';
+    }
+}
+
+/**
+ * Creates a hashtag pill element with styling.
+ * Factory pattern for consistent pill creation.
+ *
+ * @param {string} tag - Hashtag text
+ * @param {string} badge - Badge text (e.g., " (3/5)")
+ * @param {string} color - Pill color
+ * @param {boolean} isRemoved - Whether tag is in removed state
+ * @returns {HTMLElement} - Complete pill element
+ */
+function createHashtagPill(tag, badge, color, isRemoved) {
+    const span = document.createElement('span');
+    span.className = 'hashtag editor-hashtag';
+    span.dataset.tag = tag;
+    span.textContent = tag + badge;
+    applyHashtagPillStyle(span, color, isRemoved);
+    return span;
+}
+
+/**
+ * Saves current cursor position in textarea.
+ *
+ * @param {HTMLTextAreaElement} textarea - Textarea element
+ * @returns {number} - Cursor position (selectionStart)
+ */
+function saveCursorPosition(textarea) {
+    return textarea.selectionStart;
+}
+
+/**
+ * Restores cursor position in textarea.
+ * Clamps position to valid range (0 to content length).
+ *
+ * @param {HTMLTextAreaElement} textarea - Textarea element
+ * @param {number} position - Desired cursor position
+ */
+function restoreCursorPosition(textarea, position) {
+    const newPos = Math.min(position, textarea.value.length);
+    textarea.setSelectionRange(newPos, newPos);
+}
+
+/**
+ * Re-adds a previously removed tag to both state and textarea content.
+ * Removes from removed set and appends tag to content.
+ *
+ * @param {string} tag - Hashtag to re-add
+ * @param {HTMLTextAreaElement} textarea - Textarea element
+ */
+function reAddRemovedTag(tag, textarea) {
+    state.removedTagsInSession.delete(tag);
+    const currentContent = textarea.value.trim();
+    textarea.value = currentContent + (currentContent ? ' ' : '') + tag;
+}
+
+/**
+ * Marks tag as removed in both state and content.
+ * Adds to removed set and calls removeTagFromContent helper.
+ *
+ * @param {string} tag - Hashtag to remove
+ */
+function markTagAsRemoved(tag) {
+    state.removedTagsInSession.add(tag);
+    removeTagFromContent(tag);
+}
+
+/**
+ * Triggers synthetic input event on textarea without showing autocomplete.
+ * Sets suppression flag before dispatching event to prevent dropdown.
+ *
+ * @param {HTMLTextAreaElement} textarea - Textarea element
+ */
+function triggerInputWithoutAutocomplete(textarea) {
+    autocomplete.suppress = true;
+    textarea.dispatchEvent(new Event('input'));
+}
+
+/**
+ * Attaches click handler to hashtag display using event delegation.
+ * Single handler on parent container delegates to child pills.
+ * More efficient than individual handlers on each pill.
+ * Uses AbortController for clean listener management.
+ *
+ * @param {HTMLElement} display - Hashtag display container
+ * @param {HTMLTextAreaElement} textarea - Textarea element
+ */
+function attachHashtagPillHandlers(display, textarea) {
+    // Abort previous listener if exists (prevents duplicates on re-render)
+    if (display._abortController) {
+        display._abortController.abort();
+    }
+
+    // Create new AbortController for this listener
+    const abortController = new AbortController();
+    display._abortController = abortController;
+
+    // Create delegated handler
+    const handler = (e) => {
+        // Check if clicked element is a pill
+        const pill = e.target.closest('.editor-hashtag');
+        if (!pill) return; // Not a pill, ignore
+
+        const tag = pill.dataset.tag;
+        const isRemoved = state.removedTagsInSession.has(tag);
+        const cursorPos = saveCursorPosition(textarea);
+
+        if (isRemoved) {
+            reAddRemovedTag(tag, textarea);
+        } else {
+            markTagAsRemoved(tag);
+        }
+
+        triggerInputWithoutAutocomplete(textarea);
+        restoreCursorPosition(textarea, cursorPos);
+    };
+
+    // Attach listener with abort signal
+    display.addEventListener('click', handler, { signal: abortController.signal });
+}
+
+/**
+ * Cleans up hashtag pill click handlers.
+ * Called when editor modal closes to prevent memory leaks.
+ * Uses AbortController to remove event listener.
+ */
+function cleanupHashtagPillHandlers() {
+    const display = document.getElementById('hashtag-display');
+    if (display?._abortController) {
+        display._abortController.abort();
+        display._abortController = null;
+    }
+}
+
+/**
  * Update the hashtag pill display in the editor.
  * In batch mode, shows counts (e.g., "(3/5)" for tag in 3 of 5 nodes). Removed tags
  * shown with outlined style. Click handlers toggle add/remove state. Suppresses
@@ -3808,71 +4117,19 @@ async function saveEditor() {
  */
 function updateHashtagDisplay(hashtags, isBatchMode = false, totalNodes = 1, tagCounts = {}) {
     const display = document.getElementById('hashtag-display');
-    const modal = document.getElementById('editor-modal');
     const textarea = document.getElementById('note-text');
 
     display.replaceChildren();
+
     hashtags.forEach(tag => {
-        const color = getHashtagColor(tag, false); // Don't auto-assign colors while typing
+        const color = getHashtagColor(tag, false);
         const isRemoved = state.removedTagsInSession.has(tag);
-        // If tag is removed, count is 0 (will be deleted from all notes)
-        const count = isRemoved ? 0 : (tagCounts[tag] || 0);
-        const badge = isBatchMode ? ` (${count}/${totalNodes})` : '';
-
-        const span = document.createElement('span');
-        span.className = 'hashtag editor-hashtag';
-        span.dataset.tag = tag;
-        span.textContent = tag + badge;
-
-        // Solid pill: background color, white text
-        // Outlined pill: transparent background, colored border, white text
-        if (isRemoved) {
-            span.style.background = 'transparent';
-            span.style.border = `2px solid ${color}`;
-            span.style.color = '#fff';
-        } else {
-            span.style.background = color;
-            span.style.color = '#fff';
-        }
-
-        display.appendChild(span);
+        const badge = getHashtagBadgeText(tag, isBatchMode, isRemoved, tagCounts, totalNodes);
+        const pill = createHashtagPill(tag, badge, color, isRemoved);
+        display.appendChild(pill);
     });
 
-    // Add click handlers to remove/re-add tags
-    display.querySelectorAll('.editor-hashtag').forEach(el => {
-        el.addEventListener('click', () => {
-            const tag = el.dataset.tag;
-            const isRemoved = state.removedTagsInSession.has(tag);
-
-            // Save cursor position
-            const cursorPos = textarea.selectionStart;
-
-            if (isRemoved) {
-                // Re-add tag: append to content
-                state.removedTagsInSession.delete(tag);
-                const currentContent = textarea.value.trim();
-                textarea.value = currentContent + (currentContent ? ' ' : '') + tag;
-
-                // Suppress autocomplete for this synthetic event
-                autocomplete.suppress = true;
-                // Trigger input event to re-parse and update display
-                textarea.dispatchEvent(new Event('input'));
-            } else {
-                // Remove tag: delete from content and mark as removed
-                state.removedTagsInSession.add(tag);
-                removeTagFromContent(tag);
-
-                // Suppress autocomplete for this synthetic event
-                autocomplete.suppress = true;
-                // Trigger input event to re-parse and update display
-                textarea.dispatchEvent(new Event('input'));
-            }
-
-            // Restore cursor position (clamped to new content length)
-            const newPos = Math.min(cursorPos, textarea.value.length);
-            textarea.setSelectionRange(newPos, newPos);
-        });
-    });
+    attachHashtagPillHandlers(display, textarea);
 }
 
 // Helper function to remove a tag from content textarea
@@ -4371,6 +4628,117 @@ function hideMoveToModal() {
 }
 
 /**
+ * Create deep copies of nodes with new IDs and build ID mapping.
+ *
+ * @param {string[]} selectedNodeIds - IDs of nodes to copy
+ * @param {Object[]} allNodes - All nodes in current level
+ * @returns {{nodes: Object[], idMapping: Object}} Copied nodes and ID mapping
+ */
+function createNodeCopiesWithMapping(selectedNodeIds, allNodes) {
+    const idMapping = {};
+    const nodes = selectedNodeIds.map(id => {
+        const node = allNodes.find(n => n.id === id);
+        const copy = deepCopyNode(node);
+        idMapping[id] = copy.id;
+        return copy;
+    });
+    return { nodes, idMapping };
+}
+
+/**
+ * Filter edges between selected nodes and remap to new IDs.
+ *
+ * @param {Array} edges - All edges in current level
+ * @param {Object} idMapping - Map from old IDs to new IDs
+ * @param {string[]} selectedNodeIds - IDs of selected nodes
+ * @returns {Array} Edges with remapped IDs
+ */
+function filterAndRemapEdges(edges, idMapping, selectedNodeIds) {
+    return edges
+        .filter(edge =>
+            selectedNodeIds.includes(edge[0]) &&
+            selectedNodeIds.includes(edge[1])
+        )
+        .map(edge => [idMapping[edge[0]], idMapping[edge[1]]]);
+}
+
+/**
+ * Calculate bounding box and center point for a set of nodes.
+ *
+ * @param {Object[]} nodes - Nodes to calculate bounds for
+ * @returns {{minX: number, minY: number, maxX: number, maxY: number, centerX: number, centerY: number}}
+ */
+function calculateBoundingBox(nodes) {
+    const minX = Math.min(...nodes.map(n => n.position.x));
+    const minY = Math.min(...nodes.map(n => n.position.y));
+    const maxX = Math.max(...nodes.map(n => n.position.x + NODE_WIDTH));
+    const maxY = Math.max(...nodes.map(n => n.position.y + NODE_HEIGHT));
+
+    const centerX = (minX + maxX) / 2;
+    const centerY = (minY + maxY) / 2;
+
+    return { minX, minY, maxX, maxY, centerX, centerY };
+}
+
+/**
+ * Calculate relative offset from center for each node.
+ *
+ * @param {Object[]} nodes - Nodes to calculate offsets for
+ * @param {number} centerX - Center X coordinate
+ * @param {number} centerY - Center Y coordinate
+ * @returns {Object} Map of node ID to {dx, dy} offset
+ */
+function calculateRelativeOffsets(nodes, centerX, centerY) {
+    const offsets = {};
+    nodes.forEach(node => {
+        offsets[node.id] = {
+            dx: node.position.x - centerX,
+            dy: node.position.y - centerY
+        };
+    });
+    return offsets;
+}
+
+/**
+ * Get project name by ID.
+ *
+ * @param {string} projectId - Project ID to look up
+ * @param {Object[]} projectsList - List of all projects
+ * @returns {string} Project name or 'Unknown'
+ */
+function getSourceProjectName(projectId, projectsList) {
+    const project = projectsList.find(p => p.id === projectId);
+    return project ? project.name : 'Unknown';
+}
+
+/**
+ * Build complete move package structure.
+ *
+ * @param {Object} data - All data needed for move package
+ * @returns {Object} Complete move package
+ */
+function buildMovePackage(data) {
+    return {
+        sourceProjectId: data.sourceProjectId,
+        sourceProjectName: data.sourceProjectName,
+        originalIds: data.originalIds,
+        nodes: data.nodes,
+        edges: data.edges,
+        boundingBox: data.boundingBox,
+        relativeOffsets: data.relativeOffsets
+    };
+}
+
+/**
+ * Store pending move data in sessionStorage.
+ *
+ * @param {Object} movePackage - Complete move package to store
+ */
+function storePendingMove(movePackage) {
+    sessionStorage.setItem(MOVE_STORAGE_KEY, JSON.stringify(movePackage));
+}
+
+/**
  * Initiate move operation to transfer selected nodes to another notebook.
  * Creates deep copies with new IDs, preserves edges between moved nodes, calculates
  * bounding box and relative offsets for cursor following, stores pending move in
@@ -4380,64 +4748,71 @@ function hideMoveToModal() {
  * @returns {Promise<void>}
  */
 async function initiateMoveToNotebook(targetProjectId) {
-    // Store original IDs for source cleanup
+    // Guard clauses - validate preconditions
+    if (!targetProjectId) {
+        console.error('No target project ID provided');
+        return;
+    }
+
+    if (!state.currentProjectId) {
+        console.error('No current project open');
+        return;
+    }
+
+    if (state.selectedNodes.length === 0) {
+        console.error('No nodes selected to move');
+        return;
+    }
+
+    const projectsList = getProjectsList();
+    const targetExists = projectsList.some(p => p.id === targetProjectId);
+    if (!targetExists) {
+        console.error('Target project does not exist');
+        return;
+    }
+
+    // Command execution - pure operations first, then side effects
+
+    // 1. Data transformation
     const originalIds = [...state.selectedNodes];
+    const { nodes, idMapping } = createNodeCopiesWithMapping(
+        state.selectedNodes,
+        state.nodes
+    );
+    const edges = filterAndRemapEdges(
+        state.edges,
+        idMapping,
+        state.selectedNodes
+    );
 
-    // Create a mapping from old IDs to new IDs for edge updates
-    const idMapping = {};
+    // 2. Geometric calculations
+    const boundingBox = calculateBoundingBox(nodes);
+    const relativeOffsets = calculateRelativeOffsets(
+        nodes,
+        boundingBox.centerX,
+        boundingBox.centerY
+    );
 
-    // Get selected nodes and create deep copies with new IDs
-    const nodesToMove = state.selectedNodes.map(id => {
-        const node = state.nodes.find(n => n.id === id);
-        const copy = deepCopyNode(node);
-        idMapping[id] = copy.id;
-        return copy;
-    });
-
-    // Get edges where both endpoints are in the selection, and update to new IDs
-    const edgesToMove = state.edges
-        .filter(edge =>
-            state.selectedNodes.includes(edge[0]) && state.selectedNodes.includes(edge[1])
-        )
-        .map(edge => [idMapping[edge[0]], idMapping[edge[1]]]);
-
-    // Calculate bounding box and relative offsets
-    const bounds = {
-        minX: Math.min(...nodesToMove.map(n => n.position.x)),
-        minY: Math.min(...nodesToMove.map(n => n.position.y)),
-        maxX: Math.max(...nodesToMove.map(n => n.position.x + NODE_WIDTH)),
-        maxY: Math.max(...nodesToMove.map(n => n.position.y + NODE_HEIGHT))
-    };
-
-    const centerX = (bounds.minX + bounds.maxX) / 2;
-    const centerY = (bounds.minY + bounds.maxY) / 2;
-
-    // Store relative offsets from center for each node (using new IDs)
-    const relativeOffsets = {};
-    nodesToMove.forEach(node => {
-        relativeOffsets[node.id] = {
-            dx: node.position.x - centerX,
-            dy: node.position.y - centerY
-        };
-    });
-
-    // Get source project name for toast message
-    const sourceProject = getProjectsList().find(p => p.id === state.currentProjectId);
-
-    // Store pending move in sessionStorage
-    const pendingMove = {
+    // 3. Data assembly
+    const sourceProjectName = getSourceProjectName(
+        state.currentProjectId,
+        projectsList
+    );
+    const movePackage = buildMovePackage({
         sourceProjectId: state.currentProjectId,
-        sourceProjectName: sourceProject ? sourceProject.name : 'Unknown',
-        originalIds: originalIds,  // Store original IDs for source cleanup
-        nodes: nodesToMove,
-        edges: edgesToMove,
-        boundingBox: { centerX, centerY },
+        sourceProjectName: sourceProjectName,
+        originalIds: originalIds,
+        nodes: nodes,
+        edges: edges,
+        boundingBox: {
+            centerX: boundingBox.centerX,
+            centerY: boundingBox.centerY
+        },
         relativeOffsets: relativeOffsets
-    };
+    });
 
-    sessionStorage.setItem(MOVE_STORAGE_KEY, JSON.stringify(pendingMove));
-
-    // Switch to target notebook
+    // 4. Side effects - storage and navigation
+    storePendingMove(movePackage);
     await openProject(targetProjectId);
 }
 
@@ -6342,8 +6717,7 @@ function initEventListeners() {
     document.getElementById('note-text').addEventListener('keydown', (e) => {
         if (handleAutocompleteKeydown(e)) return;
         // On desktop: Enter saves (unless Shift). On mobile: Enter always inserts newline
-        const isMobile = window.innerWidth <= MOBILE_BREAKPOINT;
-        if (e.key === 'Enter' && !e.shiftKey && !isMobile) {
+        if (e.key === 'Enter' && !e.shiftKey && !isMobileDevice()) {
             e.preventDefault();
             saveEditor();
         }
