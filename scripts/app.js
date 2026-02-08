@@ -4968,6 +4968,9 @@ async function handleImportOverwrite() {
         return;
     }
 
+    // Save import data before hiding modal (hideImportModal clears state.pendingImportData)
+    const importData = state.pendingImportData;
+
     // Hide import modal and show overwrite selection modal
     hideImportModal();
 
@@ -4991,12 +4994,12 @@ async function handleImportOverwrite() {
     // Save imported data to the existing project
     const projectData = {
         version: 1,
-        nodes: state.pendingImportData.nodes || [],
-        edges: state.pendingImportData.edges || [],
-        hashtagColors: state.pendingImportData.hashtagColors || {},
-        settings: state.pendingImportData.settings || { defaultCompletion: null },
-        hiddenHashtags: state.pendingImportData.hiddenHashtags || [],
-        theme: state.pendingImportData.theme || getCurrentTheme()
+        nodes: importData.nodes || [],
+        edges: importData.edges || [],
+        hashtagColors: importData.hashtagColors || {},
+        settings: importData.settings || { defaultCompletion: null },
+        hiddenHashtags: importData.hiddenHashtags || [],
+        theme: importData.theme || getCurrentTheme()
     };
     localStorage.setItem(STORAGE_KEY_PREFIX + targetProject.id, JSON.stringify(projectData));
 
