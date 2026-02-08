@@ -597,11 +597,10 @@ async function saveProjectToStorage() {
 
         if (e.name === 'QuotaExceededError') {
             await showAlert(
-                'Storage quota exceeded! Export this notebook immediately to avoid losing work.\n\n' +
+                'Storage quota exceeded! Export (⬇) this notebook immediately to avoid losing work.\n\n' +
                 'To free up space:\n' +
-                '1. Click toolbar Export button (⬇) to save this notebook\n' +
-                '2. Delete unneeded notebooks from landing page\n' +
-                '3. Or clear browser data: Settings → Privacy → Clear browsing data → Site data',
+                '1. Delete unneeded notebooks from landing page\n' +
+                '2. Or clear browser data: Settings → Privacy → Clear browsing data → Site data',
                 'Storage Error'
             );
         } else {
