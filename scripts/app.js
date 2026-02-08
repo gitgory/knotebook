@@ -3932,6 +3932,113 @@ function getAutocompleteSuggestions(query) {
 }
 
 /**
+ * Updates autocomplete state with suggestions and target input.
+ * Resets selection index and marks autocomplete as active.
+ *
+ * @param {Object[]} suggestions - Array of autocomplete suggestions
+ * @param {HTMLElement} inputElement - Input element that triggered autocomplete
+ */
+function updateAutocompleteState(suggestions, inputElement) {
+    autocomplete.items = suggestions;
+    autocomplete.selectedIndex = -1;
+    autocomplete.active = true;
+    autocomplete.targetInput = inputElement;
+}
+
+/**
+ * Creates an empty state element for autocomplete dropdown.
+ * Shown when no tags match the current query.
+ *
+ * @returns {HTMLElement} - Empty state div element
+ */
+function renderEmptyAutocomplete() {
+    const emptyDiv = document.createElement('div');
+    emptyDiv.className = 'autocomplete-empty';
+    emptyDiv.textContent = 'No matching tags';
+    return emptyDiv;
+}
+
+/**
+ * Creates a single autocomplete item element with pill, tag, and count.
+ * Uses Factory Pattern to encapsulate element creation logic.
+ *
+ * @param {Object} suggestion - Suggestion object with tag, color, and count
+ * @param {number} index - Index of item in suggestions array
+ * @returns {HTMLElement} - Complete autocomplete item div
+ */
+function createAutocompleteItem(suggestion, index) {
+    const div = document.createElement('div');
+    div.className = 'autocomplete-item';
+    div.dataset.index = index;
+
+    const pill = document.createElement('span');
+    pill.className = 'ac-pill';
+    pill.style.background = suggestion.color;
+
+    const tag = document.createElement('span');
+    tag.className = 'ac-tag';
+    tag.textContent = suggestion.tag;
+
+    const count = document.createElement('span');
+    count.className = 'ac-count';
+    count.textContent = suggestion.count;
+
+    div.appendChild(pill);
+    div.appendChild(tag);
+    div.appendChild(count);
+
+    return div;
+}
+
+/**
+ * Attaches mousedown event handler to autocomplete item.
+ * Prevents input blur and triggers item selection.
+ *
+ * @param {HTMLElement} itemElement - Autocomplete item element
+ * @param {number} index - Index of item to select
+ */
+function attachAutocompleteItemHandler(itemElement, index) {
+    itemElement.addEventListener('mousedown', (e) => {
+        e.preventDefault(); // prevent input blur
+        selectAutocompleteItem(index);
+    });
+}
+
+/**
+ * Populates autocomplete list with suggestions or empty state.
+ * Clears existing list and creates new item elements with event handlers.
+ *
+ * @param {Object[]} suggestions - Array of autocomplete suggestions
+ */
+function populateAutocompleteList(suggestions) {
+    const list = document.getElementById('hashtag-autocomplete-list');
+
+    if (suggestions.length === 0) {
+        list.replaceChildren(renderEmptyAutocomplete());
+        return;
+    }
+
+    list.replaceChildren();
+    suggestions.forEach((suggestion, index) => {
+        const item = createAutocompleteItem(suggestion, index);
+        attachAutocompleteItemHandler(item, index);
+        list.appendChild(item);
+    });
+}
+
+/**
+ * Displays the autocomplete dropdown.
+ * Positions dropdown relative to input and makes it visible.
+ *
+ * @param {HTMLElement} inputElement - Input element to position relative to
+ */
+function displayAutocompleteDropdown(inputElement) {
+    const dropdown = document.getElementById('hashtag-autocomplete');
+    positionAutocomplete(inputElement);
+    dropdown.classList.remove('hidden');
+}
+
+/**
  * Display the autocomplete dropdown with hashtag suggestions.
  * Creates list items with colored pills, tag text, and usage counts. Positions
  * dropdown relative to input element. Sets up click handlers for item selection.
@@ -3940,53 +4047,10 @@ function getAutocompleteSuggestions(query) {
  */
 function showAutocomplete(inputElement) {
     const suggestions = getAutocompleteSuggestions(autocomplete.query);
-    autocomplete.items = suggestions;
-    autocomplete.selectedIndex = -1;
 
-    const dropdown = document.getElementById('hashtag-autocomplete');
-    const list = document.getElementById('hashtag-autocomplete-list');
-
-    if (suggestions.length === 0) {
-        const emptyDiv = document.createElement('div');
-        emptyDiv.className = 'autocomplete-empty';
-        emptyDiv.textContent = 'No matching tags';
-        list.replaceChildren(emptyDiv);
-    } else {
-        list.replaceChildren();
-        suggestions.forEach((item, i) => {
-            const div = document.createElement('div');
-            div.className = 'autocomplete-item';
-            div.dataset.index = i;
-
-            const pill = document.createElement('span');
-            pill.className = 'ac-pill';
-            pill.style.background = item.color;
-
-            const tag = document.createElement('span');
-            tag.className = 'ac-tag';
-            tag.textContent = item.tag;
-
-            const count = document.createElement('span');
-            count.className = 'ac-count';
-            count.textContent = item.count;
-
-            div.appendChild(pill);
-            div.appendChild(tag);
-            div.appendChild(count);
-
-            div.addEventListener('mousedown', (e) => {
-                e.preventDefault(); // prevent input blur
-                selectAutocompleteItem(i);
-            });
-
-            list.appendChild(div);
-        });
-    }
-
-    positionAutocomplete(inputElement);
-    dropdown.classList.remove('hidden');
-    autocomplete.active = true;
-    autocomplete.targetInput = inputElement;
+    updateAutocompleteState(suggestions, inputElement);
+    populateAutocompleteList(suggestions);
+    displayAutocompleteDropdown(inputElement);
 }
 
 /**
