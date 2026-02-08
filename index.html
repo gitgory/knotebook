@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>knotebook</title>
     <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
-    <link rel="stylesheet" href="styles/main.css?v=146">
+    <link rel="stylesheet" href="styles/main.css?v=147">
 </head>
 <body>
     <div id="app">
@@ -22,7 +22,18 @@
                     <h2>Your Notebooks</h2>
                     <div id="projects-list"></div>
                 </div>
-                <div id="version-info">CSS v146 | JS v150</div>
+                <div id="version-info">CSS v147 | JS v151</div>
+
+                <!-- Debug Tools (hidden by default) -->
+                <div id="debug-tools" class="hidden">
+                    <h3>🛠️ Developer Tools</h3>
+                    <div id="debug-buttons">
+                        <button id="debug-fill-storage">Fill localStorage</button>
+                        <button id="debug-clear-test-data">Clear test data</button>
+                        <button id="debug-check-usage">Check storage usage</button>
+                    </div>
+                    <div id="debug-output"></div>
+                </div>
             </div>
         </div>
 
@@ -337,6 +348,6 @@
         </div>
     </div>
 
-    <script src="scripts/app.js?v=150"></script>
+    <script src="scripts/app.js?v=151"></script>
 </body>
 </html>

@@ -6628,6 +6628,14 @@ function initEventListeners() {
 
     // Landing page buttons
     document.getElementById('new-project-btn').addEventListener('click', newProject);
+
+    // Debug tools (show with Ctrl+Shift+D on landing page)
+    document.addEventListener('keydown', (e) => {
+        if (e.ctrlKey && e.shiftKey && e.key === 'D' && document.getElementById('landing-page').style.display !== 'none') {
+            const debugTools = document.getElementById('debug-tools');
+            debugTools.classList.toggle('hidden');
+        }
+    });
     document.getElementById('import-project-btn').addEventListener('click', async () => {
         const btn = document.getElementById('import-project-btn');
         btn.classList.add('loading');
@@ -6994,6 +7002,60 @@ function initEventListeners() {
             }
         });
     }
+
+    // Debug tools buttons
+    document.getElementById('debug-fill-storage')?.addEventListener('click', () => {
+        const output = document.getElementById('debug-output');
+        output.textContent = 'Filling localStorage...\n';
+        const CHUNK_SIZE = 100000; // 100KB chunks
+        const testKey = 'test-filler-';
+        let i = 0;
+        let totalSize = 0;
+
+        try {
+            while (true) {
+                const data = 'x'.repeat(CHUNK_SIZE);
+                localStorage.setItem(testKey + i, data);
+                totalSize += CHUNK_SIZE;
+                i++;
+                output.textContent += `Added chunk ${i} (${(totalSize / 1024 / 1024).toFixed(2)} MB total)\n`;
+            }
+        } catch (e) {
+            output.textContent += `\n✅ Filled localStorage successfully!\n`;
+            output.textContent += `Total: ${i} chunks (${(totalSize / 1024 / 1024).toFixed(2)} MB)\n`;
+            output.textContent += `Error: ${e.message}\n\n`;
+            output.textContent += 'Now try making a change to trigger auto-save.';
+        }
+    });
+
+    document.getElementById('debug-clear-test-data')?.addEventListener('click', () => {
+        const output = document.getElementById('debug-output');
+        output.textContent = 'Cleaning up test data...\n';
+        let count = 0;
+        const keys = Object.keys(localStorage);
+
+        for (const key of keys) {
+            if (key.startsWith('test-filler-')) {
+                localStorage.removeItem(key);
+                count++;
+            }
+        }
+
+        output.textContent += `✅ Removed ${count} test chunks\n`;
+        output.textContent += 'localStorage freed up successfully';
+    });
+
+    document.getElementById('debug-check-usage')?.addEventListener('click', () => {
+        const output = document.getElementById('debug-output');
+        let total = 0;
+        for (const key in localStorage) {
+            if (localStorage.hasOwnProperty(key)) {
+                total += localStorage[key].length + key.length;
+            }
+        }
+        output.textContent = `Current localStorage usage: ${(total / 1024 / 1024).toFixed(2)} MB\n`;
+        output.textContent += `Percentage used: ${((total / (10 * 1024 * 1024)) * 100).toFixed(2)}%`;
+    });
 
     // Error recovery modal buttons
     const errorExport = document.getElementById('error-export');
