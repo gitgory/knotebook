@@ -470,7 +470,13 @@ async function saveProjectsIndex(projects) {
     } catch (e) {
         console.error('Failed to save projects index:', e);
         if (e.name === 'QuotaExceededError') {
-            await showAlert('Storage quota exceeded! Please export and delete old projects to free up space.', 'Storage Error');
+            await showAlert(
+                'Storage quota exceeded! To free up space:\n\n' +
+                '1. Export important notebooks (⋮ menu → Export)\n' +
+                '2. Delete unneeded notebooks from landing page\n' +
+                '3. Or clear browser data: Settings → Privacy → Clear browsing data → Site data',
+                'Storage Error'
+            );
         } else {
             await showAlert('Failed to save projects list. Your changes may not persist.', 'Save Error');
         }
@@ -590,7 +596,14 @@ async function saveProjectToStorage() {
         state.lastSaveError = e.message;
 
         if (e.name === 'QuotaExceededError') {
-            await showAlert('Storage quota exceeded! Export this project immediately to avoid losing work.', 'Storage Error');
+            await showAlert(
+                'Storage quota exceeded! Export this notebook immediately to avoid losing work.\n\n' +
+                'To free up space:\n' +
+                '1. Click toolbar Export button (⬇) to save this notebook\n' +
+                '2. Delete unneeded notebooks from landing page\n' +
+                '3. Or clear browser data: Settings → Privacy → Clear browsing data → Site data',
+                'Storage Error'
+            );
         } else {
             await showAlert('Failed to save project. Consider exporting to preserve your work.', 'Save Error');
         }
@@ -659,7 +672,14 @@ async function createProject(name) {
     } catch (e) {
         console.error('Failed to create project:', e);
         if (e.name === 'QuotaExceededError') {
-            await showAlert('Storage quota exceeded! Cannot create new project.', 'Storage Error');
+            await showAlert(
+                'Storage quota exceeded! Cannot create new notebook.\n\n' +
+                'To free up space:\n' +
+                '1. Export important notebooks (⋮ menu → Export)\n' +
+                '2. Delete unneeded notebooks from landing page\n' +
+                '3. Or clear browser data: Settings → Privacy → Clear browsing data → Site data',
+                'Storage Error'
+            );
         } else {
             await showAlert('Failed to create project.', 'Error');
         }
