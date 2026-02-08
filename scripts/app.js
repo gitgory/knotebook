@@ -71,9 +71,9 @@ function hideErrorRecoveryUI() {
  * If a notebook is open, exports that notebook. Otherwise exports all projects list.
  * Provides last-resort data recovery when app is in error state.
  *
- * @returns {void}
+ * @returns {Promise<void>}
  */
-function exportCurrentDataForRecovery() {
+async function exportCurrentDataForRecovery() {
     try {
         // Try to export current project if one is open
         if (state.currentProjectId) {
@@ -91,7 +91,7 @@ function exportCurrentDataForRecovery() {
         showToast('Data exported successfully', { duration: EXPORT_SUCCESS_TOAST });
     } catch (exportError) {
         console.error('Failed to export data:', exportError);
-        alert('Failed to export data. Please try manually copying localStorage.');
+        await showAlert('Failed to export data. Please try manually copying localStorage.', 'Export Error');
     }
 }
 
@@ -452,17 +452,17 @@ function getProjectsList() {
  * Handles quota exceeded errors and other storage failures with user alerts.
  *
  * @param {Array<Object>} projects - Array of project metadata objects to save
- * @returns {void}
+ * @returns {Promise<void>}
  */
-function saveProjectsIndex(projects) {
+async function saveProjectsIndex(projects) {
     try {
         localStorage.setItem(PROJECTS_INDEX_KEY, JSON.stringify(projects));
     } catch (e) {
         console.error('Failed to save projects index:', e);
         if (e.name === 'QuotaExceededError') {
-            alert('Storage quota exceeded! Please export and delete old projects to free up space.');
+            await showAlert('Storage quota exceeded! Please export and delete old projects to free up space.', 'Storage Error');
         } else {
-            alert('Failed to save projects list. Your changes may not persist.');
+            await showAlert('Failed to save projects list. Your changes may not persist.', 'Save Error');
         }
     }
 }
@@ -580,9 +580,9 @@ async function saveProjectToStorage() {
         state.lastSaveError = e.message;
 
         if (e.name === 'QuotaExceededError') {
-            alert('Storage quota exceeded! Export this project immediately to avoid losing work.');
+            await showAlert('Storage quota exceeded! Export this project immediately to avoid losing work.', 'Storage Error');
         } else {
-            alert('Failed to save project. Consider exporting to preserve your work.');
+            await showAlert('Failed to save project. Consider exporting to preserve your work.', 'Save Error');
         }
 
         // Re-throw to allow queue to handle failure
@@ -618,9 +618,9 @@ function loadProjectFromStorage(projectId) {
  * Handles storage errors and rolls back index changes on failure.
  *
  * @param {string} name - The name for the new project
- * @returns {string|null} - Project ID on success, null on failure
+ * @returns {Promise<string|null>} - Project ID on success, null on failure
  */
-function createProject(name) {
+async function createProject(name) {
     const projectId = generateProjectId();
     const projects = getProjectsList();
 
@@ -632,7 +632,7 @@ function createProject(name) {
         modified: new Date().toISOString()
     });
 
-    saveProjectsIndex(projects);
+    await saveProjectsIndex(projects);
 
     // Save empty project data
     const projectData = {
@@ -649,14 +649,14 @@ function createProject(name) {
     } catch (e) {
         console.error('Failed to create project:', e);
         if (e.name === 'QuotaExceededError') {
-            alert('Storage quota exceeded! Cannot create new project.');
+            await showAlert('Storage quota exceeded! Cannot create new project.', 'Storage Error');
         } else {
-            alert('Failed to create project.');
+            await showAlert('Failed to create project.', 'Error');
         }
         // Remove from index if storage failed
         const projects = getProjectsList();
         const filtered = projects.filter(p => p.id !== projectId);
-        saveProjectsIndex(filtered);
+        await saveProjectsIndex(filtered);
         return null;
     }
 
@@ -706,12 +706,12 @@ function deleteProject(projectId) {
  * Checks for pending "Move to Notebook" operations after loading.
  *
  * @param {string} projectId - The ID of the project to open
- * @returns {void}
+ * @returns {Promise<void>}
  */
-function openProject(projectId) {
+async function openProject(projectId) {
     const data = loadProjectFromStorage(projectId);
     if (!data) {
-        alert('Notebook not found');
+        await showAlert('Notebook not found', 'Error');
         return;
     }
 
@@ -1060,9 +1060,9 @@ function populateProjectsList() {
 
     // Click on project to open
     list.querySelectorAll('.project-item').forEach(item => {
-        item.addEventListener('click', (e) => {
+        item.addEventListener('click', async (e) => {
             if (e.target.closest('.project-menu-btn')) return;
-            openProject(item.dataset.id);
+            await openProject(item.dataset.id);
         });
     });
 
@@ -1190,30 +1190,145 @@ function showConfirmation(message) {
 }
 
 /**
+ * Display an alert modal with a message and OK button.
+ *
+ * @param {string} message - The alert message to display
+ * @param {string} [title='Alert'] - Optional title for the alert
+ * @returns {Promise<void>} - Resolves when user clicks OK
+ */
+function showAlert(message, title = 'Alert') {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('alert-modal');
+        const titleEl = document.getElementById('alert-title');
+        const messageEl = document.getElementById('alert-message');
+        const okBtn = document.getElementById('alert-ok');
+
+        // Set content and show
+        titleEl.textContent = title;
+        messageEl.textContent = message;
+        modal.classList.remove('hidden');
+
+        // Focus OK button
+        okBtn.focus();
+
+        // OK handler
+        const handleOk = () => {
+            cleanup();
+            resolve();
+        };
+
+        // Keyboard handler
+        const handleKey = (e) => {
+            if (e.key === 'Enter' || e.key === 'Escape') {
+                e.preventDefault();
+                handleOk();
+            }
+        };
+
+        // Cleanup
+        const cleanup = () => {
+            modal.classList.add('hidden');
+            okBtn.removeEventListener('click', handleOk);
+            document.removeEventListener('keydown', handleKey);
+        };
+
+        // Attach listeners
+        okBtn.addEventListener('click', handleOk);
+        document.addEventListener('keydown', handleKey);
+    });
+}
+
+/**
+ * Display a prompt modal with a message, text input, and OK/Cancel buttons.
+ *
+ * @param {string} message - The prompt message to display
+ * @param {string} [defaultValue=''] - Default value for the input field
+ * @param {string} [title='Input Required'] - Optional title for the prompt
+ * @returns {Promise<string|null>} - Resolves to input value if OK, null if cancelled
+ */
+function showPrompt(message, defaultValue = '', title = 'Input Required') {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('prompt-modal');
+        const titleEl = document.getElementById('prompt-title');
+        const messageEl = document.getElementById('prompt-message');
+        const input = document.getElementById('prompt-input');
+        const okBtn = document.getElementById('prompt-ok');
+        const cancelBtn = document.getElementById('prompt-cancel');
+
+        // Set content and show
+        titleEl.textContent = title;
+        messageEl.textContent = message;
+        input.value = defaultValue;
+        modal.classList.remove('hidden');
+
+        // Focus and select input
+        input.focus();
+        input.select();
+
+        // OK handler
+        const handleOk = () => {
+            const value = input.value.trim();
+            cleanup();
+            resolve(value);
+        };
+
+        // Cancel handler
+        const handleCancel = () => {
+            cleanup();
+            resolve(null);
+        };
+
+        // Keyboard handler
+        const handleKey = (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleOk();
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                handleCancel();
+            }
+        };
+
+        // Cleanup
+        const cleanup = () => {
+            modal.classList.add('hidden');
+            okBtn.removeEventListener('click', handleOk);
+            cancelBtn.removeEventListener('click', handleCancel);
+            input.removeEventListener('keydown', handleKey);
+        };
+
+        // Attach listeners
+        okBtn.addEventListener('click', handleOk);
+        cancelBtn.addEventListener('click', handleCancel);
+        input.addEventListener('keydown', handleKey);
+    });
+}
+
+/**
  * Handle creating a new project from the new project modal.
  * Validates the project name (non-empty, max 100 chars), creates the project,
  * hides the modal, and opens the newly created project.
  */
-function handleCreateProject() {
+async function handleCreateProject() {
     const input = document.getElementById('new-project-name');
     const name = input.value.trim();
 
     if (!name) {
-        alert('Notebook name cannot be empty.');
+        await showAlert('Notebook name cannot be empty.', 'Validation Error');
         input.focus();
         return;
     }
 
     // Validate: max length
     if (name.length > PROJECT_NAME_MAX_LENGTH) {
-        alert(`Notebook name is too long (${name.length} characters). Maximum: ${PROJECT_NAME_MAX_LENGTH} characters.`);
+        await showAlert(`Notebook name is too long (${name.length} characters). Maximum: ${PROJECT_NAME_MAX_LENGTH} characters.`, 'Validation Error');
         input.focus();
         return;
     }
 
-    const projectId = createProject(name);
+    const projectId = await createProject(name);
     hideNewProjectModal();
-    openProject(projectId);
+    await openProject(projectId);
 }
 
 /**
@@ -1223,25 +1338,25 @@ function handleCreateProject() {
  *
  * @param {string} projectId - The ID of the project to rename
  */
-function handleRenameProject(projectId) {
+async function handleRenameProject(projectId) {
     const projects = getProjectsList();
     const project = projects.find(p => p.id === projectId);
     if (!project) return;
 
-    const newName = prompt('Rename notebook:', project.name);
-    if (!newName) return; // User cancelled
+    const newName = await showPrompt('Enter new notebook name:', project.name, 'Rename Notebook');
+    if (newName === null) return; // User cancelled
 
     const trimmed = newName.trim();
 
     // Validate: not empty
     if (!trimmed) {
-        alert('Notebook name cannot be empty.');
+        await showAlert('Notebook name cannot be empty.', 'Validation Error');
         return;
     }
 
     // Validate: max length
     if (trimmed.length > PROJECT_NAME_MAX_LENGTH) {
-        alert(`Notebook name is too long (${trimmed.length} characters). Maximum: ${PROJECT_NAME_MAX_LENGTH} characters.`);
+        await showAlert(`Notebook name is too long (${trimmed.length} characters). Maximum: ${PROJECT_NAME_MAX_LENGTH} characters.`, 'Validation Error');
         return;
     }
 
@@ -1562,8 +1677,9 @@ function showAllHashtags() {
  *
  * @param {string} oldTag - Current hashtag name (e.g., "#old")
  * @param {string} newTag - New hashtag name (e.g., "#new" or "new")
+ * @returns {Promise<void>}
  */
-function renameHashtag(oldTag, newTag) {
+async function renameHashtag(oldTag, newTag) {
     // Validate new tag format
     newTag = newTag.trim();
     if (!newTag.startsWith('#')) {
@@ -1572,7 +1688,7 @@ function renameHashtag(oldTag, newTag) {
 
     // Validate hashtag format (must be #word with alphanumeric, underscore, or hyphen)
     if (!/^#[a-zA-Z0-9_-]+$/.test(newTag)) {
-        alert('Invalid tag format. Tags can only contain letters, numbers, underscores, and hyphens (no spaces or special characters).');
+        await showAlert('Invalid tag format. Tags can only contain letters, numbers, underscores, and hyphens (no spaces or special characters).', 'Validation Error');
         return;
     }
 
@@ -1710,9 +1826,9 @@ function showHashtagContextMenu(tag, x, y) {
             hideHashtagContextMenu();
 
             if (action === 'rename') {
-                const newTag = prompt(`Rename tag "${tag}" to:`, tag);
+                const newTag = await showPrompt(`Enter new name for tag "${tag}":`, tag, 'Rename Tag');
                 if (newTag && newTag.trim()) {
-                    renameHashtag(tag, newTag);
+                    await renameHashtag(tag, newTag);
                 }
             } else if (action === 'delete') {
                 const confirmed = await showConfirmation(`Delete tag "${tag}" from all notes?`);
@@ -3517,8 +3633,9 @@ function cancelEditor() {
  * In batch mode, adds/removes hashtags and updates completion for all selected nodes.
  * In single mode, validates and saves title/content/hashtags/completion. Updates
  * modified timestamp, deletes empty nodes, closes editor, and triggers render.
+ * @returns {Promise<void>}
  */
-function saveEditor() {
+async function saveEditor() {
     const modal = document.getElementById('editor-modal');
 
     if (modal.dataset.batchMode === 'true') {
@@ -3582,14 +3699,14 @@ function saveEditor() {
 
             // Validate title length (soft limit)
             if (titleInput.value.length > TITLE_SOFT_LIMIT) {
-                const confirmSave = confirm(`Warning: Title is ${titleInput.value.length} characters (recommended max: ${TITLE_SOFT_LIMIT}). Save anyway?`);
-                if (!confirmSave) return;
+                const confirmed = await showConfirmation(`Warning: Title is ${titleInput.value.length} characters (recommended max: ${TITLE_SOFT_LIMIT}). Save anyway?`);
+                if (!confirmed) return;
             }
 
             // Validate content length (soft limit)
             if (textarea.value.length > 100000) {
-                const confirmSave = confirm(`Warning: Content is ${textarea.value.length} characters (recommended max: ${CONTENT_SOFT_LIMIT.toLocaleString()}). Save anyway?`);
-                if (!confirmSave) return;
+                const confirmed = await showConfirmation(`Warning: Content is ${textarea.value.length} characters (recommended max: ${CONTENT_SOFT_LIMIT.toLocaleString()}). Save anyway?`);
+                if (!confirmed) return;
             }
 
             node.title = titleInput.value;
@@ -4132,8 +4249,9 @@ function hideMoveToModal() {
  * sessionStorage, and switches to target project.
  *
  * @param {string} targetProjectId - ID of destination notebook
+ * @returns {Promise<void>}
  */
-function initiateMoveToNotebook(targetProjectId) {
+async function initiateMoveToNotebook(targetProjectId) {
     // Store original IDs for source cleanup
     const originalIds = [...state.selectedNodes];
 
@@ -4192,7 +4310,7 @@ function initiateMoveToNotebook(targetProjectId) {
     sessionStorage.setItem(MOVE_STORAGE_KEY, JSON.stringify(pendingMove));
 
     // Switch to target notebook
-    openProject(targetProjectId);
+    await openProject(targetProjectId);
 }
 
 /**
@@ -4270,7 +4388,7 @@ function placeGhostNodes() {
         const message = `Moved ${state.ghostNodes.length} note${state.ghostNodes.length > 1 ? 's' : ''} from ${sourceProjectName}`;
         showToast(message, {
             linkText: `Return to ${sourceProjectName}`,
-            linkOnClick: () => openProject(sourceProjectId)
+            linkOnClick: async () => await openProject(sourceProjectId)
         });
     }
 
@@ -4320,7 +4438,7 @@ function cancelGhostDrag() {
     if (sourceProjectId && sourceProjectName) {
         showToast('Move cancelled', {
             linkText: `Return to ${sourceProjectName}`,
-            linkOnClick: () => openProject(sourceProjectId)
+            linkOnClick: async () => await openProject(sourceProjectId)
         });
     } else {
         showToast('Move cancelled');
@@ -4561,7 +4679,7 @@ function downloadAsFile(filename, data) {
  */
 async function exportToFile() {
     if (!state.currentProjectId) {
-        alert('No notebook open to export');
+        await showAlert('No notebook open to export', 'Error');
         return;
     }
 
@@ -4601,7 +4719,7 @@ async function exportToFile() {
         } catch (err) {
             if (err.name !== 'AbortError') {
                 console.error('Export failed:', err);
-                alert('Failed to export: ' + err.message);
+                await showAlert('Failed to export: ' + err.message, 'Export Error');
             }
         }
     } else {
@@ -4620,7 +4738,7 @@ async function exportToFile() {
 async function exportProjectToFile(projectId) {
     const data = loadProjectFromStorage(projectId);
     if (!data) {
-        alert('Notebook not found');
+        await showAlert('Notebook not found', 'Error');
         return;
     }
 
@@ -4656,7 +4774,7 @@ async function exportProjectToFile(projectId) {
         } catch (err) {
             if (err.name !== 'AbortError') {
                 console.error('Export failed:', err);
-                alert('Failed to export: ' + err.message);
+                await showAlert('Failed to export: ' + err.message, 'Export Error');
             }
         }
     } else {
@@ -4708,7 +4826,7 @@ async function importFromFile() {
         } catch (err) {
             if (err.name !== 'AbortError') {
                 console.error('Import failed:', err);
-                alert('Failed to import: ' + err.message);
+                await showAlert('Failed to import: ' + err.message, 'Import Error');
             }
         }
     } else {
@@ -4756,7 +4874,7 @@ function importFromFileFallback() {
 
         } catch (err) {
             console.error('Import failed:', err);
-            alert('Failed to import: ' + err.message);
+            showAlert('Failed to import: ' + err.message, 'Import Error');
         }
     });
 
@@ -4772,12 +4890,13 @@ function hideImportModal() {
  * Handle "Create New Notebook" import option.
  * Creates new project with imported data name, saves imported nodes/edges/colors/settings,
  * updates note count, and opens the new project.
+ * @returns {Promise<void>}
  */
-function handleImportAsNew() {
+async function handleImportAsNew() {
     if (!state.pendingImportData) return;
 
     const name = state.pendingImportData.name || 'Imported Notebook';
-    const projectId = createProject(name);
+    const projectId = await createProject(name);
 
     // Save imported data to the new project
     const projectData = {
@@ -4796,11 +4915,11 @@ function handleImportAsNew() {
     const project = projects.find(p => p.id === projectId);
     if (project) {
         project.noteCount = countNotes(projectData.nodes);
-        saveProjectsIndex(projects);
+        await saveProjectsIndex(projects);
     }
 
     hideImportModal();
-    openProject(projectId);
+    await openProject(projectId);
 }
 
 /**
@@ -4819,13 +4938,13 @@ async function handleImportOverwrite() {
 
     // Show a simple selection
     const names = projects.map((p, i) => `${i + 1}. ${p.name}`).join('\n');
-    const choice = prompt(`Enter the number of the project to overwrite:\n\n${names}`);
+    const choice = await showPrompt(`Enter the number of the project to overwrite:\n\n${names}`, '', 'Select Project');
 
     if (!choice) return;
 
     const index = parseInt(choice) - 1;
     if (isNaN(index) || index < 0 || index >= projects.length) {
-        alert('Invalid selection');
+        await showAlert('Invalid selection', 'Invalid Selection');
         return;
     }
 
@@ -4850,10 +4969,10 @@ async function handleImportOverwrite() {
     // Update note count
     targetProject.noteCount = countNotes(projectData.nodes);
     targetProject.modified = new Date().toISOString();
-    saveProjectsIndex(projects);
+    await saveProjectsIndex(projects);
 
     hideImportModal();
-    openProject(targetProject.id);
+    await openProject(targetProject.id);
 }
 
 // ============================================================================
@@ -5773,10 +5892,18 @@ function initEventListeners() {
                 return;
             }
 
+            const alertModal = document.getElementById('alert-modal');
+            const promptModal = document.getElementById('prompt-modal');
             const editorModal = document.getElementById('editor-modal');
             const helpModal = document.getElementById('help-modal');
             const settingsModal = document.getElementById('settings-modal');
             const moveToModal = document.getElementById('move-to-modal');
+
+            // Alert and prompt modals handle Escape in their own handlers
+            if (!alertModal.classList.contains('hidden') || !promptModal.classList.contains('hidden')) {
+                return; // Let modal's own handler deal with it
+            }
+
             if (!editorModal.classList.contains('hidden')) {
                 saveEditor();
             } else if (!settingsModal.classList.contains('hidden')) {
@@ -5889,12 +6016,12 @@ function initEventListeners() {
             hideMoveToModal();
         }
     });
-    document.getElementById('move-to-list').addEventListener('click', (e) => {
+    document.getElementById('move-to-list').addEventListener('click', async (e) => {
         const item = e.target.closest('.move-to-item');
         if (item) {
             const targetProjectId = item.dataset.projectId;
             hideMoveToModal();
-            initiateMoveToNotebook(targetProjectId);
+            await initiateMoveToNotebook(targetProjectId);
         }
     });
 
@@ -6261,9 +6388,9 @@ function initEventListeners() {
     // Save status error click - show details
     const saveStatus = document.getElementById('save-status');
     if (saveStatus) {
-        saveStatus.addEventListener('click', () => {
+        saveStatus.addEventListener('click', async () => {
             if (state.saveStatus === 'error' && state.lastSaveError) {
-                alert(`Save failed: ${state.lastSaveError}\n\nConsider exporting your work to avoid data loss.`);
+                await showAlert(`Save failed: ${state.lastSaveError}\n\nConsider exporting your work to avoid data loss.`, 'Save Failed');
             }
         });
     }

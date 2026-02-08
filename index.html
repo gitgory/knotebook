@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>knotebook</title>
     <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
-    <link rel="stylesheet" href="styles/main.css?v=141">
+    <link rel="stylesheet" href="styles/main.css?v=142">
 </head>
 <body>
     <div id="app">
@@ -22,7 +22,7 @@
                     <h2>Your Notebooks</h2>
                     <div id="projects-list"></div>
                 </div>
-                <div id="version-info">CSS v141 | JS v141</div>
+                <div id="version-info">CSS v142 | JS v142</div>
             </div>
         </div>
 
@@ -286,6 +286,30 @@
             <div id="hashtag-autocomplete-list"></div>
         </div>
 
+        <!-- Alert Modal -->
+        <div id="alert-modal" class="hidden">
+            <div id="alert-content">
+                <h3 id="alert-title">Alert</h3>
+                <p id="alert-message"></p>
+                <div id="alert-buttons">
+                    <button id="alert-ok">OK</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Prompt Modal -->
+        <div id="prompt-modal" class="hidden">
+            <div id="prompt-content">
+                <h3 id="prompt-title">Input Required</h3>
+                <p id="prompt-message"></p>
+                <input type="text" id="prompt-input" placeholder="">
+                <div id="prompt-buttons">
+                    <button id="prompt-ok">OK</button>
+                    <button id="prompt-cancel">Cancel</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Error Recovery Modal -->
         <div id="error-modal" class="hidden">
             <div id="error-content">
@@ -304,6 +328,6 @@
         </div>
     </div>
 
-    <script src="scripts/app.js?v=141"></script>
+    <script src="scripts/app.js?v=142"></script>
 </body>
 </html>
