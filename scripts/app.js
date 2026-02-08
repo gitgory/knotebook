@@ -859,6 +859,71 @@ function updateSaveStatus(status, error = null) {
 }
 
 /**
+ * Checks if the save status should be updated to 'saved' when queue is empty.
+ * Prevents unnecessary status updates that cause UI flicker.
+ *
+ * @returns {boolean} - True if status should be updated to 'saved'
+ */
+function shouldUpdateToSaved() {
+    return state.saveQueue.length === 0 && state.saveStatus !== 'saved';
+}
+
+/**
+ * Gets the current project data for saving.
+ * Returns root data if at root level, otherwise returns current level data.
+ *
+ * @returns {Object} - Project data object with nodes, edges, colors, settings, etc.
+ */
+function getCurrentProjectData() {
+    return {
+        nodes: state.currentPath.length === 0 ? state.nodes : state.rootNodes,
+        edges: state.currentPath.length === 0 ? state.edges : state.rootEdges,
+        hashtagColors: state.hashtagColors,
+        settings: state.projectSettings,
+        hiddenHashtags: state.hiddenHashtags,
+        theme: getCurrentTheme()
+    };
+}
+
+/**
+ * Handles successful save operation.
+ * Updates save hash, timestamps, clears errors, updates UI, and removes from queue.
+ *
+ * @param {Object} savedData - The data that was successfully saved
+ */
+function handleSaveSuccess(savedData) {
+    state.lastSaveHash = hashData(savedData);
+    state.saveStatus = 'saved';
+    state.lastSaveTime = Date.now();
+    state.lastSaveError = null;
+    updateSaveStatus('saved');
+    state.saveQueue.shift();
+}
+
+/**
+ * Handles failed save operation.
+ * Logs error, updates status, and removes from queue (no infinite retries).
+ *
+ * @param {Error} error - The error that occurred during save
+ */
+function handleSaveFailure(error) {
+    console.error('Save failed in queue:', error);
+    state.saveStatus = 'error';
+    updateSaveStatus('error', error.message);
+    state.saveQueue.shift();
+}
+
+/**
+ * Continues processing the save queue if items remain.
+ * Uses a small delay to avoid tight loops and give UI time to update.
+ */
+function continueQueueProcessing() {
+    if (state.saveQueue.length > 0) {
+        setTimeout(() => processSaveQueue(), SAVE_RETRY_DELAY);
+    }
+}
+
+/**
  * Processes the save queue sequentially to prevent race conditions.
  * Executes one save at a time, updating status and hash after successful saves.
  * Automatically processes next queued save after completion or failure.
@@ -867,13 +932,12 @@ function updateSaveStatus(status, error = null) {
  * @returns {Promise<void>}
  */
 async function processSaveQueue() {
-    // Already processing
+    // Guard: Already processing
     if (state.saveInProgress) return;
 
-    // Empty queue
+    // Guard: Empty queue - update status if needed
     if (state.saveQueue.length === 0) {
-        // Only update status if not already saved (prevent flicker)
-        if (state.saveStatus !== 'saved') {
+        if (shouldUpdateToSaved()) {
             state.saveStatus = 'saved';
             updateSaveStatus('saved');
         }
@@ -883,48 +947,16 @@ async function processSaveQueue() {
     // Mark as in progress
     state.saveInProgress = true;
     state.saveStatus = 'saving';
-    // Don't show "Saving..." status - save is too fast, skip directly to "Saved"
 
     try {
-        // Execute the save
         await saveProjectToStorage();
-
-        // Update hash after successful save
-        const savedData = {
-            nodes: state.currentPath.length === 0 ? state.nodes : state.rootNodes,
-            edges: state.currentPath.length === 0 ? state.edges : state.rootEdges,
-            hashtagColors: state.hashtagColors,
-            settings: state.projectSettings,
-            hiddenHashtags: state.hiddenHashtags,
-            theme: getCurrentTheme()
-        };
-        state.lastSaveHash = hashData(savedData);
-
-        // Success
-        state.saveStatus = 'saved';
-        state.lastSaveTime = Date.now();
-        state.lastSaveError = null;
-        updateSaveStatus('saved');
-
-        // Remove processed item
-        state.saveQueue.shift();
-    } catch (e) {
-        console.error('Save failed in queue:', e);
-
-        // Update status
-        state.saveStatus = 'error';
-        updateSaveStatus('error', e.message);
-
-        // Remove failed item (don't retry infinitely)
-        state.saveQueue.shift();
+        const savedData = getCurrentProjectData();
+        handleSaveSuccess(savedData);
+    } catch (error) {
+        handleSaveFailure(error);
     } finally {
         state.saveInProgress = false;
-
-        // Process next in queue (if any)
-        if (state.saveQueue.length > 0) {
-            // Small delay to avoid tight loop
-            setTimeout(() => processSaveQueue(), SAVE_RETRY_DELAY);
-        }
+        continueQueueProcessing();
     }
 }
 
