@@ -4,6 +4,31 @@ This file tracks significant technical and design decisions made during developm
 
 ---
 
+## 2026-02-09: Complete Refactoring - Final 5 Functions
+
+DECISION: Refactor remaining 5 high-priority functions using Extract Method pattern
+CHOSE: Apply proven pattern from previous refactorings (lifecycle/phase-based helpers)
+NOT: Leave functions as-is (mixed concerns, duplication, low testability)
+NOT: Over-engineer with complex abstractions
+
+Reasoning:
+- Proven pattern: 5 previous successful refactorings demonstrated effectiveness
+- Consistency: All 10 functions now follow same Extract Method pattern
+- Line reduction: 362→73 lines across 5 functions (80% average reduction)
+- Eliminated duplication: 24 lines in updateSaveStatus, reused helpers in showHashtagContextMenu
+- Single Responsibility: Each helper function does one thing
+- Improved testability: Each phase independently testable
+- Data-driven: updateSaveStatus uses statusConfig object instead of switch statement
+
+Functions refactored:
+1. showConfirmation() - 81→8 lines (4 helpers: lifecycle phases)
+2. showHashtagContextMenu() - 73→18 lines (3 helpers: menu, actions, events)
+3. showToast() - 70→20 lines (5 helpers: create, link, style, keyboard, auto-remove)
+4. initiateMoveToNotebook() - 68→12 lines (2 helpers: validate, prepare)
+5. updateSaveStatus() - 70→15 lines (5 helpers: get, clear, reset, apply, schedule)
+
+---
+
 ## 2026-02-06: Magic Numbers Refactor - Replace with Named Constants
 
 DECISION: Replace ~60 magic numbers with semantic named constants
