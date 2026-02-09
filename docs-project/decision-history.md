@@ -543,3 +543,62 @@ Reasoning:
 - Design principles: Applied SRP, Extract Method, Separation of Concerns, Guard Clauses, Command Pattern
 
 ---
+
+## 2026-02-08: Ghost Node Placement Refactoring - SRP and Command Pattern
+
+DECISION: Refactor placeGhostNodes() and cancelGhostDrag() to apply Single Responsibility Principle
+CHOSE: Extract 7 helper functions, implement 8-step command pattern
+NOT: Keep 57-line monolithic function with 6 mixed responsibilities
+NOT: Keep duplicated state clearing and toast notification code
+
+Reasoning:
+- Mixed concerns: 6 responsibilities in one function (data integration, selection, cleanup, UI, state, persistence)
+- Duplication: Ghost state clearing and toast patterns duplicated in both functions (~25 lines)
+- Silent failures: Missing guard clauses, no logging for validation failures
+- No idempotency: Re-running would duplicate nodes
+- Design principles: Applied SRP, Extract Method, Separation of Concerns, Guard Clauses, Command Pattern
+
+Helpers extracted:
+- `clearGhostState(clearSelectionBox)` - Centralizes ghost state cleanup
+- `showMoveToast(message, sourceProjectId, sourceProjectName)` - Toast with return link
+- `integrateGhostNodes()` - Integrates ghost nodes/edges into current project
+- `selectPlacedNodes(nodeIds)` - Updates selection after placement
+- `syncSourceAfterMove(sourceProjectId, originalNodeIds)` - Source cleanup wrapper
+- `queueTargetProjectSave()` - Queues immediate save after move
+- `updateProjectNoteCount(projectId, nodes)` - Updates note count in projects index
+
+---
+
+## 2026-02-08: Refactoring Workflow - Plan Agent vs Skill
+
+DECISION: Use Plan agent for coordinating multi-function refactoring
+CHOSE: Specialized Plan agent with standardized prompt template
+NOT: Skill/slash command (less flexible, clutters main conversation)
+NOT: Ad-hoc refactoring without plan (misses dependencies, inconsistent patterns)
+
+Reasoning:
+- Exploration needed: Each refactoring requires understanding unique dependencies and context
+- Autonomous work: Agent can independently read files, analyze patterns, propose approaches
+- Focused context: Agent works in isolated context, presents complete proposal
+- Follows workflow: Agent presents options → Grigri chooses → document → plan → confirm → implement
+- Reusable template: Standardized prompt ensures consistency across refactorings
+- Documentation: Created refactoring-workflow.md and refactoring-quick-reference.md
+
+---
+
+## 2026-02-08: populateSidebar() Refactoring - Extract Method Pattern
+
+DECISION: Refactor populateSidebar() using Extract Method pattern with 6 focused helpers
+CHOSE: Extract 6 helper functions - DOM creation, event handlers, context menus (186 → ~20 lines)
+NOT: Factory Pattern with event delegation (12-14 functions, over-engineering)
+NOT: Hybrid approach (keeps 55-line event handler, insufficient separation)
+
+Reasoning:
+- Proven pattern: Matches successful refactorings (updateHashtagDisplay, showNodeContextMenu)
+- 7 responsibilities: Data prep, empty state, state computation, DOM building, event handlers, context menus
+- Balanced approach: 6 helpers achieves 89% reduction without over-engineering
+- Clear separation: Each helper has single responsibility (create UI, attach handlers, context menu)
+- Testability: Each function independently testable
+- Maintainability: Event handlers grouped by logical purpose
+
+---

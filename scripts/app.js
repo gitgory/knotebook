@@ -2058,102 +2058,150 @@ function setHashtagColor(hashtag, color) {
     render(); // Re-render to update node hashtag colors
 }
 
+/**
+ * Renders empty state message when no hashtags exist
+ * @param {HTMLElement} list - The hashtag list container element
+ * @returns {void}
+ */
+function renderEmptyHashtagState(list) {
+    const emptyDiv = document.createElement('div');
+    emptyDiv.className = 'sidebar-empty';
+    emptyDiv.textContent = 'No tags yet';
+    list.replaceChildren(emptyDiv);
+}
+
+/**
+ * Creates "Show All Tags" button for sidebar header
+ * @param {boolean} hasHiddenTags - Whether any tags are currently hidden
+ * @returns {HTMLButtonElement} Button element with appropriate state
+ */
+function createShowAllTagsButton(hasHiddenTags) {
+    const headerBtn = document.createElement('button');
+    headerBtn.className = 'show-all-tags-btn' + (hasHiddenTags ? '' : ' disabled');
+    headerBtn.id = 'show-all-tags-btn';
+    headerBtn.disabled = !hasHiddenTags;
+    headerBtn.textContent = 'Show All Tags';
+    return headerBtn;
+}
+
+/**
+ * Creates complete hashtag row with pill, count, color button, hide button, and color picker
+ * @param {string} tag - The hashtag text
+ * @param {string} color - The hashtag color hex code
+ * @param {boolean} isActive - Whether tag is currently filtered
+ * @param {boolean} isHidden - Whether tag is currently hidden
+ * @param {number} count - Number of notes with this tag
+ * @returns {HTMLElement} Complete row container with all child elements
+ */
+function createHashtagRow(tag, color, isActive, isHidden, count) {
+    const container = document.createElement('div');
+    container.className = 'sidebar-hashtag' + (isActive ? ' active' : '') + (isHidden ? ' hidden' : '');
+    container.dataset.tag = tag;
+
+    // Pill
+    const pill = document.createElement('span');
+    pill.className = 'hashtag-pill hashtag-clickable';
+    pill.dataset.tag = tag;
+    pill.textContent = tag;
+    pill.style.background = isHidden ? `linear-gradient(to right, #6b7280 0%, #6b7280 30%, ${color} 100%)` : color;
+
+    // Count
+    const countSpan = document.createElement('span');
+    countSpan.className = 'hashtag-count hashtag-clickable';
+    countSpan.dataset.tag = tag;
+    countSpan.textContent = `(${count})`;
+
+    // Color button
+    const colorBtn = document.createElement('button');
+    colorBtn.className = 'hashtag-color-btn';
+    colorBtn.style.background = color;
+    colorBtn.dataset.tag = tag;
+    colorBtn.title = 'Change color';
+
+    // Hide button
+    const hideBtn = document.createElement('button');
+    hideBtn.className = 'hashtag-hide-btn';
+    hideBtn.dataset.tag = tag;
+    hideBtn.title = isHidden ? 'Show tag' : 'Hide tag';
+    hideBtn.textContent = '\u00d7';
+
+    // Color picker dropdown
+    const dropdown = document.createElement('div');
+    dropdown.className = 'color-picker-dropdown hidden';
+    dropdown.dataset.tag = tag;
+
+    HASHTAG_COLORS.forEach(c => {
+        const swatch = document.createElement('div');
+        swatch.className = 'color-swatch' + (c === color ? ' active' : '');
+        swatch.style.background = c;
+        swatch.dataset.color = c;
+        dropdown.appendChild(swatch);
+    });
+
+    container.appendChild(pill);
+    container.appendChild(countSpan);
+    container.appendChild(colorBtn);
+    container.appendChild(hideBtn);
+    container.appendChild(dropdown);
+
+    return container;
+}
+
+/**
+ * Populates the sidebar hashtag list with tags from current project
+ * @returns {void}
+ */
 function populateSidebar() {
     const list = document.getElementById('hashtag-list');
     const counts = getHashtagCounts();
     const hashtags = Object.keys(counts).sort();
 
     if (hashtags.length === 0) {
-        const emptyDiv = document.createElement('div');
-        emptyDiv.className = 'sidebar-empty';
-        emptyDiv.textContent = 'No tags yet';
-        list.replaceChildren(emptyDiv);
+        renderEmptyHashtagState(list);
         return;
     }
 
-    // Check which hashtags are currently active in the filter and which are hidden
     const activeFilters = state.filterHashtags.map(t => t.toLowerCase());
     const hiddenTags = state.hiddenHashtags.map(t => t.toLowerCase());
-
-    // Clear list
     list.replaceChildren();
 
-    // Add "Show All Tags" button (always visible, grayed out when not needed)
-    const hasHiddenTags = state.hiddenHashtags.length > 0;
-    const headerBtn = document.createElement('button');
-    headerBtn.className = 'show-all-tags-btn' + (hasHiddenTags ? '' : ' disabled');
-    headerBtn.id = 'show-all-tags-btn';
-    headerBtn.disabled = !hasHiddenTags;
-    headerBtn.textContent = 'Show All Tags';
-    list.appendChild(headerBtn);
+    const showAllBtn = createShowAllTagsButton(state.hiddenHashtags.length > 0);
+    list.appendChild(showAllBtn);
 
-    // Add hashtags
     hashtags.forEach(tag => {
-        const color = getHashtagColor(tag);
-        const isActive = activeFilters.includes(tag.toLowerCase());
-        const isHidden = hiddenTags.includes(tag.toLowerCase());
-
-        const container = document.createElement('div');
-        container.className = 'sidebar-hashtag' + (isActive ? ' active' : '') + (isHidden ? ' hidden' : '');
-        container.dataset.tag = tag;
-
-        // Pill
-        const pill = document.createElement('span');
-        pill.className = 'hashtag-pill hashtag-clickable';
-        pill.dataset.tag = tag;
-        pill.textContent = tag;
-        pill.style.background = isHidden ? `linear-gradient(to right, #6b7280 0%, #6b7280 30%, ${color} 100%)` : color;
-
-        // Count
-        const count = document.createElement('span');
-        count.className = 'hashtag-count hashtag-clickable';
-        count.dataset.tag = tag;
-        count.textContent = `(${counts[tag]})`;
-
-        // Color button
-        const colorBtn = document.createElement('button');
-        colorBtn.className = 'hashtag-color-btn';
-        colorBtn.style.background = color;
-        colorBtn.dataset.tag = tag;
-        colorBtn.title = 'Change color';
-
-        // Hide button
-        const hideBtn = document.createElement('button');
-        hideBtn.className = 'hashtag-hide-btn';
-        hideBtn.dataset.tag = tag;
-        hideBtn.title = isHidden ? 'Show tag' : 'Hide tag';
-        hideBtn.textContent = '\u00d7';
-
-        // Color picker dropdown
-        const dropdown = document.createElement('div');
-        dropdown.className = 'color-picker-dropdown hidden';
-        dropdown.dataset.tag = tag;
-
-        HASHTAG_COLORS.forEach(c => {
-            const swatch = document.createElement('div');
-            swatch.className = 'color-swatch' + (c === color ? ' active' : '');
-            swatch.style.background = c;
-            swatch.dataset.color = c;
-            dropdown.appendChild(swatch);
-        });
-
-        container.appendChild(pill);
-        container.appendChild(count);
-        container.appendChild(colorBtn);
-        container.appendChild(hideBtn);
-        container.appendChild(dropdown);
-        list.appendChild(container);
+        const row = createHashtagRow(
+            tag,
+            getHashtagColor(tag),
+            activeFilters.includes(tag.toLowerCase()),
+            hiddenTags.includes(tag.toLowerCase()),
+            counts[tag]
+        );
+        list.appendChild(row);
     });
 
-    // Show all tags button handler
-    const showAllBtn = document.getElementById('show-all-tags-btn');
-    if (showAllBtn) {
-        showAllBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            showAllHashtags();
-        });
-    }
+    attachShowAllTagsHandler(showAllBtn);
+    attachHashtagRowHandlers(list);
+    attachHashtagContextMenuHandlers(list);
+}
 
+/**
+ * Attaches click handler to "Show All Tags" button
+ * @param {HTMLButtonElement} button - The show all tags button element
+ * @returns {void}
+ */
+function attachShowAllTagsHandler(button) {
+    button.addEventListener('click', (e) => {
+        e.stopPropagation();
+        showAllHashtags();
+    });
+}
+
+/**
+ * Attaches all interaction handlers to hashtag rows (filter, hide, color picker)
+ * @param {HTMLElement} list - The hashtag list container element
+ * @returns {void}
+ */
+function attachHashtagRowHandlers(list) {
     // Hide button handlers
     list.querySelectorAll('.hashtag-hide-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -2162,7 +2210,7 @@ function populateSidebar() {
         });
     });
 
-    // Add click handlers for filter (pill + count only)
+    // Filter handlers (pill + count only)
     list.querySelectorAll('.hashtag-clickable').forEach(el => {
         el.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -2197,8 +2245,14 @@ function populateSidebar() {
             dropdown.classList.add('hidden');
         });
     });
+}
 
-    // Context menu handlers (right-click on hashtag row)
+/**
+ * Attaches context menu handlers (right-click and long-press) to hashtag rows
+ * @param {HTMLElement} list - The hashtag list container element
+ * @returns {void}
+ */
+function attachHashtagContextMenuHandlers(list) {
     let longPressTimer = null;
     list.querySelectorAll('.sidebar-hashtag').forEach(row => {
         const tag = row.dataset.tag;
@@ -4876,99 +4930,72 @@ function checkForPendingMove() {
 }
 
 /**
- * Place ghost nodes in target notebook and remove from source.
- * Adds ghost nodes to current notebook as real nodes, adds edges, selects placed nodes,
- * removes originals from source notebook, shows toast with return link, clears ghost
- * state, and saves immediately.
+ * Place ghost nodes into current project and complete move operation.
+ * Integrates nodes/edges, removes from source, shows feedback, and triggers save.
  */
 function placeGhostNodes() {
-    if (!state.ghostDragging || state.ghostNodes.length === 0) return;
-
-    // Add ghost nodes to current notebook as real nodes
-    state.ghostNodes.forEach(node => {
-        state.nodes.push(node);
-    });
-
-    // Add edges
-    if (state.pendingMove && state.pendingMove.edges) {
-        state.pendingMove.edges.forEach(edge => {
-            state.edges.push(edge);
-        });
+    // Step 1: Validate (guard clauses with logging)
+    if (!state.ghostDragging) {
+        console.warn('placeGhostNodes: not in ghost drag mode');
+        return;
     }
 
-    // Select the newly placed nodes
-    state.selectedNodes = state.ghostNodes.map(n => n.id);
-
-    // Remove nodes from source notebook (using original IDs)
-    if (state.pendingMove) {
-        const sourceProjectId = state.pendingMove.sourceProjectId;
-        const sourceProjectName = state.pendingMove.sourceProjectName;
-
-        removeNodesFromSourceNotebook(
-            sourceProjectId,
-            state.pendingMove.originalIds
-        );
-
-        // Show toast with link back to source notebook
-        const message = `Moved ${state.ghostNodes.length} note${state.ghostNodes.length > 1 ? 's' : ''} from ${sourceProjectName}`;
-        showToast(message, {
-            linkText: `Return to ${sourceProjectName}`,
-            linkOnClick: async () => await openProject(sourceProjectId)
-        });
+    if (state.ghostNodes.length === 0) {
+        console.warn('placeGhostNodes: no ghost nodes to place');
+        return;
     }
 
-    // Clear ghost state
-    state.ghostNodes = [];
-    state.ghostDragging = false;
-    state.pendingMove = null;
+    // Step 2: Extract source info before clearing state
+    const sourceProjectId = state.pendingMove?.sourceProjectId;
+    const sourceProjectName = state.pendingMove?.sourceProjectName;
+    const originalNodeIds = state.pendingMove?.originalIds || [];
+    const nodeCount = state.ghostNodes.length;
 
-    // Clear any selection box state
-    state.selectionBox = null;
+    // Step 3: Integrate nodes and edges into current project
+    const placedNodeIds = integrateGhostNodes();
 
-    // Remove ghost drag cursor
-    const canvas = document.getElementById('canvas');
-    if (canvas) canvas.classList.remove('ghost-drag-mode');
+    // Step 4: Select the newly placed nodes
+    selectPlacedNodes(placedNodeIds);
 
+    // Step 5: Sync source project (remove moved nodes)
+    if (sourceProjectId && originalNodeIds.length > 0) {
+        syncSourceAfterMove(sourceProjectId, originalNodeIds);
+    }
+
+    // Step 6: Show feedback toast
+    const message = `Moved ${nodeCount} note${nodeCount > 1 ? 's' : ''} from ${sourceProjectName || 'source'}`;
+    showMoveToast(message, sourceProjectId, sourceProjectName);
+
+    // Step 7: Clear all ghost state
+    clearGhostState(true); // Clear selection box too
+
+    // Step 8: Render and save
     render();
-
-    // Save immediately to target notebook (don't wait for auto-save)
-    state.saveQueue.push({
-        timestamp: Date.now(),
-        projectId: state.currentProjectId
-    });
-    processSaveQueue(); // Start immediately but don't await (async operation)
+    queueTargetProjectSave();
 }
 
 /**
  * Cancel ghost drag operation without placing nodes.
- * Clears ghost state, removes drag cursor, shows toast with return link to source
- * notebook, and triggers render.
+ * Clears ghost state, removes drag cursor, shows toast with return link to source.
  */
 function cancelGhostDrag() {
-    if (!state.ghostDragging) return;
-
-    // Store source info before clearing state
-    const sourceProjectId = state.pendingMove ? state.pendingMove.sourceProjectId : null;
-    const sourceProjectName = state.pendingMove ? state.pendingMove.sourceProjectName : null;
-
-    state.ghostNodes = [];
-    state.ghostDragging = false;
-    state.pendingMove = null;
-
-    // Remove ghost drag cursor
-    const canvas = document.getElementById('canvas');
-    if (canvas) canvas.classList.remove('ghost-drag-mode');
-
-    // Show toast with link back to source notebook
-    if (sourceProjectId && sourceProjectName) {
-        showToast('Move cancelled', {
-            linkText: `Return to ${sourceProjectName}`,
-            linkOnClick: async () => await openProject(sourceProjectId)
-        });
-    } else {
-        showToast('Move cancelled');
+    // Guard clause: validate we're in ghost drag mode
+    if (!state.ghostDragging) {
+        console.warn('cancelGhostDrag: not in ghost drag mode');
+        return;
     }
 
+    // Step 1: Extract source info before clearing state
+    const sourceProjectId = state.pendingMove?.sourceProjectId;
+    const sourceProjectName = state.pendingMove?.sourceProjectName;
+
+    // Step 2: Clear ghost state (don't clear selection box - not placing)
+    clearGhostState(false);
+
+    // Step 3: Show cancellation feedback
+    showMoveToast('Move cancelled', sourceProjectId, sourceProjectName);
+
+    // Step 4: Render to update UI
     render();
 }
 
@@ -4980,6 +5007,125 @@ function cancelGhostDrag() {
  * @param {string} sourceProjectId - ID of source notebook
  * @param {string[]} nodeIds - Array of original node IDs to remove
  */
+/**
+ * Clear all ghost node state and remove drag cursor.
+ * @param {boolean} clearSelectionBox - Whether to also clear selection box (default: true)
+ */
+function clearGhostState(clearSelectionBox = true) {
+    state.ghostNodes = [];
+    state.ghostDragging = false;
+    state.pendingMove = null;
+
+    if (clearSelectionBox) {
+        state.selectionBox = null;
+    }
+
+    const canvas = document.getElementById('canvas');
+    if (canvas) {
+        canvas.classList.remove('ghost-drag-mode');
+    }
+}
+
+/**
+ * Show toast notification with return link to source project.
+ * @param {string} message - Toast message to display
+ * @param {string|null} sourceProjectId - Source project ID for return link
+ * @param {string|null} sourceProjectName - Source project name for display
+ */
+function showMoveToast(message, sourceProjectId, sourceProjectName) {
+    if (sourceProjectId && sourceProjectName) {
+        showToast(message, {
+            linkText: `Return to ${sourceProjectName}`,
+            linkOnClick: async () => await openProject(sourceProjectId)
+        });
+    } else {
+        showToast(message);
+    }
+}
+
+/**
+ * Integrate ghost nodes and edges into current project state.
+ * @returns {string[]} - Array of newly integrated node IDs
+ */
+function integrateGhostNodes() {
+    // Guard clause: validate ghost nodes exist
+    if (!state.ghostNodes || state.ghostNodes.length === 0) {
+        console.warn('integrateGhostNodes: no ghost nodes to integrate');
+        return [];
+    }
+
+    // Add ghost nodes to current notebook as real nodes
+    state.ghostNodes.forEach(node => {
+        state.nodes.push(node);
+    });
+
+    // Add edges if present
+    if (state.pendingMove && state.pendingMove.edges) {
+        state.pendingMove.edges.forEach(edge => {
+            state.edges.push(edge);
+        });
+    }
+
+    // Return IDs for selection
+    return state.ghostNodes.map(n => n.id);
+}
+
+/**
+ * Select the newly placed nodes after integration.
+ * @param {string[]} nodeIds - Array of node IDs to select
+ */
+function selectPlacedNodes(nodeIds) {
+    state.selectedNodes = nodeIds;
+}
+
+/**
+ * Remove moved nodes from source project and update note count.
+ * @param {string} sourceProjectId - Source project ID
+ * @param {string[]} originalNodeIds - Original node IDs to remove
+ * @returns {boolean} - True if successful, false otherwise
+ */
+function syncSourceAfterMove(sourceProjectId, originalNodeIds) {
+    // Guard clause: validate parameters
+    if (!sourceProjectId) {
+        console.warn('syncSourceAfterMove: missing sourceProjectId');
+        return false;
+    }
+
+    if (!originalNodeIds || originalNodeIds.length === 0) {
+        console.warn('syncSourceAfterMove: no node IDs to remove');
+        return false;
+    }
+
+    // Delegate to existing function
+    removeNodesFromSourceNotebook(sourceProjectId, originalNodeIds);
+    return true;
+}
+
+/**
+ * Queue immediate save of target project after move operation.
+ */
+function queueTargetProjectSave() {
+    state.saveQueue.push({
+        timestamp: Date.now(),
+        projectId: state.currentProjectId
+    });
+    processSaveQueue(); // Start immediately but don't await
+}
+
+/**
+ * Update note count for a project in the projects index.
+ * @param {string} projectId - Project ID to update
+ * @param {Array} nodes - Current nodes array to count
+ */
+function updateProjectNoteCount(projectId, nodes) {
+    const projects = getProjectsList();
+    const project = projects.find(p => p.id === projectId);
+    if (project) {
+        project.noteCount = countNotes(nodes);
+        saveProjectsIndex(projects);
+    }
+}
+
 /**
  * Recursively removes nodes by ID from a node array and all nested children.
  * Processes both the current level and all descendant levels.
@@ -5008,11 +5154,26 @@ function removeNodesRecursively(nodes, nodeIdsToRemove) {
  *
  * @param {string} sourceProjectId - ID of source project to remove nodes from
  * @param {string[]} nodeIds - Array of node IDs to remove
+ * @returns {boolean} - True if successful, false otherwise
  */
 function removeNodesFromSourceNotebook(sourceProjectId, nodeIds) {
+    // Guard clause: validate parameters
+    if (!sourceProjectId) {
+        console.error('removeNodesFromSourceNotebook: missing sourceProjectId');
+        return false;
+    }
+
+    if (!nodeIds || nodeIds.length === 0) {
+        console.warn('removeNodesFromSourceNotebook: no node IDs to remove');
+        return false;
+    }
+
     // Load source project data
     const sourceData = localStorage.getItem(STORAGE_KEY_PREFIX + sourceProjectId);
-    if (!sourceData) return;
+    if (!sourceData) {
+        console.error('removeNodesFromSourceNotebook: source project not found:', sourceProjectId);
+        return false;
+    }
 
     try {
         const project = JSON.parse(sourceData);
@@ -5029,14 +5190,12 @@ function removeNodesFromSourceNotebook(sourceProjectId, nodeIds) {
         localStorage.setItem(STORAGE_KEY_PREFIX + sourceProjectId, JSON.stringify(project));
 
         // Update note count in projects index
-        const projects = getProjectsList();
-        const sourceProject = projects.find(p => p.id === sourceProjectId);
-        if (sourceProject) {
-            sourceProject.noteCount = countNotes(project.nodes);
-            saveProjectsIndex(projects);
-        }
+        updateProjectNoteCount(sourceProjectId, project.nodes);
+
+        return true;
     } catch (e) {
-        console.error('Error removing nodes from source notebook:', e);
+        console.error('removeNodesFromSourceNotebook: error removing nodes:', e);
+        return false;
     }
 }
 

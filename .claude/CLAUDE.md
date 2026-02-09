@@ -7,6 +7,8 @@ Display for the user, "I read your PROJECT-level claude.md file"
 
 Project documentation is organized into folders:
 - `docs-project/` - Project-level documentation (SESSION_NOTES.md, decision-history.md, design-spec.txt, ROADMAP.txt, file_structure.txt, GRIGRI.txt)
+  - **Refactoring workflow**: refactoring-workflow.md, refactoring-quick-reference.md, refactoring-example.md, refactoring-session-checklist.md
+  - **Functions to refactor**: functions to refactor.txt (prioritized list)
 - `docs-app/` - App-specific technical reference (app-controls-reference.md, json-schema.md)
 - `knowledge/` - Conceptual articles and explorations
 - `tests/` - Test plans and testing documentation
