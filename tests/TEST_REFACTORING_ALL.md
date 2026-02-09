@@ -896,9 +896,10 @@ Each refactoring extracts smaller, focused functions from larger monolithic func
 ---
 
 #### TC5.5: Nested Move Operations
-**Status:** ❌ FAIL
+**Status:** ✅ PASS (Fixed 2026-02-08)
 **Description:** Test moving nodes from nested level and nodes with children
-**Failure Reason:** Bug #2 - removeNodesFromSourceNotebook() doesn't recursively remove nested nodes. Both Part A (move from nested level) and Part B (move parent with children) leave duplicates in source notebook.
+**Previous Issue:** Bug #2 - removeNodesFromSourceNotebook() didn't recursively remove nested nodes.
+**Fix:** Added removeNodesRecursively() helper function to search all nesting levels.
 **Steps:**
 1. **Test Move from Nested Level:**
    - Create notebook "Source"
@@ -1009,6 +1010,7 @@ Each refactoring extracts smaller, focused functions from larger monolithic func
 | 2026-02-08 | Grigri | updateHashtagDisplay() | 9/9 | 0/9 | All tests pass |
 | 2026-02-08 | Grigri | showNodeContextMenu() | 5/5 | 0/5 | All tests pass |
 | 2026-02-08 | Grigri | initiateMoveToNotebook() | 6/7 | 1/7 | TC5.5 FAIL - Bug #2 found |
+| 2026-02-08 | Grigri | Bug #2 Fix & Retest | 1/1 | 0/1 | TC5.5 now PASS - Bug fixed |
 
 ---
 
@@ -1016,14 +1018,14 @@ Each refactoring extracts smaller, focused functions from larger monolithic func
 
 **Total Test Cases:** 37 (consolidated from 108)
 **Sections:** 5 refactorings
-**Status:** ✅ 36/37 PASS (97.3%)
+**Status:** ✅ 37/37 PASS (100%)
 
 ### Tests by Section:
 - processSaveQueue(): 7/7 PASS ✅
 - showAutocomplete(): 9/9 PASS ✅
 - updateHashtagDisplay(): 9/9 PASS ✅
 - showNodeContextMenu(): 5/5 PASS ✅
-- initiateMoveToNotebook(): 6/7 PASS ⚠️ (1 bug found)
+- initiateMoveToNotebook(): 7/7 PASS ✅ (Bug #2 fixed)
 
 ### Consolidation Benefits:
 - 66% reduction in test count (108 → 37)
@@ -1037,35 +1039,40 @@ Each refactoring extracts smaller, focused functions from larger monolithic func
 
 ---
 
-## Bugs Found During Testing
+## Bugs Found & Fixed During Testing
 
-### Bug #2: Nested Node Removal Failure (HIGH SEVERITY)
+### Bug #2: Nested Node Removal Failure (HIGH SEVERITY) - ✅ FIXED
 **Test Case:** TC5.5 - Nested Move Operations
-**Status:** ❌ FAIL
+**Status:** ✅ FIXED (2026-02-08)
 **Location:** `removeNodesFromSourceNotebook()` (scripts/app.js:4980)
-**Issue:** Function only searches `project.nodes` (root level) and doesn't recursively remove nested children from parent nodes.
+**Issue:** Function only searched `project.nodes` (root level) and didn't recursively remove nested children from parent nodes.
 
 **Impact:**
-- Moving nodes FROM nested level leaves duplicates in source parent
-- Moving parent WITH children leaves parent duplicate in source
-- Causes data duplication in source notebook
+- Moving nodes FROM nested level left duplicates in source parent
+- Moving parent WITH children left parent duplicate in source
+- Caused data duplication in source notebook
 
-**Root Cause:** Function uses `project.nodes.filter()` which only filters root-level nodes. Nested children inside parent.nodes[] are not searched or removed.
+**Root Cause:** Function used `project.nodes.filter()` which only filtered root-level nodes. Nested children inside parent.nodes[] were not searched or removed.
 
-**Fix Required:** Implement recursive search to find and remove nodes at any depth level.
+**Fix Implemented:** Added `removeNodesRecursively()` helper function that:
+- Recursively searches all nesting levels
+- Filters nodes at current level
+- Processes children arrays recursively
+- Follows same pattern as `countNotes()` function
 
-**Tracked In:** Task #2
+**Fix Commit:** 9045caf
+**Verification:** Both TC5.5 test cases now PASS ✅
 
 ---
 
 ## Sign-off
 
 **Refactoring Complete:** ✅
-**Tests Complete:** ✅ 36/37 PASS (97.3%)
-**Ready for Production:** ⚠️ PENDING (Bug #2 must be fixed)
+**Tests Complete:** ✅ 37/37 PASS (100%)
+**Ready for Production:** ✅ YES
 
 **Outstanding Items:**
-1. Fix Bug #2 - Nested node removal (HIGH priority)
+1. ~~Fix Bug #2 - Nested node removal~~ ✅ FIXED (2026-02-08)
 2. Task #1 - Auto-focus textarea after hashtag pill click (MEDIUM priority - UX improvement)
 
 ---
