@@ -4977,6 +4977,35 @@ function cancelGhostDrag() {
  * @param {string} sourceProjectId - ID of source notebook
  * @param {string[]} nodeIds - Array of original node IDs to remove
  */
+/**
+ * Recursively removes nodes by ID from a node array and all nested children.
+ * Processes both the current level and all descendant levels.
+ *
+ * @param {Array} nodes - Array of nodes to filter
+ * @param {Array} nodeIdsToRemove - IDs of nodes to remove
+ * @returns {Array} Filtered nodes with removed IDs excluded at all levels
+ */
+function removeNodesRecursively(nodes, nodeIdsToRemove) {
+    return nodes
+        .filter(node => !nodeIdsToRemove.includes(node.id))
+        .map(node => {
+            // If node has children, recursively remove from children too
+            if (node.children && node.children.length > 0) {
+                node.children = removeNodesRecursively(node.children, nodeIdsToRemove);
+            }
+            return node;
+        });
+}
+
+/**
+ * Removes nodes from source notebook after they've been moved.
+ * Searches recursively at all nesting levels to find and remove nodes.
+ * Also removes edges that reference the removed nodes.
+ * Updates note count in projects index after removal.
+ *
+ * @param {string} sourceProjectId - ID of source project to remove nodes from
+ * @param {string[]} nodeIds - Array of node IDs to remove
+ */
 function removeNodesFromSourceNotebook(sourceProjectId, nodeIds) {
     // Load source project data
     const sourceData = localStorage.getItem(STORAGE_KEY_PREFIX + sourceProjectId);
@@ -4985,8 +5014,8 @@ function removeNodesFromSourceNotebook(sourceProjectId, nodeIds) {
     try {
         const project = JSON.parse(sourceData);
 
-        // Remove nodes by ID
-        project.nodes = project.nodes.filter(n => !nodeIds.includes(n.id));
+        // Remove nodes by ID recursively (searches all nesting levels)
+        project.nodes = removeNodesRecursively(project.nodes, nodeIds);
 
         // Remove edges that reference removed nodes
         project.edges = project.edges.filter(edge =>
