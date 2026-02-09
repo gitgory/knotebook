@@ -5338,101 +5338,150 @@ async function exportProjectToFile(projectId) {
 }
 
 /**
- * Import project from JSON file (from landing page).
- * Uses File System Access API if available, otherwise falls back to file input.
- * Parses file, stores in pendingImportData, and shows import modal with options
- * (create new or overwrite existing).
+ * Get file using File System Access API (modern browsers).
+ * @returns {Promise<File|null>} - Selected file or null if cancelled
+ * @throws {Error} - If file selection fails
  */
-async function importFromFile() {
-    // Try File System Access API first, fall back to file input
-    if (window.showOpenFilePicker) {
-        try {
-            const [handle] = await window.showOpenFilePicker({
-                types: [{
-                    description: 'JSON Files',
-                    accept: { 'application/json': ['.json'] }
-                }]
-            });
+async function getFileViaPicker() {
+    const [handle] = await window.showOpenFilePicker({
+        types: [{
+            description: 'JSON Files',
+            accept: { 'application/json': ['.json'] }
+        }]
+    });
+    return await handle.getFile();
+}
 
-            const file = await handle.getFile();
-            const text = await file.text();
-            const data = JSON.parse(text);
+/**
+ * Get file using legacy file input (fallback for mobile/unsupported browsers).
+ * @returns {Promise<File|null>} - Selected file or null if cancelled
+ */
+function getFileViaInput() {
+    return new Promise((resolve) => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json,application/json';
 
-            // Store for import flow
-            state.pendingImportData = data;
+        input.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            resolve(file || null);
+        });
 
-            // Show import modal
-            const modal = document.getElementById('import-modal');
-            const filename = document.getElementById('import-filename');
-            filename.textContent = `File: ${file.name}`;
+        input.click();
+    });
+}
 
-            // Hide overwrite button if no projects exist
-            const overwriteBtn = document.getElementById('import-overwrite');
-            const projects = getProjectsList();
-            if (projects.length === 0) {
-                overwriteBtn.style.display = 'none';
-            } else {
-                overwriteBtn.style.display = '';
-            }
+/**
+ * Read file contents and parse as JSON.
+ * @param {File} file - File object to read
+ * @returns {Promise<Object>} - Parsed JSON data
+ * @throws {Error} - If file read fails or JSON is invalid
+ */
+async function readAndParseJsonFile(file) {
+    // Guard clause: empty file
+    if (!file) throw new Error('No file provided');
 
-            modal.classList.remove('hidden');
+    const text = await file.text();
 
-        } catch (err) {
-            if (err.name !== 'AbortError') {
-                console.error('Import failed:', err);
-                await showAlert('Failed to import: ' + err.message, 'Import Error');
-            }
-        }
-    } else {
-        // Fallback for mobile/unsupported browsers
-        importFromFileFallback();
+    // Guard clause: empty content
+    if (!text || text.trim() === '') {
+        throw new Error('File is empty');
+    }
+
+    return JSON.parse(text);
+}
+
+/**
+ * Validate imported data structure matches expected format.
+ * @param {Object} data - Imported data to validate
+ * @throws {Error} - If data structure is invalid
+ */
+function validateImportData(data) {
+    // Guard clauses for required fields
+    if (!data || typeof data !== 'object') {
+        throw new Error('Invalid data format');
+    }
+
+    if (!data.name || typeof data.name !== 'string') {
+        throw new Error('Missing or invalid project name');
+    }
+
+    if (!Array.isArray(data.nodes)) {
+        throw new Error('Missing or invalid nodes array');
+    }
+
+    if (!Array.isArray(data.edges)) {
+        throw new Error('Missing or invalid edges array');
+    }
+
+    // Optional fields with defaults
+    if (data.hashtagColors && typeof data.hashtagColors !== 'object') {
+        throw new Error('Invalid hashtagColors format');
+    }
+
+    if (data.settings && typeof data.settings !== 'object') {
+        throw new Error('Invalid settings format');
+    }
+
+    if (data.hiddenHashtags && !Array.isArray(data.hiddenHashtags)) {
+        throw new Error('Invalid hiddenHashtags format');
     }
 }
 
 /**
- * Fallback import function using hidden file input for browsers without File System Access API.
- * Creates hidden input element, reads file on change, parses JSON, stores in pendingImportData,
- * and shows import modal.
+ * Update import modal UI with filename and show/hide overwrite button.
+ * @param {string} filename - Name of imported file
  */
-function importFromFileFallback() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json,application/json';
+function updateImportModal(filename) {
+    const modal = document.getElementById('import-modal');
+    const filenameEl = document.getElementById('import-filename');
+    const overwriteBtn = document.getElementById('import-overwrite');
 
-    input.addEventListener('change', async (e) => {
-        const file = e.target.files[0];
+    // Update filename display
+    filenameEl.textContent = `File: ${filename}`;
+
+    // Show/hide overwrite button based on existing projects
+    const projects = getProjectsList();
+    overwriteBtn.style.display = projects.length === 0 ? 'none' : '';
+
+    // Show modal
+    modal.classList.remove('hidden');
+}
+
+/**
+ * Import project from JSON file (from landing page).
+ * Uses File System Access API if available, otherwise falls back to file input.
+ * Parses file, validates data, stores in pendingImportData, and shows import modal.
+ */
+async function importFromFile() {
+    try {
+        // Step 1: Select file (strategy pattern)
+        const file = window.showOpenFilePicker
+            ? await getFileViaPicker()
+            : await getFileViaInput();
+
+        // Guard clause: user cancelled
         if (!file) return;
 
-        try {
-            const text = await file.text();
-            const data = JSON.parse(text);
+        // Step 2: Read and parse
+        const data = await readAndParseJsonFile(file);
 
-            // Store for import flow
-            state.pendingImportData = data;
+        // Step 3: Validate
+        validateImportData(data);
 
-            // Show import modal
-            const modal = document.getElementById('import-modal');
-            const filename = document.getElementById('import-filename');
-            filename.textContent = `File: ${file.name}`;
+        // Step 4: Store for import flow
+        state.pendingImportData = data;
 
-            // Hide overwrite button if no projects exist
-            const overwriteBtn = document.getElementById('import-overwrite');
-            const projects = getProjectsList();
-            if (projects.length === 0) {
-                overwriteBtn.style.display = 'none';
-            } else {
-                overwriteBtn.style.display = '';
-            }
+        // Step 5: Update UI
+        updateImportModal(file.name);
 
-            modal.classList.remove('hidden');
+    } catch (err) {
+        // Guard clause: ignore user cancellation
+        if (err.name === 'AbortError') return;
 
-        } catch (err) {
-            console.error('Import failed:', err);
-            showAlert('Failed to import: ' + err.message, 'Import Error');
-        }
-    });
-
-    input.click();
+        console.error('Import failed:', err);
+        await showAlert('Failed to import: ' + err.message, 'Import Error');
+    }
 }
 
 function hideImportModal() {

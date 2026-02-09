@@ -1,8 +1,7 @@
-/**
- * Graph Notes - Main Application
- * A visual note-taking app with graph structure
- */
-// ============================================================================
+Parsing G:\My Drive\Claude Projects\knotebook\scripts\app.js...
+Generated G:\My Drive\Claude Projects\knotebook\scripts\app_js_table_of_contents.txt
+  780 lines
+==========
 // ERROR HANDLING (line 6)
 // ============================================================================
     // Global error boundary - catches all uncaught exceptions
@@ -593,16 +592,24 @@ function downloadAsFile(filename, data)  // line 5215
         // Fallback for mobile/unsupported browsers
         // Try File System Access API first, fall back to data URL download
         // Fallback for mobile/unsupported browsers
-        // Try File System Access API first, fall back to file input
-        // Store for import flow
-        // Show import modal
-        // Hide overwrite button if no projects exist
-        // Fallback for mobile/unsupported browsers
-function importFromFileFallback()  // line 5397
-        // Store for import flow
-        // Show import modal
-        // Hide overwrite button if no projects exist
-function hideImportModal()  // line 5438
+function getFileViaInput()  // line 5359
+        // Guard clause: empty file
+        // Guard clause: empty content
+function validateImportData(data)  // line 5399
+        // Guard clauses for required fields
+        // Optional fields with defaults
+function updateImportModal(filename)  // line 5435
+        // Update filename display
+        // Show/hide overwrite button based on existing projects
+        // Show modal
+        // Step 1: Select file (strategy pattern)
+        // Guard clause: user cancelled
+        // Step 2: Read and parse
+        // Step 3: Validate
+        // Step 4: Store for import flow
+        // Step 5: Update UI
+        // Guard clause: ignore user cancellation
+function hideImportModal()  // line 5487
         // Save imported data to the new project
         // Update note count
         // Save import data before hiding modal (hideImportModal clears state.pendingImportData)
@@ -611,7 +618,7 @@ function hideImportModal()  // line 5438
         // Confirm with 3-second delay
         // Save imported data to the existing project
         // Update note count
-function showOverwriteSelectModal(projects)  // line 5543
+function showOverwriteSelectModal(projects)  // line 5592
         // Populate the list
         // Handle item selection
         // Handle cancel
@@ -619,9 +626,9 @@ function showOverwriteSelectModal(projects)  // line 5543
         // Cleanup
         // Attach listeners
 // ============================================================================
-// EVENT HANDLERS (line 5610)
+// EVENT HANDLERS (line 5659)
 // ============================================================================
-function initEventListeners()  // line 5614
+function initEventListeners()  // line 5663
         // Mouse down on canvas
         // Click on children indicator - enter the node
         // Click on completion indicator - cycle state
@@ -652,9 +659,9 @@ function initEventListeners()  // line 5614
         // Mouse wheel for zooming
         // Touch state for mobile
         // Helper to get distance between two touches
-function getTouchDistance(touches)  // line 6008
+function getTouchDistance(touches)  // line 6057
         // Helper to get center point between two touches
-function getTouchCenter(touches)  // line 6015
+function getTouchCenter(touches)  // line 6064
         // Touch start (for mobile drag and pan)
         // Close hashtag sidebar on touch (mobile UX)
         // Handle pinch zoom (2 fingers)
@@ -761,9 +768,9 @@ function getTouchCenter(touches)  // line 6015
         // Debug tools buttons
         // Error recovery modal buttons
 // ============================================================================
-// INITIALIZATION (line 7116)
+// INITIALIZATION (line 7165)
 // ============================================================================
-function init()  // line 7126
+function init()  // line 7175
         // Check if localStorage is available
         // Clear any stale pending move operations from browser refresh
         // Start the app when DOM is ready
