@@ -4104,6 +4104,9 @@ function attachHashtagPillHandlers(display, textarea) {
 
         triggerInputWithoutAutocomplete(textarea);
         restoreCursorPosition(textarea, cursorPos);
+
+        // Return focus to textarea for better editing flow
+        textarea.focus();
     };
 
     // Attach listener with abort signal
