@@ -1339,61 +1339,99 @@ function showAlert(message, title = 'Alert') {
  * @param {string} [title='Input Required'] - Optional title for the prompt
  * @returns {Promise<string|null>} - Resolves to input value if OK, null if cancelled
  */
-function showPrompt(message, defaultValue = '', title = 'Input Required') {
-    return new Promise((resolve) => {
-        const modal = document.getElementById('prompt-modal');
-        const titleEl = document.getElementById('prompt-title');
-        const messageEl = document.getElementById('prompt-message');
-        const input = document.getElementById('prompt-input');
-        const okBtn = document.getElementById('prompt-ok');
-        const cancelBtn = document.getElementById('prompt-cancel');
+/**
+ * Gets all DOM elements needed for the prompt modal.
+ * @returns {Object} Object containing modal elements
+ */
+function getPromptModalElements() {
+    return {
+        modal: document.getElementById('prompt-modal'),
+        titleEl: document.getElementById('prompt-title'),
+        messageEl: document.getElementById('prompt-message'),
+        input: document.getElementById('prompt-input'),
+        okBtn: document.getElementById('prompt-ok'),
+        cancelBtn: document.getElementById('prompt-cancel')
+    };
+}
 
-        // Set content and show
-        titleEl.textContent = title;
-        messageEl.textContent = message;
-        input.value = defaultValue;
-        modal.classList.remove('hidden');
+/**
+ * Configures the prompt modal with content and shows it.
+ * @param {Object} elements - DOM elements from getPromptModalElements()
+ * @param {string} message - The prompt message to display
+ * @param {string} defaultValue - Default input value
+ * @param {string} title - Modal title
+ */
+function configurePromptModal(elements, message, defaultValue, title) {
+    elements.titleEl.textContent = title;
+    elements.messageEl.textContent = message;
+    elements.input.value = defaultValue;
+    elements.modal.classList.remove('hidden');
+    elements.input.focus();
+    elements.input.select();
+}
 
-        // Focus and select input
-        input.focus();
-        input.select();
+/**
+ * Creates event handlers for the prompt modal.
+ * @param {Object} elements - DOM elements from getPromptModalElements()
+ * @param {Function} resolve - Promise resolve function
+ * @returns {Object} Object containing handler functions
+ */
+function createPromptHandlers(elements, resolve) {
+    const cleanup = () => {
+        elements.modal.classList.add('hidden');
+        elements.okBtn.removeEventListener('click', handlers.handleOk);
+        elements.cancelBtn.removeEventListener('click', handlers.handleCancel);
+        elements.input.removeEventListener('keydown', handlers.handleKey);
+    };
 
-        // OK handler
-        const handleOk = () => {
-            const value = input.value.trim();
+    const handlers = {
+        handleOk: () => {
+            const value = elements.input.value.trim();
             cleanup();
             resolve(value);
-        };
-
-        // Cancel handler
-        const handleCancel = () => {
+        },
+        handleCancel: () => {
             cleanup();
             resolve(null);
-        };
-
-        // Keyboard handler
-        const handleKey = (e) => {
+        },
+        handleKey: (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
-                handleOk();
+                handlers.handleOk();
             } else if (e.key === 'Escape') {
                 e.preventDefault();
-                handleCancel();
+                handlers.handleCancel();
             }
-        };
+        }
+    };
 
-        // Cleanup
-        const cleanup = () => {
-            modal.classList.add('hidden');
-            okBtn.removeEventListener('click', handleOk);
-            cancelBtn.removeEventListener('click', handleCancel);
-            input.removeEventListener('keydown', handleKey);
-        };
+    return handlers;
+}
 
-        // Attach listeners
-        okBtn.addEventListener('click', handleOk);
-        cancelBtn.addEventListener('click', handleCancel);
-        input.addEventListener('keydown', handleKey);
+/**
+ * Attaches event listeners to the prompt modal.
+ * @param {Object} elements - DOM elements from getPromptModalElements()
+ * @param {Object} handlers - Event handlers from createPromptHandlers()
+ */
+function attachPromptListeners(elements, handlers) {
+    elements.okBtn.addEventListener('click', handlers.handleOk);
+    elements.cancelBtn.addEventListener('click', handlers.handleCancel);
+    elements.input.addEventListener('keydown', handlers.handleKey);
+}
+
+/**
+ * Shows a prompt modal dialog and returns user input.
+ * @param {string} message - The prompt message to display
+ * @param {string} defaultValue - Default input value
+ * @param {string} title - Modal title
+ * @returns {Promise<string|null>} The user's input or null if cancelled
+ */
+function showPrompt(message, defaultValue = '', title = 'Input Required') {
+    return new Promise((resolve) => {
+        const elements = getPromptModalElements();
+        configurePromptModal(elements, message, defaultValue, title);
+        const handlers = createPromptHandlers(elements, resolve);
+        attachPromptListeners(elements, handlers);
     });
 }
 

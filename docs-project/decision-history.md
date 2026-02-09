@@ -618,3 +618,19 @@ Reasoning:
 - Right abstraction: Not too granular, not over-engineered
 
 ---
+
+## 2026-02-08: showPrompt() Refactoring - Extract Modal Lifecycle Helpers
+
+DECISION: Refactor showPrompt() by extracting lifecycle phase helpers
+CHOSE: Extract 4 helpers by lifecycle phase (57 → 12 lines, 79% reduction)
+NOT: Factory Pattern with shared modal infrastructure (touches 3 functions, higher risk, over-engineering)
+NOT: Minimal refactoring with handler extraction only (doesn't achieve line count goal or full SRP)
+
+Reasoning:
+- Proven pattern: Matches Extract Method pattern from successful refactorings
+- Clear separation: Each helper handles one lifecycle phase (get → configure → create handlers → attach)
+- Low risk: Only touches showPrompt(), no changes to working functions
+- Testable: Each phase independently testable
+- Consistent: Aligns with existing refactoring style
+
+---
