@@ -4,8 +4,8 @@ Summary: Functions >50 Lines (Candidates for Refactoring)
   1. ✅ populateSidebar() - REFACTORED (186 → 31 lines, 6 helpers extracted) - 2026-02-08
   2. ✅ renderNodes() - REFACTORED (186 → 20 lines, 8 helpers extracted, eliminated duplication with renderGhostNodes) - 2026-02-08
   3. ✅ showPrompt() - REFACTORED (57 → 12 lines, 4 helpers extracted) - 2026-02-08
-  4. saveEditor() - 132 lines
-  5. openEditor() - 121 lines
+  4. ✅ saveEditor() - REFACTORED (95 → 18 lines, 10 helpers extracted) - 2026-02-08
+  5. ✅ openEditor() - REFACTORED (121 → 15 lines, 4 helpers extracted) - 2026-02-08
 
   Medium Priority (75-100 lines):
   6. openProject() - 99 lines

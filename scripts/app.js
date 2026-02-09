@@ -3797,124 +3797,158 @@ function saveRootState() {
  *
  * @param {string} nodeId - ID of node to edit (ignored in batch mode)
  */
-function openEditor(nodeId) {
-    // Check if we're in batch edit mode (multiple nodes selected)
-    const isBatchMode = state.selectedNodes.length > 1;
-
-    // Clear removed tags from previous session
+/**
+ * Prepares the editor session by clearing state and hiding UI elements.
+ */
+function prepareEditorSession() {
     state.removedTagsInSession.clear();
+    hideActionBar();
+}
 
-    if (isBatchMode) {
-        // Batch edit mode
-        const nodes = state.selectedNodes.map(id => state.nodes.find(n => n.id === id)).filter(Boolean);
-        if (nodes.length === 0) return;
+/**
+ * Gets all DOM elements needed for the editor modal.
+ * @returns {Object} Object containing editor DOM elements
+ */
+function getEditorElements() {
+    return {
+        modal: document.getElementById('editor-modal'),
+        titleInput: document.getElementById('note-title'),
+        textarea: document.getElementById('note-text'),
+        enterBtn: document.getElementById('editor-enter')
+    };
+}
 
-        // Snapshot all nodes for cancel/revert
-        state.editorSnapshot = {
-            batchMode: true,
-            nodes: nodes.map(node => ({
-                id: node.id,
-                hashtags: [...(node.hashtags || [])],
-                completion: node.completion || null
-            }))
-        };
+/**
+ * Opens the editor in batch mode for editing multiple nodes.
+ * @param {Array} nodes - Array of node objects to edit
+ */
+function openBatchEditor(nodes) {
+    if (nodes.length === 0) return;
 
-        hideActionBar();
-        const modal = document.getElementById('editor-modal');
-        const titleInput = document.getElementById('note-title');
-        const textarea = document.getElementById('note-text');
-        const enterBtn = document.getElementById('editor-enter');
-
-        // Disable title field only
-        titleInput.disabled = true;
-        titleInput.value = '';
-        titleInput.placeholder = `Editing ${nodes.length} notes`;
-
-        // Enable textarea for adding tags
-        textarea.disabled = false;
-        textarea.value = '';
-        textarea.placeholder = 'Type tags to add (e.g., #urgent #review)';
-
-        // Disable enter button
-        enterBtn.disabled = true;
-        enterBtn.textContent = 'Step into note';
-        enterBtn.classList.remove('has-children');
-
-        // Collect all unique tags across selected nodes with counts
-        const tagCounts = {};
-        nodes.forEach(node => {
-            (node.hashtags || []).forEach(tag => {
-                tagCounts[tag] = (tagCounts[tag] || 0) + 1;
-            });
-        });
-
-        // Sort by frequency (most common first), then alphabetically
-        const allTags = Object.keys(tagCounts).sort((a, b) => {
-            if (tagCounts[b] !== tagCounts[a]) {
-                return tagCounts[b] - tagCounts[a]; // Descending by count
-            }
-            return a.localeCompare(b); // Alphabetically if same count
-        });
-
-        updateHashtagDisplay(allTags, true, nodes.length, tagCounts);
-
-        // Check completion status - if all same, show it; otherwise show mixed
-        const completions = nodes.map(n => n.completion || null);
-        const allSame = completions.every(c => c === completions[0]);
-        updateCompletionButtons(allSame ? completions[0] : 'mixed');
-
-        modal.classList.remove('hidden');
-        modal.dataset.batchMode = 'true';
-
-        // Focus on textarea for tag entry
-        textarea.focus();
-    } else {
-        // Single node edit mode
-        const node = state.nodes.find(n => n.id === nodeId);
-        if (!node) return;
-
-        // Snapshot current state for cancel/revert
-        state.editorSnapshot = {
-            batchMode: false,
-            title: node.title || '',
-            content: node.content || '',
+    // Snapshot all nodes for cancel/revert
+    state.editorSnapshot = {
+        batchMode: true,
+        nodes: nodes.map(node => ({
+            id: node.id,
             hashtags: [...(node.hashtags || [])],
             completion: node.completion || null
-        };
+        }))
+    };
 
-        hideActionBar();
-        const modal = document.getElementById('editor-modal');
-        const titleInput = document.getElementById('note-title');
-        const textarea = document.getElementById('note-text');
-        const enterBtn = document.getElementById('editor-enter');
+    const elements = getEditorElements();
 
-        // Enable all fields
-        titleInput.disabled = false;
-        textarea.disabled = false;
-        enterBtn.disabled = false;
+    // Configure title input (disabled in batch mode)
+    elements.titleInput.disabled = true;
+    elements.titleInput.value = '';
+    elements.titleInput.placeholder = `Editing ${nodes.length} notes`;
 
-        titleInput.value = node.title || '';
-        titleInput.placeholder = '';
-        textarea.value = node.content || '';
-        textarea.placeholder = '';
-        updateHashtagDisplay(node.hashtags || [], false, 1, {});
-        updateCompletionButtons(node.completion || '');
+    // Configure textarea for tag entry
+    elements.textarea.disabled = false;
+    elements.textarea.value = '';
+    elements.textarea.placeholder = 'Type tags to add (e.g., #urgent #review)';
 
-        // Update enter button based on whether node has children
-        if (node.children && node.children.length > 0) {
-            const count = node.children.length;
-            enterBtn.textContent = `View ${count} nested ${count === 1 ? 'note' : 'notes'}`;
-            enterBtn.classList.add('has-children');
-        } else {
-            enterBtn.textContent = 'Step into note';
-            enterBtn.classList.remove('has-children');
+    // Disable enter button
+    elements.enterBtn.disabled = true;
+    elements.enterBtn.textContent = 'Step into note';
+    elements.enterBtn.classList.remove('has-children');
+
+    // Collect all unique tags across selected nodes with counts
+    const tagCounts = {};
+    nodes.forEach(node => {
+        (node.hashtags || []).forEach(tag => {
+            tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+        });
+    });
+
+    // Sort by frequency (most common first), then alphabetically
+    const allTags = Object.keys(tagCounts).sort((a, b) => {
+        if (tagCounts[b] !== tagCounts[a]) {
+            return tagCounts[b] - tagCounts[a];
         }
+        return a.localeCompare(b);
+    });
 
-        modal.classList.remove('hidden');
-        modal.dataset.nodeId = nodeId;
-        titleInput.focus();
-        titleInput.setSelectionRange(0, 0);
-        titleInput.scrollLeft = 0;
+    updateHashtagDisplay(allTags, true, nodes.length, tagCounts);
+
+    // Check completion status - if all same, show it; otherwise show mixed
+    const completions = nodes.map(n => n.completion || null);
+    const allSame = completions.every(c => c === completions[0]);
+    updateCompletionButtons(allSame ? completions[0] : 'mixed');
+
+    // Show modal and focus textarea
+    elements.modal.classList.remove('hidden');
+    elements.modal.dataset.batchMode = 'true';
+    elements.textarea.focus();
+}
+
+/**
+ * Opens the editor in single mode for editing one node.
+ * @param {Object} node - The node object to edit
+ * @param {string} nodeId - The node's ID
+ */
+function openSingleEditor(node, nodeId) {
+    if (!node) return;
+
+    // Snapshot current state for cancel/revert
+    state.editorSnapshot = {
+        batchMode: false,
+        title: node.title || '',
+        content: node.content || '',
+        hashtags: [...(node.hashtags || [])],
+        completion: node.completion || null
+    };
+
+    const elements = getEditorElements();
+
+    // Enable all fields
+    elements.titleInput.disabled = false;
+    elements.textarea.disabled = false;
+    elements.enterBtn.disabled = false;
+
+    // Load node data
+    elements.titleInput.value = node.title || '';
+    elements.titleInput.placeholder = '';
+    elements.textarea.value = node.content || '';
+    elements.textarea.placeholder = '';
+
+    updateHashtagDisplay(node.hashtags || [], false, 1, {});
+    updateCompletionButtons(node.completion || '');
+
+    // Update enter button based on whether node has children
+    if (node.children && node.children.length > 0) {
+        const count = node.children.length;
+        elements.enterBtn.textContent = `View ${count} nested ${count === 1 ? 'note' : 'notes'}`;
+        elements.enterBtn.classList.add('has-children');
+    } else {
+        elements.enterBtn.textContent = 'Step into note';
+        elements.enterBtn.classList.remove('has-children');
+    }
+
+    // Show modal and focus title
+    elements.modal.classList.remove('hidden');
+    elements.modal.dataset.nodeId = nodeId;
+    elements.titleInput.focus();
+    elements.titleInput.setSelectionRange(0, 0);
+    elements.titleInput.scrollLeft = 0;
+}
+
+/**
+ * Opens the note editor modal.
+ * Supports both single node and batch editing modes based on selection state.
+ * @param {string} nodeId - The ID of the node to edit (used in single mode)
+ */
+function openEditor(nodeId) {
+    const isBatchMode = state.selectedNodes.length > 1;
+    prepareEditorSession();
+
+    if (isBatchMode) {
+        const nodes = state.selectedNodes
+            .map(id => state.nodes.find(n => n.id === id))
+            .filter(Boolean);
+        openBatchEditor(nodes);
+    } else {
+        const node = state.nodes.find(n => n.id === nodeId);
+        openSingleEditor(node, nodeId);
     }
 }
 
@@ -3971,6 +4005,174 @@ function cancelEditor() {
 }
 
 /**
+ * Gets the editor mode and associated nodes.
+ * @returns {Object} Object with isBatchMode flag and relevant nodes
+ */
+function getEditorMode() {
+    const modal = document.getElementById('editor-modal');
+    const isBatchMode = modal.dataset.batchMode === 'true';
+
+    if (isBatchMode) {
+        const nodes = state.selectedNodes
+            .map(id => state.nodes.find(n => n.id === id))
+            .filter(Boolean);
+        return { isBatchMode, nodes, node: null };
+    } else {
+        const nodeId = modal.dataset.nodeId;
+        const node = state.nodes.find(n => n.id === nodeId);
+        return { isBatchMode, nodes: null, node, nodeId };
+    }
+}
+
+/**
+ * Gets form data from the editor inputs.
+ * @returns {Object} Object containing form values
+ */
+function getEditorFormData() {
+    const titleInput = document.getElementById('note-title');
+    const textarea = document.getElementById('note-text');
+    const activeBtn = document.querySelector('.completion-btn.active');
+    const completionValue = activeBtn ? activeBtn.dataset.value : '';
+    const newTags = parseHashtags(textarea.value);
+
+    return {
+        titleInput: titleInput.value,
+        textarea: textarea.value,
+        completionValue,
+        newTags
+    };
+}
+
+/**
+ * Removes specified tags from nodes in batch mode.
+ * @param {Array} nodes - Array of node objects
+ * @param {Set} tagsToRemove - Set of tag strings to remove
+ */
+function removeBatchTags(nodes, tagsToRemove) {
+    if (tagsToRemove.size === 0) return;
+
+    nodes.forEach(node => {
+        tagsToRemove.forEach(tag => {
+            // Remove from hashtags array
+            node.hashtags = node.hashtags.filter(t => t !== tag);
+            // Remove from content text
+            const escapedTag = tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp(escapedTag + '\\s?', 'gi');
+            node.content = node.content.replace(regex, '').trim();
+            // Clean up multiple spaces
+            node.content = node.content.replace(/\s+/g, ' ');
+        });
+    });
+}
+
+/**
+ * Adds specified tags to nodes in batch mode.
+ * @param {Array} nodes - Array of node objects
+ * @param {Array} tagsToAdd - Array of tag strings to add
+ */
+function addBatchTags(nodes, tagsToAdd) {
+    if (tagsToAdd.length === 0) return;
+
+    nodes.forEach(node => {
+        tagsToAdd.forEach(tag => {
+            if (!node.hashtags.includes(tag)) {
+                node.hashtags.push(tag);
+            }
+        });
+
+        // Update content to include new tags
+        const existingContent = node.content.trim();
+        const missingTags = tagsToAdd.filter(tag => !node.content.includes(tag));
+        if (missingTags.length > 0) {
+            node.content = existingContent + (existingContent ? ' ' : '') + missingTags.join(' ');
+            node.hashtags = parseHashtags(node.content);
+        }
+    });
+}
+
+/**
+ * Updates completion state for nodes in batch mode.
+ * @param {Array} nodes - Array of node objects
+ * @param {string} completionValue - Completion value to set
+ */
+function updateBatchCompletion(nodes, completionValue) {
+    if (!completionValue || completionValue === 'mixed') return;
+
+    nodes.forEach(node => {
+        node.completion = completionValue || null;
+    });
+}
+
+/**
+ * Updates modified timestamps for nodes in batch mode.
+ * @param {Array} nodes - Array of node objects
+ */
+function updateBatchTimestamps(nodes) {
+    const timestamp = new Date().toISOString();
+    nodes.forEach(node => {
+        node.modified = timestamp;
+    });
+}
+
+/**
+ * Validates single node input with soft limits and confirmation dialogs.
+ * @param {string} titleValue - Title input value
+ * @param {string} contentValue - Content textarea value
+ * @returns {Promise<boolean>} True if validation passes, false otherwise
+ */
+async function validateSingleNodeInput(titleValue, contentValue) {
+    // Validate title length (soft limit)
+    if (titleValue.length > TITLE_SOFT_LIMIT) {
+        const confirmed = await showConfirmation(
+            `Warning: Title is ${titleValue.length} characters (recommended max: ${TITLE_SOFT_LIMIT}). Save anyway?`
+        );
+        if (!confirmed) return false;
+    }
+
+    // Validate content length (soft limit)
+    if (contentValue.length > CONTENT_SOFT_LIMIT) {
+        const confirmed = await showConfirmation(
+            `Warning: Content is ${contentValue.length} characters (recommended max: ${CONTENT_SOFT_LIMIT.toLocaleString()}). Save anyway?`
+        );
+        if (!confirmed) return false;
+    }
+
+    return true;
+}
+
+/**
+ * Saves single node data from editor inputs.
+ * @param {Object} node - The node object to update
+ * @param {string} nodeId - The node's ID
+ * @param {string} titleValue - Title input value
+ * @param {string} contentValue - Content textarea value
+ * @param {string} completionValue - Completion state value
+ */
+function saveSingleNode(node, nodeId, titleValue, contentValue, completionValue) {
+    if (!node) return;
+
+    node.title = titleValue;
+    node.content = contentValue;
+    node.hashtags = parseHashtags(contentValue);
+    node.modified = new Date().toISOString();
+    node.completion = completionValue || null;
+
+    // Delete empty nodes (created but never filled in)
+    if (!node.title.trim() && !node.content.trim()) {
+        deleteNode(nodeId);
+    }
+}
+
+/**
+ * Cleans up editor state and closes the editor.
+ */
+function cleanupEditorState() {
+    state.editorSnapshot = null;
+    closeEditor();
+    render();
+}
+
+/**
  * Save editor changes and close.
  * In batch mode, adds/removes hashtags and updates completion for all selected nodes.
  * In single mode, validates and saves title/content/hashtags/completion. Updates
@@ -3978,99 +4180,20 @@ function cancelEditor() {
  * @returns {Promise<void>}
  */
 async function saveEditor() {
-    const modal = document.getElementById('editor-modal');
+    const { isBatchMode, nodes, node, nodeId } = getEditorMode();
+    const formData = getEditorFormData();
 
-    if (modal.dataset.batchMode === 'true') {
-        // Batch mode: apply changes to all selected nodes
-        const nodes = state.selectedNodes.map(id => state.nodes.find(n => n.id === id)).filter(Boolean);
-        const textarea = document.getElementById('note-text');
-
-        // Parse hashtags from textarea (these are tags to add)
-        const newTags = parseHashtags(textarea.value);
-
-        // Get completion state
-        const activeBtn = document.querySelector('.completion-btn.active');
-        const completionValue = activeBtn ? activeBtn.dataset.value : '';
-
-        nodes.forEach(node => {
-            // Remove tags that were marked for removal
-            if (state.removedTagsInSession.size > 0) {
-                state.removedTagsInSession.forEach(tag => {
-                    // Remove from hashtags array
-                    node.hashtags = node.hashtags.filter(t => t !== tag);
-                    // Remove from content text
-                    const escapedTag = tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                    const regex = new RegExp(escapedTag + '\\s?', 'gi');
-                    node.content = node.content.replace(regex, '').trim();
-                    // Clean up multiple spaces
-                    node.content = node.content.replace(/\s+/g, ' ');
-                });
-            }
-
-            // Add new tags to each node (avoid duplicates)
-            if (newTags.length > 0) {
-                newTags.forEach(tag => {
-                    if (!node.hashtags.includes(tag)) {
-                        node.hashtags.push(tag);
-                    }
-                });
-                // Update content to include new tags
-                const existingContent = node.content.trim();
-                const tagsToAdd = newTags.filter(tag => !node.content.includes(tag));
-                if (tagsToAdd.length > 0) {
-                    node.content = existingContent + (existingContent ? ' ' : '') + tagsToAdd.join(' ');
-                    node.hashtags = parseHashtags(node.content);
-                }
-            }
-
-            // Set completion state (unless it's 'mixed' which means no change)
-            if (completionValue && completionValue !== 'mixed') {
-                node.completion = completionValue || null;
-            }
-
-            node.modified = new Date().toISOString();
-        });
+    if (isBatchMode) {
+        removeBatchTags(nodes, state.removedTagsInSession);
+        addBatchTags(nodes, formData.newTags);
+        updateBatchCompletion(nodes, formData.completionValue);
+        updateBatchTimestamps(nodes);
     } else {
-        // Single node mode
-        const nodeId = modal.dataset.nodeId;
-        const node = state.nodes.find(n => n.id === nodeId);
-
-        if (node) {
-            const titleInput = document.getElementById('note-title');
-            const textarea = document.getElementById('note-text');
-
-            // Validate title length (soft limit)
-            if (titleInput.value.length > TITLE_SOFT_LIMIT) {
-                const confirmed = await showConfirmation(`Warning: Title is ${titleInput.value.length} characters (recommended max: ${TITLE_SOFT_LIMIT}). Save anyway?`);
-                if (!confirmed) return;
-            }
-
-            // Validate content length (soft limit)
-            if (textarea.value.length > 100000) {
-                const confirmed = await showConfirmation(`Warning: Content is ${textarea.value.length} characters (recommended max: ${CONTENT_SOFT_LIMIT.toLocaleString()}). Save anyway?`);
-                if (!confirmed) return;
-            }
-
-            node.title = titleInput.value;
-            node.content = textarea.value;
-            node.hashtags = parseHashtags(textarea.value);
-            node.modified = new Date().toISOString();
-
-            // Save completion state
-            const activeBtn = document.querySelector('.completion-btn.active');
-            const val = activeBtn ? activeBtn.dataset.value : '';
-            node.completion = val || null;
-
-            // Delete empty nodes (created but never filled in)
-            if (!node.title.trim() && !node.content.trim()) {
-                deleteNode(nodeId);
-            }
-        }
+        if (!await validateSingleNodeInput(formData.titleInput, formData.textarea)) return;
+        saveSingleNode(node, nodeId, formData.titleInput, formData.textarea, formData.completionValue);
     }
 
-    state.editorSnapshot = null;
-    closeEditor();
-    render();
+    cleanupEditorState();
 }
 
 /**

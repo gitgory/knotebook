@@ -634,3 +634,36 @@ Reasoning:
 - Consistent: Aligns with existing refactoring style
 
 ---
+
+## 2026-02-08: openEditor() and saveEditor() Refactoring - Extract Method Pattern
+
+DECISION: Refactor both editor functions using Extract Method pattern
+CHOSE: Extract mode-specific handlers for openEditor (4 helpers), operation-specific helpers for saveEditor (10 helpers)
+NOT: Strategy Pattern with mode classes (over-engineering for 2 modes)
+NOT: Granular extraction with 15+ helpers (excessive, too much parameter passing)
+
+Reasoning:
+- Proven pattern: Matches successful refactorings (renderNodes, populateSidebar, showPrompt)
+- Clear separation: Batch vs single mode logic fully isolated
+- Right-sized: 14 total helpers achieves goals without over-engineering
+- Testability: Can test batch operations, single operations, validation independently
+- Maintainability: Changes to one mode don't affect the other
+
+openEditor() - 121 → 15 lines (88% reduction, 4 helpers):
+- prepareEditorSession() - Clear state, hide action bar
+- getEditorElements() - Get DOM references
+- openBatchEditor() - Configure editor for batch mode
+- openSingleEditor() - Configure editor for single mode
+
+saveEditor() - 95 → 18 lines (81% reduction, 10 helpers):
+- getEditorMode() - Determine mode and get nodes
+- getEditorFormData() - Extract form values
+- removeBatchTags() - Remove tags from nodes
+- addBatchTags() - Add tags to nodes
+- updateBatchCompletion() - Set completion state
+- updateBatchTimestamps() - Update modified timestamps
+- validateSingleNodeInput() - Async validation with confirmations
+- saveSingleNode() - Save single node data
+- cleanupEditorState() - Clear state and close editor
+
+---
