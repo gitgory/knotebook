@@ -1,0 +1,31 @@
+Summary: Functions >50 Lines (Candidates for Refactoring)
+
+  Top Priority (>100 lines):
+  1. populateSidebar() - 186 lines
+  2. renderNodes() - 186 lines
+  3. showPrompt() - 136 lines
+  4. saveEditor() - 132 lines
+  5. openEditor() - 121 lines
+
+  Medium Priority (75-100 lines):
+  6. openProject() - 99 lines
+  7. stringifyAsync() - 95 lines
+  8. showConfirmation() - 89 lines
+  9. renderGhostNodes() - 89 lines
+  10. initiateMoveToNotebook() - 79 lines
+  11. updateSaveStatus() - 78 lines
+  12. showHashtagContextMenu() - 77 lines
+  13. renameHashtag() - 75 lines
+  14. loadProjectFromStorage() - 73 lines
+  15. showToast() - 72 lines
+  16. exportToFile() - 72 lines
+
+  Lower Priority (50-75 lines):
+  17. handleImportOverwrite() - 68 lines
+  18. showOverwriteSelectModal() - 67 lines
+  19. placeGhostNodes() - 63 lines
+  20. importFromFile() - 56 lines
+  21. showAlert() - 50 lines
+
+  Note: initEventListeners() at 1441 lines is intentionally excluded - it's event
+  wiring, not business logic.

@@ -1,0 +1,469 @@
+================================================================================
+REFACTORING PLAN: initiateMoveToNotebook()
+================================================================================
+Created: 2026-02-07
+Status: Ready for review
+
+================================================================================
+CURRENT STATE ANALYSIS
+================================================================================
+
+Current function (lines 4503-4563) performs 7 distinct responsibilities:
+1. Store original node IDs for cleanup
+2. Create ID mapping and deep copy nodes
+3. Filter and remap edges
+4. Calculate bounding box
+5. Calculate relative offsets from center
+6. Retrieve source project name
+7. Package data and store in sessionStorage
+8. Switch to target project
+
+Issues:
+- Single function doing too much (8 different operations)
+- Mixed concerns: data transformation, calculation, storage, navigation
+- No guard clauses (assumes valid state)
+- Hard to test individual pieces
+- No clear separation between pure calculations and side effects
+
+================================================================================
+DESIGN PRINCIPLES APPLICATION
+================================================================================
+
+1. SINGLE RESPONSIBILITY PRINCIPLE
+   Each extracted function should do ONE thing:
+   - Create node copies with ID mapping
+   - Filter relevant edges
+   - Calculate bounding box
+   - Calculate offset map
+   - Build move package
+   - Store move data
+   - Execute navigation
+
+2. EXTRACT METHOD
+   Break down into smaller, focused functions:
+   - createNodeCopiesWithMapping() → returns {nodes, idMapping}
+   - filterAndRemapEdges(edges, idMapping, selectedNodes) → returns edge[]
+   - calculateBoundingBox(nodes) → returns {minX, minY, maxX, maxY, centerX, centerY}
+   - calculateRelativeOffsets(nodes, centerX, centerY) → returns offset map
+   - buildMovePackage(data) → returns package object
+   - storePendingMove(package) → void (side effect)
+   - navigateToTargetProject(id) → Promise<void> (side effect)
+
+3. SEPARATION OF CONCERNS
+   Group functions by concern:
+   - Data transformation (copy, remap, filter)
+   - Geometric calculations (bounds, offsets)
+   - State management (build package, store)
+   - Navigation (project switch)
+
+4. GUARD CLAUSES
+   Add early returns for invalid states:
+   - No selected nodes
+   - Target project doesn't exist
+   - No current project
+   - Invalid target ID
+
+5. COMMAND PATTERN
+   Main function becomes a coordinator that:
+   - Validates preconditions (guards)
+   - Executes operations in order (commands)
+   - Handles errors gracefully
+   - Separates reads from writes
+
+================================================================================
+REFACTORED STRUCTURE
+================================================================================
+
+NEW HELPER FUNCTIONS (7 total):
+-----------------------------------
+
+1. createNodeCopiesWithMapping(selectedNodeIds, allNodes)
+   - Purpose: Create deep copies with new IDs and build ID mapping
+   - Input: selectedNodeIds[], allNodes[]
+   - Output: {nodes: Node[], idMapping: {oldId: newId}}
+   - Pure function: no side effects
+   - Single responsibility: node copying and ID tracking
+
+2. filterAndRemapEdges(edges, idMapping, selectedNodeIds)
+   - Purpose: Get edges between selected nodes and remap to new IDs
+   - Input: edges[], idMapping{}, selectedNodeIds[]
+   - Output: edge[] (array of [newId1, newId2])
+   - Pure function: no side effects
+   - Single responsibility: edge filtering and remapping
+
+3. calculateBoundingBox(nodes)
+   - Purpose: Calculate min/max bounds and center point
+   - Input: nodes[]
+   - Output: {minX, minY, maxX, maxY, centerX, centerY}
+   - Pure function: geometry calculation
+   - Single responsibility: bounding box math
+
+4. calculateRelativeOffsets(nodes, centerX, centerY)
+   - Purpose: Calculate each node's offset from center
+   - Input: nodes[], centerX, centerY
+   - Output: {nodeId: {dx, dy}}
+   - Pure function: geometry calculation
+   - Single responsibility: offset calculation
+
+5. getSourceProjectName(projectId, projectsList)
+   - Purpose: Retrieve project name by ID
+   - Input: projectId, projectsList[]
+   - Output: string (name or 'Unknown')
+   - Pure function: lookup
+   - Single responsibility: data retrieval
+
+6. buildMovePackage(sourceData, nodeData, edgeData, geometryData)
+   - Purpose: Assemble complete move package structure
+   - Input: source info, nodes, edges, bounding box, offsets
+   - Output: pendingMove object
+   - Pure function: data assembly
+   - Single responsibility: package construction
+
+7. storePendingMove(movePackage)
+   - Purpose: Save move data to sessionStorage
+   - Input: movePackage object
+   - Output: void
+   - Side effect: writes to sessionStorage
+   - Single responsibility: persistence
+
+REFACTORED MAIN FUNCTION:
+--------------------------
+
+async function initiateMoveToNotebook(targetProjectId) {
+    // GUARD CLAUSES (validate preconditions)
+    if (!targetProjectId) {
+        console.error('No target project ID provided');
+        return;
+    }
+
+    if (!state.currentProjectId) {
+        console.error('No current project open');
+        return;
+    }
+
+    if (state.selectedNodes.length === 0) {
+        console.error('No nodes selected to move');
+        return;
+    }
+
+    const projectsList = getProjectsList();
+    const targetExists = projectsList.some(p => p.id === targetProjectId);
+    if (!targetExists) {
+        console.error('Target project does not exist');
+        return;
+    }
+
+    // COMMAND EXECUTION (pure operations first, then side effects)
+
+    // 1. Data transformation
+    const originalIds = [...state.selectedNodes];
+    const {nodes, idMapping} = createNodeCopiesWithMapping(
+        state.selectedNodes,
+        state.nodes
+    );
+    const edges = filterAndRemapEdges(
+        state.edges,
+        idMapping,
+        state.selectedNodes
+    );
+
+    // 2. Geometric calculations
+    const boundingBox = calculateBoundingBox(nodes);
+    const relativeOffsets = calculateRelativeOffsets(
+        nodes,
+        boundingBox.centerX,
+        boundingBox.centerY
+    );
+
+    // 3. Data assembly
+    const sourceProjectName = getSourceProjectName(
+        state.currentProjectId,
+        projectsList
+    );
+    const movePackage = buildMovePackage({
+        sourceProjectId: state.currentProjectId,
+        sourceProjectName: sourceProjectName,
+        originalIds: originalIds,
+        nodes: nodes,
+        edges: edges,
+        boundingBox: {
+            centerX: boundingBox.centerX,
+            centerY: boundingBox.centerY
+        },
+        relativeOffsets: relativeOffsets
+    });
+
+    // 4. Side effects (storage and navigation)
+    storePendingMove(movePackage);
+    await openProject(targetProjectId);
+}
+
+================================================================================
+IMPLEMENTATION DETAILS
+================================================================================
+
+FUNCTION SIGNATURES:
+--------------------
+
+/**
+ * Create deep copies of nodes with new IDs and build ID mapping.
+ *
+ * @param {string[]} selectedNodeIds - IDs of nodes to copy
+ * @param {Node[]} allNodes - All nodes in current level
+ * @returns {{nodes: Node[], idMapping: Object}} Copied nodes and ID mapping
+ */
+function createNodeCopiesWithMapping(selectedNodeIds, allNodes) {
+    const idMapping = {};
+    const nodes = selectedNodeIds.map(id => {
+        const node = allNodes.find(n => n.id === id);
+        const copy = deepCopyNode(node);
+        idMapping[id] = copy.id;
+        return copy;
+    });
+    return {nodes, idMapping};
+}
+
+/**
+ * Filter edges between selected nodes and remap to new IDs.
+ *
+ * @param {Array} edges - All edges in current level
+ * @param {Object} idMapping - Map from old IDs to new IDs
+ * @param {string[]} selectedNodeIds - IDs of selected nodes
+ * @returns {Array} Edges with remapped IDs
+ */
+function filterAndRemapEdges(edges, idMapping, selectedNodeIds) {
+    return edges
+        .filter(edge =>
+            selectedNodeIds.includes(edge[0]) &&
+            selectedNodeIds.includes(edge[1])
+        )
+        .map(edge => [idMapping[edge[0]], idMapping[edge[1]]]);
+}
+
+/**
+ * Calculate bounding box and center point for a set of nodes.
+ *
+ * @param {Node[]} nodes - Nodes to calculate bounds for
+ * @returns {{minX: number, minY: number, maxX: number, maxY: number, centerX: number, centerY: number}}
+ */
+function calculateBoundingBox(nodes) {
+    const minX = Math.min(...nodes.map(n => n.position.x));
+    const minY = Math.min(...nodes.map(n => n.position.y));
+    const maxX = Math.max(...nodes.map(n => n.position.x + NODE_WIDTH));
+    const maxY = Math.max(...nodes.map(n => n.position.y + NODE_HEIGHT));
+
+    const centerX = (minX + maxX) / 2;
+    const centerY = (minY + maxY) / 2;
+
+    return {minX, minY, maxX, maxY, centerX, centerY};
+}
+
+/**
+ * Calculate relative offset from center for each node.
+ *
+ * @param {Node[]} nodes - Nodes to calculate offsets for
+ * @param {number} centerX - Center X coordinate
+ * @param {number} centerY - Center Y coordinate
+ * @returns {Object} Map of node ID to {dx, dy} offset
+ */
+function calculateRelativeOffsets(nodes, centerX, centerY) {
+    const offsets = {};
+    nodes.forEach(node => {
+        offsets[node.id] = {
+            dx: node.position.x - centerX,
+            dy: node.position.y - centerY
+        };
+    });
+    return offsets;
+}
+
+/**
+ * Get project name by ID.
+ *
+ * @param {string} projectId - Project ID to look up
+ * @param {Array} projectsList - List of all projects
+ * @returns {string} Project name or 'Unknown'
+ */
+function getSourceProjectName(projectId, projectsList) {
+    const project = projectsList.find(p => p.id === projectId);
+    return project ? project.name : 'Unknown';
+}
+
+/**
+ * Build complete move package structure.
+ *
+ * @param {Object} data - All data needed for move package
+ * @returns {Object} Complete move package
+ */
+function buildMovePackage(data) {
+    return {
+        sourceProjectId: data.sourceProjectId,
+        sourceProjectName: data.sourceProjectName,
+        originalIds: data.originalIds,
+        nodes: data.nodes,
+        edges: data.edges,
+        boundingBox: data.boundingBox,
+        relativeOffsets: data.relativeOffsets
+    };
+}
+
+/**
+ * Store pending move data in sessionStorage.
+ *
+ * @param {Object} movePackage - Complete move package to store
+ */
+function storePendingMove(movePackage) {
+    sessionStorage.setItem(MOVE_STORAGE_KEY, JSON.stringify(movePackage));
+}
+
+================================================================================
+FILE ORGANIZATION
+================================================================================
+
+Location in app.js:
+- Add new helper functions in "MOVE TO NOTEBOOK MODAL" section (line 4440+)
+- Place helpers BEFORE initiateMoveToNotebook()
+- Order: pure functions first, side-effect functions last
+- Keep initiateMoveToNotebook() in same location (currently line 4503)
+
+Suggested order:
+1. createNodeCopiesWithMapping()
+2. filterAndRemapEdges()
+3. calculateBoundingBox()
+4. calculateRelativeOffsets()
+5. getSourceProjectName()
+6. buildMovePackage()
+7. storePendingMove()
+8. showMoveToModal()
+9. hideMoveToModal()
+10. initiateMoveToNotebook() ← REFACTORED
+11. checkForPendingMove()
+12. placeGhostNodes()
+13. cancelGhostDrag()
+14. removeNodesFromSourceNotebook()
+
+================================================================================
+TESTING STRATEGY
+================================================================================
+
+Unit Tests (conceptual - no test framework):
+1. createNodeCopiesWithMapping()
+   - Returns correct number of nodes
+   - All nodes have new IDs
+   - idMapping contains all original IDs
+   - Deep copy preserves node structure
+
+2. filterAndRemapEdges()
+   - Only includes edges between selected nodes
+   - Edge IDs correctly remapped
+   - Edge count matches expected
+
+3. calculateBoundingBox()
+   - Min/max values correct for single node
+   - Min/max values correct for multiple nodes
+   - Center point calculation correct
+
+4. calculateRelativeOffsets()
+   - Offset count matches node count
+   - dx/dy values correct for center node (0,0)
+   - dx/dy values correct for offset nodes
+
+5. getSourceProjectName()
+   - Returns correct name when found
+   - Returns 'Unknown' when not found
+
+6. buildMovePackage()
+   - All fields present in output
+   - Data correctly assigned to fields
+
+7. storePendingMove()
+   - sessionStorage contains correct key
+   - Stored data is valid JSON
+   - Stored data matches input
+
+Integration Test:
+- Call initiateMoveToNotebook() with valid data
+- Verify guard clauses prevent invalid calls
+- Verify sessionStorage contains move data
+- Verify openProject() called with correct ID
+
+================================================================================
+BENEFITS OF REFACTORING
+================================================================================
+
+1. TESTABILITY
+   - Each helper is independently testable
+   - Pure functions easier to verify
+   - Side effects isolated and explicit
+
+2. READABILITY
+   - Main function reads like a recipe
+   - Each step has clear purpose
+   - Function names are self-documenting
+
+3. MAINTAINABILITY
+   - Changes to calculations isolated
+   - Easy to modify individual steps
+   - Guard clauses prevent invalid states
+
+4. REUSABILITY
+   - calculateBoundingBox() could be used elsewhere
+   - calculateRelativeOffsets() is general-purpose
+   - filterAndRemapEdges() pattern applicable to other features
+
+5. DEBUGGING
+   - Easy to log/inspect intermediate values
+   - Can test each step in isolation
+   - Clear failure points
+
+6. EXTENSIBILITY
+   - Easy to add validation to each step
+   - Could add error handling to individual functions
+   - Could add metrics/logging at each stage
+
+================================================================================
+MIGRATION NOTES
+================================================================================
+
+Changes required:
+1. Add 7 new helper functions before initiateMoveToNotebook()
+2. Replace initiateMoveToNotebook() body with refactored version
+3. Update TOC with new functions
+
+Breaking changes: NONE
+- Function signature unchanged
+- Return type unchanged
+- Side effects unchanged
+- Behavior identical
+
+Testing checklist:
+[ ] Move single node to another notebook
+[ ] Move multiple nodes to another notebook
+[ ] Move nodes with edges between them
+[ ] Verify ghost nodes appear in target notebook
+[ ] Verify click to place works
+[ ] Verify source nodes removed after placement
+[ ] Verify cancel returns to source notebook
+[ ] Test with invalid targetProjectId (should fail gracefully)
+[ ] Test with no selected nodes (should fail gracefully)
+
+================================================================================
+ESTIMATED IMPACT
+================================================================================
+
+Lines of code:
+- Current: ~60 lines (1 function)
+- After: ~120 lines (8 functions)
+- Net change: +60 lines
+
+Complexity:
+- Current: High (one complex function)
+- After: Low (many simple functions)
+
+Performance:
+- No performance impact (same operations, different organization)
+
+Cache version bump:
+- Not needed (internal refactor, no user-facing changes)
+
+================================================================================

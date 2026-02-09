@@ -88,15 +88,18 @@ def extract_toc(js_file_path):
             # Determine indentation by counting leading spaces in original line
             original_indent = len(line) - len(line.lstrip())
 
+            # Only show comments at first two indentation levels (0 and 1)
             # If indent_level is 0, this is a top-level comment (before any functions)
             if indent_level == 0 and in_section:
                 # Top-level comment in a section (e.g., describing state variables)
                 toc_lines.append(f"    // {comment_text}")
-            elif indent_level > 0:
-                # Comment inside a function - use more indentation
-                # Convert spaces to conceptual indent level (rough heuristic)
-                comment_indent = '    ' * min(indent_level + (original_indent // 8), 4)
-                toc_lines.append(f"{comment_indent}// {comment_text}")
+            elif indent_level == 1:
+                # Comment inside a function at first level - use more indentation
+                # Only include first-level comments (not deeply nested)
+                # Rough heuristic: first-level comments are typically indented 4-12 spaces
+                if original_indent <= 12:
+                    comment_indent = '    ' * 2
+                    toc_lines.append(f"{comment_indent}// {comment_text}")
 
     return toc_lines
 

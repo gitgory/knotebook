@@ -1,0 +1,521 @@
+# Refactoring Plan: showNodeContextMenu()
+
+## Current State Analysis
+
+### Function Overview
+- **Location:** scripts/app.js, line ~3264
+- **Size:** ~57 lines
+- **Complexity:** Medium - multiple responsibilities mixed together
+- **Related Function:** `hideNodeContextMenu()` - 4 lines
+
+### What It Does
+1. Removes existing context menu (cleanup)
+2. Creates menu container element
+3. Positions menu at mouse coordinates
+4. Sets z-index for proper layering
+5. Builds menu items based on selection count
+6. Creates and appends menu item elements
+7. Appends menu to document body
+8. Adjusts position if menu goes off-screen
+9. Attaches event listeners to menu items
+10. Executes actions based on menu selection
+11. Hides menu after action
+
+### Current Issues
+1. **Multiple responsibilities** - Creation, positioning, event handling, action dispatch
+2. **Menu item creation in forEach** - Repetitive element creation logic
+3. **Complex event handler** - 15+ lines of if/else chain for action dispatch
+4. **Position adjustment after append** - Forces reflow/repaint
+5. **Mixed concerns** - Menu building mixed with action handling
+6. **Hardcoded styles** - Inline styles scattered throughout
+7. **No command abstraction** - Actions not modular/testable
+8. **Event listener per item** - Inefficient (though mitigated by small item count)
+9. **Poor testability** - Can't test menu building without DOM
+
+---
+
+## Design Principles
+
+1. **Single Responsibility Principle (SRP)** - Each function should do ONE thing
+2. **Extract Method** - Pull out cohesive blocks into named functions
+3. **Separation of Concerns** - Separate creation, positioning, and interaction
+4. **Guard Clauses** - Early returns for edge cases
+5. **Command Pattern** - Actions as commands for modularity and testability
+6. **Factory Pattern** - Consistent menu element creation
+
+---
+
+## Refactoring Strategy
+
+### Phase 1: Extract Menu Item Definition (Data Structure)
+**Extract:** Menu item configuration as data structure
+**Purpose:** Separate data from logic, enable dynamic menu building
+**Benefits:** Testable, reusable, clear structure
+
+```javascript
+/**
+ * Gets menu items for node context menu based on selection state.
+ * Items vary based on whether single or multiple nodes selected.
+ *
+ * @param {number} selectionCount - Number of selected nodes
+ * @returns {Array<{action: string, text: string}>} - Menu item definitions
+ */
+function getNodeContextMenuItems(selectionCount) {
+    const items = [];
+
+    // Multi-selection specific items
+    if (selectionCount > 1) {
+        items.push({ action: 'connect-to', text: 'Connect to...' });
+    }
+
+    // Common items (always available)
+    items.push({ action: 'bring-front', text: 'Bring to Front' });
+    items.push({ action: 'send-back', text: 'Send to Back' });
+    items.push({ action: 'move-to', text: 'Move to...' });
+
+    return items;
+}
+```
+
+---
+
+### Phase 2: Extract Menu Item Factory
+**Extract:** `createContextMenuItem()`
+**Purpose:** Consistent creation of menu item elements
+**Benefits:** Reusable, testable, clear intent
+
+```javascript
+/**
+ * Creates a context menu item element.
+ * Factory pattern for consistent menu item creation.
+ *
+ * @param {string} action - Action identifier (e.g., 'bring-front')
+ * @param {string} text - Display text for menu item
+ * @returns {HTMLElement} - Menu item element
+ */
+function createContextMenuItem(action, text) {
+    const div = document.createElement('div');
+    div.className = 'context-menu-item';
+    div.dataset.action = action;
+    div.textContent = text;
+    return div;
+}
+```
+
+---
+
+### Phase 3: Extract Menu Container Factory
+**Extract:** `createContextMenuContainer()`
+**Purpose:** Create and configure menu container element
+**Benefits:** Separates structure from positioning, testable
+
+```javascript
+/**
+ * Creates the context menu container element with base styles.
+ * Container positioned fixed at specified coordinates with proper z-index.
+ *
+ * @param {string} menuId - ID for the menu element
+ * @param {number} x - Initial X coordinate (px)
+ * @param {number} y - Initial Y coordinate (px)
+ * @returns {HTMLElement} - Menu container element
+ */
+function createContextMenuContainer(menuId, x, y) {
+    const menu = document.createElement('div');
+    menu.id = menuId;
+    menu.style.position = 'fixed';
+    menu.style.left = x + 'px';
+    menu.style.top = y + 'px';
+    menu.style.zIndex = CONTEXT_MENU_Z_INDEX;
+    return menu;
+}
+```
+
+---
+
+### Phase 4: Extract Menu Population
+**Extract:** `populateContextMenu()`
+**Purpose:** Add menu items to container
+**Benefits:** Clear separation, reusable for any menu
+
+```javascript
+/**
+ * Populates context menu with items.
+ * Creates menu item elements and appends to container.
+ *
+ * @param {HTMLElement} menu - Menu container element
+ * @param {Array<{action: string, text: string}>} items - Menu item definitions
+ */
+function populateContextMenu(menu, items) {
+    items.forEach(item => {
+        const menuItem = createContextMenuItem(item.action, item.text);
+        menu.appendChild(menuItem);
+    });
+}
+```
+
+---
+
+### Phase 5: Extract Position Adjustment (Viewport Clamping)
+**Extract:** `adjustContextMenuPosition()`
+**Purpose:** Prevent menu from going off-screen
+**Benefits:** Reusable for any positioned element, testable logic
+
+```javascript
+/**
+ * Adjusts context menu position to keep it within viewport bounds.
+ * Flips menu to left/top if it would extend beyond right/bottom edges.
+ * MUST be called after menu is appended to DOM (requires getBoundingClientRect).
+ *
+ * @param {HTMLElement} menu - Menu element to adjust
+ * @param {number} originalX - Original X coordinate
+ * @param {number} originalY - Original Y coordinate
+ */
+function adjustContextMenuPosition(menu, originalX, originalY) {
+    const rect = menu.getBoundingClientRect();
+
+    // Flip to left if extending beyond right edge
+    if (rect.right > window.innerWidth) {
+        menu.style.left = (originalX - rect.width) + 'px';
+    }
+
+    // Flip to top if extending beyond bottom edge
+    if (rect.bottom > window.innerHeight) {
+        menu.style.top = (originalY - rect.height) + 'px';
+    }
+}
+```
+
+---
+
+### Phase 6: Extract Action Commands (Command Pattern)
+**Extract:** Individual command functions for each action
+**Purpose:** Decouple action logic from menu system
+**Benefits:** Testable, reusable, follows Command Pattern
+
+```javascript
+/**
+ * Command: Bring selected nodes to front.
+ * Increases z-order of selected nodes.
+ */
+function commandBringToFront() {
+    bringToFront();
+}
+
+/**
+ * Command: Send selected nodes to back.
+ * Decreases z-order of selected nodes.
+ */
+function commandSendToBack() {
+    sendToBack();
+}
+
+/**
+ * Command: Open move-to modal.
+ * Allows moving nodes to different parent/level.
+ */
+function commandMoveTo() {
+    showMoveToModal();
+}
+
+/**
+ * Command: Start batch connect mode.
+ * Initiates edge creation from selected nodes.
+ */
+function commandConnectTo() {
+    startEdgeCreation();
+}
+```
+
+---
+
+### Phase 7: Extract Action Dispatcher (Command Registry)
+**Extract:** `executeContextMenuAction()`
+**Purpose:** Map action strings to command functions
+**Benefits:** Single place for action mapping, extensible
+
+```javascript
+/**
+ * Executes context menu action based on action identifier.
+ * Maps action strings to command functions using Command Pattern.
+ *
+ * @param {string} action - Action identifier from menu item
+ */
+function executeContextMenuAction(action) {
+    const commands = {
+        'bring-front': commandBringToFront,
+        'send-back': commandSendToBack,
+        'move-to': commandMoveTo,
+        'connect-to': commandConnectTo
+    };
+
+    const command = commands[action];
+    if (command) {
+        command();
+    }
+}
+```
+
+---
+
+### Phase 8: Extract Event Handler Attachment
+**Extract:** `attachContextMenuHandler()`
+**Purpose:** Separate event binding from menu creation
+**Benefits:** Clear responsibility, easier to modify behavior
+
+```javascript
+/**
+ * Attaches click handler to context menu.
+ * Handles action execution and menu cleanup.
+ *
+ * @param {HTMLElement} menu - Menu element
+ * @param {Function} onAction - Callback for action execution
+ */
+function attachContextMenuHandler(menu, onAction) {
+    menu.addEventListener('mousedown', (e) => {
+        e.stopPropagation(); // Prevent event bubbling
+        const action = e.target.dataset.action;
+        if (action) {
+            onAction(action);
+            hideNodeContextMenu();
+        }
+    });
+}
+```
+
+---
+
+### Phase 9: Simplified Main Function
+**Result:** Clear, readable orchestration of helpers
+
+```javascript
+/**
+ * Shows node context menu at specified screen coordinates.
+ * Menu items vary based on selection count (multi-select adds "Connect to...").
+ * Position adjusted to keep menu within viewport bounds.
+ *
+ * @param {string} nodeId - ID of node (currently unused, for future features)
+ * @param {number} x - Screen X coordinate for menu position
+ * @param {number} y - Screen Y coordinate for menu position
+ */
+function showNodeContextMenu(nodeId, x, y) {
+    hideNodeContextMenu(); // Guard: cleanup existing menu
+
+    // 1. Get menu configuration based on selection state
+    const items = getNodeContextMenuItems(state.selectedNodes.length);
+
+    // 2. Create menu structure
+    const menu = createContextMenuContainer('node-context-menu', x, y);
+    populateContextMenu(menu, items);
+
+    // 3. Add to DOM (required for position adjustment)
+    document.body.appendChild(menu);
+
+    // 4. Adjust position to prevent off-screen rendering
+    adjustContextMenuPosition(menu, x, y);
+
+    // 5. Attach event handler
+    attachContextMenuHandler(menu, executeContextMenuAction);
+}
+```
+
+---
+
+## Alternative Approach: Event Delegation
+
+**Consideration:** Could we use event delegation on `document.body` instead of attaching handler to each menu?
+
+**Analysis:**
+- **Current:** Handler attached to menu element (removed with menu)
+- **Delegation:** Handler on body, checks for menu item clicks
+- **Trade-offs:**
+  - Pro: No need to attach/remove handler per menu
+  - Con: Handler persists even when no menu shown
+  - Con: More complex event matching logic
+  - Pro: Easier to handle dynamic menu updates
+
+**Decision:** KEEP current approach (handler on menu element)
+- Context menus are short-lived (created/destroyed frequently)
+- Simple cleanup (menu.remove() also removes listeners)
+- No global handler pollution
+- Clear ownership (handler lifecycle matches menu lifecycle)
+
+---
+
+## Benefits Summary
+
+### Readability
+- Main function: 57 lines → 12 lines
+- Clear separation of concerns
+- Function names explain intent
+- No nested logic
+
+### Testability
+- Each helper can be unit tested
+- Menu item generation testable without DOM
+- Position adjustment testable independently
+- Command functions testable in isolation
+- Action dispatch testable with mock commands
+
+### Maintainability
+- Add new menu item? Update `getNodeContextMenuItems()`
+- Change positioning logic? Only touch `adjustContextMenuPosition()`
+- Add new action? Add to command registry
+- Each concern has one location
+
+### Reusability
+- `createContextMenuItem()` usable for other menus
+- `createContextMenuContainer()` usable for any context menu
+- `adjustContextMenuPosition()` usable for any positioned element
+- `populateContextMenu()` usable for any menu system
+- Command functions reusable from keyboard shortcuts, toolbar, etc.
+
+### Extensibility
+- Command Pattern makes adding actions trivial
+- Menu items defined as data (could be JSON, could come from config)
+- Easy to add conditional menu items
+- Easy to add separators, submenus, icons, etc.
+
+---
+
+## Testing Strategy
+
+### Unit Tests (if framework added)
+- `getNodeContextMenuItems()` - test single vs multi-selection
+- `createContextMenuItem()` - test element structure
+- `createContextMenuContainer()` - test container properties
+- `adjustContextMenuPosition()` - test viewport clamping logic
+- `executeContextMenuAction()` - test action mapping
+- Command functions - test each action independently
+
+### Integration Tests
+- Full menu display cycle
+- Click handlers execute correct actions
+- Position adjustment when near edges
+- Menu cleanup after action
+- Multi-selection vs single-selection menu items
+
+### Manual Test Cases (to be added to TEST_REFACTORING_ALL.md)
+- Right-click single node → verify menu items
+- Right-click with multi-selection → verify "Connect to..." appears
+- Menu near right edge → verify flips left
+- Menu near bottom edge → verify flips up
+- Click each menu action → verify correct function called
+- Click outside menu → verify menu closes
+
+---
+
+## Implementation Order
+
+1. ✅ Extract `getNodeContextMenuItems()`
+2. ✅ Extract `createContextMenuItem()`
+3. ✅ Extract `createContextMenuContainer()`
+4. ✅ Extract `populateContextMenu()`
+5. ✅ Extract `adjustContextMenuPosition()`
+6. ✅ Extract command functions (4 commands)
+7. ✅ Extract `executeContextMenuAction()` with command registry
+8. ✅ Extract `attachContextMenuHandler()`
+9. ✅ Simplify main function to use helpers
+10. ✅ Test all functionality
+11. ✅ Commit with descriptive message
+
+---
+
+## Risk Assessment
+
+### Low Risk
+- ✅ No changes to external API (function signature unchanged)
+- ✅ No changes to other functions (isolated refactor)
+- ✅ DOM structure unchanged (same classes, IDs, attributes)
+- ✅ Behavior preserved (same user experience)
+- ✅ Event handling unchanged (same mousedown + stopPropagation)
+
+### Mitigation
+- Keep original function signature (nodeId, x, y)
+- Preserve all class names and data attributes
+- Maintain exact same behavior for menu actions
+- Preserve event.stopPropagation() for proper event handling
+- Test thoroughly before commit
+
+---
+
+## Validation Checklist
+
+Before committing:
+- [ ] Function signature unchanged
+- [ ] Right-click shows menu at correct position
+- [ ] Menu items match selection state (single vs multi)
+- [ ] "Connect to..." only appears with multi-selection
+- [ ] All menu actions work correctly:
+  - [ ] Bring to Front
+  - [ ] Send to Back
+  - [ ] Move to...
+  - [ ] Connect to... (multi-selection only)
+- [ ] Menu flips left when near right edge
+- [ ] Menu flips up when near bottom edge
+- [ ] Menu closes after action selected
+- [ ] No console errors
+- [ ] No duplicate menu elements
+- [ ] Event listeners cleaned up on menu removal
+
+---
+
+## Code Quality Metrics
+
+### Before Refactoring
+- Main function: 57 lines
+- Cyclomatic complexity: ~6
+- Number of responsibilities: 7+
+- Testability: Low (requires full DOM)
+- Action dispatch: if/else chain
+
+### After Refactoring
+- Main function: 12 lines
+- Cyclomatic complexity: ~1
+- Number of responsibilities: 1 (orchestration)
+- Testability: High (helpers testable independently)
+- Helper functions: 9 (each 5-20 lines)
+- Action dispatch: Command Pattern (registry lookup)
+
+---
+
+## Future Enhancements (Post-Refactoring)
+
+With this refactored structure, future enhancements become easier:
+
+1. **Menu Separators** - Add separator items to menu definition
+2. **Disabled Items** - Add `disabled: boolean` to item definition
+3. **Icons** - Add `icon: string` to item definition
+4. **Submenus** - Add `submenu: []` to item definition
+5. **Keyboard Shortcuts** - Add `shortcut: string` to item definition
+6. **Conditional Items** - More complex logic in `getNodeContextMenuItems()`
+7. **Menu Animations** - Add CSS transitions/animations
+8. **Accessibility** - ARIA attributes, keyboard navigation
+9. **Menu Themes** - Different styling based on context
+10. **Command History** - Track executed commands for undo/redo
+
+---
+
+## Pattern Consistency
+
+**Note:** This refactoring creates reusable patterns that can be applied to:
+- `showHashtagContextMenu()` (similar structure, similar issues)
+- Any future context menus (edge context menu, canvas context menu, etc.)
+- Other popup/modal systems
+
+**Recommendation:** After completing this refactoring, apply same patterns to `showHashtagContextMenu()` to maintain consistency.
+
+---
+
+## Notes
+
+- Command Pattern used for action dispatch
+- Factory Pattern used for element creation
+- Strategy Pattern implicit in menu item definitions
+- Separation of Concerns between creation, positioning, and interaction
+- Guard clauses used (hideNodeContextMenu at start)
+- Single Responsibility maintained throughout
+
+---
+
+*Plan created: 2026-02-07*
+*Target completion: Same session*
