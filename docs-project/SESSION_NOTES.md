@@ -4,6 +4,105 @@ This file tracks work across Claude Code sessions for continuity.
 
 ---
 
+## Session 2026-02-08 (Continued) - Import Function Refactoring
+
+### Summary
+Refactored `importFromFile()` to eliminate 88% code duplication and add missing validation layer. Applied 5 design principles: Single Responsibility, Extract Method, Separation of Concerns, Guard Clauses, and Command Pattern.
+
+### Tasks Completed
+- [x] **Planned Refactoring Approach**
+  - Created comprehensive refactoring plan following design principles
+  - Analyzed current implementation: 80/91 lines (88%) duplicated
+  - Identified 6 distinct concerns mixed in monolithic function
+  - Documented missing validation layer vulnerability
+
+- [x] **Extracted 5 Helper Functions (SRP)**
+  - `getFileViaPicker()` - File System Access API selection (13 lines)
+  - `getFileViaInput()` - Fallback file input selection (15 lines)
+  - `readAndParseJsonFile()` - File reading and JSON parsing (15 lines)
+  - `validateImportData()` - NEW validation layer (30 lines)
+  - `updateImportModal()` - UI modal updates (13 lines)
+
+- [x] **Refactored Main Function**
+  - Reduced importFromFile() from 45 to 30 lines
+  - Implemented 6-step command pattern flow
+  - Added guard clauses for error conditions
+  - Unified File System Access API and fallback paths
+
+- [x] **Deleted Duplicate Code**
+  - Removed importFromFileFallback() entirely (-45 lines)
+  - Eliminated 88% duplication (80/91 lines)
+  - Simplified event handler (already clean)
+
+- [x] **Added Validation Layer (NEW)**
+  - Validates required fields: name, nodes, edges
+  - Validates optional field types: hashtagColors, settings, hiddenHashtags
+  - Guards against empty files
+  - Provides specific error messages per validation failure
+
+- [x] **Created Test Plan**
+  - 17 comprehensive test cases
+  - 11 new validation tests (TC5-TC17)
+  - Tests for both File System Access API and fallback
+  - End-to-end import workflow tests
+  - Backwards compatibility verification
+
+### Code Impact
+- **Lines added**: ~115 lines (5 helpers + refactored main)
+- **Lines removed**: ~90 lines (old implementations)
+- **Net change**: +25 lines
+- **Duplication eliminated**: 88%
+- **New capabilities**: Data validation layer
+
+### Design Principles Applied
+1. **Single Responsibility Principle**: Each function has one clear purpose
+2. **Extract Method**: 5 helpers extracted from monolithic code
+3. **Separation of Concerns**: 6 layers isolated (file selection, reading, validation, state, UI, errors)
+4. **Guard Clauses**: Early returns throughout
+5. **Command Pattern**: Sequential operation flow
+
+### Benefits
+- ✅ 88% less duplication - single source of truth
+- ✅ Each function follows SRP
+- ✅ Clear separation of concerns (6 layers)
+- ✅ Guard clauses for error handling
+- ✅ Validation prevents corrupt imports
+- ✅ Consistent with export pattern
+- ✅ Easier to test (helpers independently testable)
+- ✅ Better error messages (specific validation failures)
+
+### Files Modified
+- `scripts/app.js` - Refactored import functions (+115, -90 lines)
+- `index.html` - Version bump to v154
+- `scripts/app_js_table_of_contents.txt` - Regenerated
+- `docs-project/decision-history.md` - Added refactoring decision
+- `tests/TEST_IMPORT_REFACTORING.md` - Created test plan (local only)
+
+### Commits
+1. a69e30b - Refactor: importFromFile() - Apply SRP and eliminate 88% duplication
+
+### Production Status
+- ⚠️ **Needs testing** - 17 test cases to verify refactoring
+- ⚠️ **Validation layer is new** - May catch previously-accepted invalid files
+- ✅ Backwards compatible - All valid v153 exports should work
+- ✅ Code quality significantly improved
+
+### Major Lessons Learned
+- Systematic analysis finds high duplication (88% in this case)
+- Extract Method pattern enables testing of isolated concerns
+- Validation layers prevent future bugs (missing in original code)
+- Guard clauses make error handling clear and explicit
+- Command Pattern creates self-documenting operation flow
+
+### Next Steps
+- [ ] Execute test plan (17 test cases)
+- [ ] Verify backwards compatibility with old export files
+- [ ] Test on mobile (fallback path)
+- [ ] Verify File System Access API path on desktop
+- [ ] Check error messages are user-friendly
+
+---
+
 ## Session 2026-02-08 - Function Refactoring Testing & Bug Fixes
 
 ### Summary

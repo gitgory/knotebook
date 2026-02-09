@@ -528,3 +528,18 @@ Reasoning:
 - Testing: Laptops with touchscreens correctly detected as desktop (can hover)
 
 ---
+
+## 2026-02-08: Import Refactoring - Validation Layer and Extract Method
+
+DECISION: Refactor importFromFile() to eliminate duplication and add validation layer
+CHOSE: Extract 5 helper functions following Single Responsibility Principle
+NOT: Keep monolithic functions with 88% duplication
+NOT: Skip validation layer (would allow corrupt imports)
+
+Reasoning:
+- Duplication: 80/91 lines (88%) duplicated between importFromFile() and importFromFileFallback()
+- Mixed concerns: File I/O, parsing, validation, UI updates all in one function
+- Missing validation: No data structure validation after JSON.parse()
+- Design principles: Applied SRP, Extract Method, Separation of Concerns, Guard Clauses, Command Pattern
+
+---
