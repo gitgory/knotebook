@@ -2599,182 +2599,246 @@ function renderImmediate() {
  * Renders node body, title, hashtag pills, completion indicator, dog-ear fold, and stacked
  * rectangles for nodes with children. Applies selection styling.
  */
-function renderNodes() {
+/**
+ * Prepares the nodes layer for rendering by clearing existing content.
+ * @returns {SVGElement} The cleared nodes layer element
+ */
+function prepareNodesLayer() {
     const layer = document.getElementById('nodes-layer');
     layer.replaceChildren();
+    return layer;
+}
 
-    // Sort nodes by zIndex (lower first = behind, higher = in front)
-    const sortedNodes = [...state.nodes].sort((a, b) => {
+/**
+ * Sorts nodes by zIndex for proper rendering order (lower zIndex = behind).
+ * @param {Array} nodes - Array of node objects to sort
+ * @returns {Array} Sorted array of nodes
+ */
+function sortNodesByZIndex(nodes) {
+    return [...nodes].sort((a, b) => {
         const aZ = a.zIndex || 0;
         const bZ = b.zIndex || 0;
         return aZ - bZ;
     });
+}
+
+/**
+ * Creates an SVG group container for a node with appropriate classes and transform.
+ * @param {Object} node - The node object
+ * @returns {SVGGElement} The configured SVG group element
+ */
+function createNodeGroup(node) {
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    g.setAttribute('class', 'node' +
+        (state.selectedNodes.includes(node.id) ? ' selected' : '') +
+        (node.children && node.children.length > 0 ? ' has-children' : '') +
+        (node.completion === 'yes' || node.completion === 'cancelled' ? ' completed' : ''));
+    g.setAttribute('data-id', node.id);
+    g.setAttribute('transform', `translate(${node.position.x}, ${node.position.y})`);
+    return g;
+}
+
+/**
+ * Renders stacked rectangle indicators for nodes with children.
+ * @param {SVGGElement} g - The node's SVG group element
+ * @param {Object} node - The node object
+ */
+function renderChildStackIndicators(g, node) {
+    if (!node.children || node.children.length === 0) return;
+
+    // Second stack layer for 3+ children
+    if (node.children.length >= 3) {
+        const stack2 = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        stack2.setAttribute('class', 'node-stack');
+        stack2.setAttribute('x', NODE_STACK_OFFSET_2);
+        stack2.setAttribute('y', NODE_STACK_OFFSET_2);
+        stack2.setAttribute('width', NODE_WIDTH);
+        stack2.setAttribute('height', NODE_HEIGHT);
+        stack2.setAttribute('rx', 8);
+        g.appendChild(stack2);
+    }
+
+    // First stack layer
+    const stack1 = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    stack1.setAttribute('class', 'node-stack');
+    stack1.setAttribute('x', NODE_STACK_OFFSET_1);
+    stack1.setAttribute('y', NODE_STACK_OFFSET_1);
+    stack1.setAttribute('width', NODE_WIDTH);
+    stack1.setAttribute('height', NODE_HEIGHT);
+    stack1.setAttribute('rx', 8);
+    g.appendChild(stack1);
+}
+
+/**
+ * Renders the node body rectangle and optional dog-ear fold indicator.
+ * @param {SVGGElement} g - The node's SVG group element
+ * @param {Object} node - The node object
+ */
+function renderNodeBody(g, node) {
+    // Node body rectangle
+    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    rect.setAttribute('class', 'node-body');
+    rect.setAttribute('width', NODE_WIDTH);
+    rect.setAttribute('height', NODE_HEIGHT);
+    g.appendChild(rect);
+
+    // Dog-ear fold for body text indicator
+    if (hasBodyText(node)) {
+        const fold = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        fold.setAttribute('class', 'node-dog-ear');
+        fold.setAttribute('d', 'M 0 18 L 18 0 L 12 0 Q 0 0 0 12 Z');
+        g.appendChild(fold);
+    }
+}
+
+/**
+ * Renders the node title text with truncation and full-text storage.
+ * @param {SVGGElement} g - The node's SVG group element
+ * @param {Object} node - The node object
+ */
+function renderNodeTitle(g, node) {
+    const title = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    title.setAttribute('class', 'node-title');
+    title.setAttribute('x', NODE_CONTENT_PADDING_X);
+    title.setAttribute('y', NODE_CONTENT_PADDING_TOP);
+    const fullTitle = node.title || 'Untitled';
+    title.textContent = truncateText(fullTitle, TITLE_TRUNCATE_LENGTH);
+    title.setAttribute('data-full-title', fullTitle);
+    g.appendChild(title);
+}
+
+/**
+ * Renders hashtag pills for the node with color, truncation, and overflow handling.
+ * @param {SVGGElement} g - The node's SVG group element
+ * @param {Object} node - The node object
+ */
+function renderNodeHashtags(g, node) {
+    if (!node.hashtags || node.hashtags.length === 0) return;
+
+    const hashtagGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    hashtagGroup.setAttribute('class', 'node-hashtags-group');
+
+    let xOffset = NODE_HASHTAG_OFFSET_X;
+    const y = NODE_HASHTAG_OFFSET_Y;
+    const maxWidth = NODE_WIDTH - 16;
+
+    // Filter out hidden hashtags
+    const hiddenTagsLower = state.hiddenHashtags.map(t => t.toLowerCase());
+    const visibleTags = node.hashtags.filter(tag => !hiddenTagsLower.includes(tag.toLowerCase()));
+
+    for (const tag of visibleTags) {
+        const color = getHashtagColor(tag);
+        const displayTag = tag.length > HASHTAG_TRUNCATE_LENGTH ? tag.substring(0, HASHTAG_TRUNCATE_LENGTH - 1) + '…' : tag;
+        const pillWidth = displayTag.length * HASHTAG_PILL_CHAR_WIDTH + (HASHTAG_PILL_PADDING_X * 2);
+
+        // Stop if we'd overflow the node
+        if (xOffset + pillWidth > maxWidth) {
+            const more = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            more.setAttribute('x', xOffset);
+            more.setAttribute('y', y + 4);
+            more.setAttribute('class', 'node-hashtag-more');
+            more.textContent = '…';
+            hashtagGroup.appendChild(more);
+            break;
+        }
+
+        // Pill background
+        const pill = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        pill.setAttribute('x', xOffset);
+        pill.setAttribute('y', y - HASHTAG_PILL_PADDING_Y);
+        pill.setAttribute('width', pillWidth);
+        pill.setAttribute('height', 16);
+        pill.setAttribute('rx', HASHTAG_PILL_RADIUS);
+        pill.setAttribute('fill', color);
+        hashtagGroup.appendChild(pill);
+
+        // Pill text
+        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        text.setAttribute('x', xOffset + HASHTAG_PILL_PADDING_X);
+        text.setAttribute('y', y + 1);
+        text.setAttribute('class', 'node-hashtag-text');
+        text.textContent = displayTag;
+        hashtagGroup.appendChild(text);
+
+        xOffset += pillWidth + HASHTAG_PILL_SPACING;
+    }
+
+    g.appendChild(hashtagGroup);
+}
+
+/**
+ * Renders the completion indicator icon for the node.
+ * @param {SVGGElement} g - The node's SVG group element
+ * @param {Object} node - The node object
+ */
+function renderCompletionIndicator(g, node) {
+    if (!node.completion) return;
+
+    const comp = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    comp.setAttribute('class', 'node-completion');
+    comp.setAttribute('data-action', 'cycle-completion');
+
+    // Background circle for click target
+    const bg = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    bg.setAttribute('cx', NODE_WIDTH - NODE_COMPLETION_OFFSET_X);
+    bg.setAttribute('cy', 22);
+    bg.setAttribute('r', 12);
+    bg.setAttribute('class', 'node-completion-bg');
+    comp.appendChild(bg);
+
+    if (node.completion === 'yes') {
+        const icon = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        icon.setAttribute('x', NODE_WIDTH - NODE_COMPLETION_OFFSET_X);
+        icon.setAttribute('y', 28);
+        icon.setAttribute('text-anchor', 'middle');
+        icon.setAttribute('class', 'node-completion-icon completion-yes');
+        icon.textContent = '✓';
+        comp.appendChild(icon);
+    } else if (node.completion === 'partial') {
+        const icon = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        icon.setAttribute('x', NODE_WIDTH - NODE_COMPLETION_OFFSET_X);
+        icon.setAttribute('y', 29);
+        icon.setAttribute('text-anchor', 'middle');
+        icon.setAttribute('class', 'node-completion-icon completion-partial');
+        icon.textContent = '◐';
+        comp.appendChild(icon);
+    } else if (node.completion === 'cancelled') {
+        const icon = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        icon.setAttribute('x', NODE_WIDTH - NODE_COMPLETION_OFFSET_X);
+        icon.setAttribute('y', 28);
+        icon.setAttribute('text-anchor', 'middle');
+        icon.setAttribute('class', 'node-completion-icon completion-cancelled');
+        icon.textContent = '✕';
+        comp.appendChild(icon);
+    } else {
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('cx', NODE_WIDTH - NODE_COMPLETION_OFFSET_X);
+        circle.setAttribute('cy', 22);
+        circle.setAttribute('r', 7);
+        circle.setAttribute('class', 'node-completion-circle completion-no');
+        comp.appendChild(circle);
+    }
+
+    g.appendChild(comp);
+}
+
+/**
+ * Renders all visible nodes to the SVG canvas.
+ * Orchestrates node rendering by delegating to specialized helper functions.
+ */
+function renderNodes() {
+    const layer = prepareNodesLayer();
+    const sortedNodes = sortNodesByZIndex(state.nodes);
 
     for (const node of sortedNodes) {
-        // Skip nodes that don't match filter
         if (!nodeMatchesFilter(node)) continue;
 
-        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-        g.setAttribute('class', 'node' +
-            (state.selectedNodes.includes(node.id) ? ' selected' : '') +
-            (node.children && node.children.length > 0 ? ' has-children' : '') +
-            (node.completion === 'yes' || node.completion === 'cancelled' ? ' completed' : ''));
-        g.setAttribute('data-id', node.id);
-        g.setAttribute('transform', `translate(${node.position.x}, ${node.position.y})`);
-
-        // Stacked rectangles for children (rendered first so they appear behind)
-        if (node.children && node.children.length > 0) {
-            if (node.children.length >= 3) {
-                // Second stack layer for 3+ children
-                const stack2 = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-                stack2.setAttribute('class', 'node-stack');
-                stack2.setAttribute('x', NODE_STACK_OFFSET_2);
-                stack2.setAttribute('y', NODE_STACK_OFFSET_2);
-                stack2.setAttribute('width', NODE_WIDTH);
-                stack2.setAttribute('height', NODE_HEIGHT);
-                stack2.setAttribute('rx', 8);
-                g.appendChild(stack2);
-            }
-            // First stack layer
-            const stack1 = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-            stack1.setAttribute('class', 'node-stack');
-            stack1.setAttribute('x', NODE_STACK_OFFSET_1);
-            stack1.setAttribute('y', NODE_STACK_OFFSET_1);
-            stack1.setAttribute('width', NODE_WIDTH);
-            stack1.setAttribute('height', NODE_HEIGHT);
-            stack1.setAttribute('rx', 8);
-            g.appendChild(stack1);
-        }
-
-        // Node body (rectangle)
-        const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-        rect.setAttribute('class', 'node-body');
-        rect.setAttribute('width', NODE_WIDTH);
-        rect.setAttribute('height', NODE_HEIGHT);
-        g.appendChild(rect);
-
-        // Dog-ear fold for body text indicator (top-left corner)
-        if (hasBodyText(node)) {
-            const fold = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-            fold.setAttribute('class', 'node-dog-ear');
-            fold.setAttribute('d', 'M 0 18 L 18 0 L 12 0 Q 0 0 0 12 Z');
-            g.appendChild(fold);
-        }
-
-        // Node title
-        const title = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        title.setAttribute('class', 'node-title');
-        title.setAttribute('x', NODE_CONTENT_PADDING_X);
-        title.setAttribute('y', NODE_CONTENT_PADDING_TOP);
-        const fullTitle = node.title || 'Untitled';
-        title.textContent = truncateText(fullTitle, TITLE_TRUNCATE_LENGTH);
-        // Store full title for hover expansion
-        title.setAttribute('data-full-title', fullTitle);
-        g.appendChild(title);
-
-        // Hashtags as colored pills
-        if (node.hashtags && node.hashtags.length > 0) {
-            const hashtagGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-            hashtagGroup.setAttribute('class', 'node-hashtags-group');
-
-            let xOffset = NODE_HASHTAG_OFFSET_X;
-            const y = NODE_HASHTAG_OFFSET_Y;
-            const maxWidth = NODE_WIDTH - 16;
-
-            // Filter out hidden hashtags
-            const hiddenTagsLower = state.hiddenHashtags.map(t => t.toLowerCase());
-            const visibleTags = node.hashtags.filter(tag => !hiddenTagsLower.includes(tag.toLowerCase()));
-
-            for (const tag of visibleTags) {
-                const color = getHashtagColor(tag);
-                const displayTag = tag.length > HASHTAG_TRUNCATE_LENGTH ? tag.substring(0, HASHTAG_TRUNCATE_LENGTH - 1) + '…' : tag;
-                const pillWidth = displayTag.length * HASHTAG_PILL_CHAR_WIDTH + (HASHTAG_PILL_PADDING_X * 2);
-
-                // Stop if we'd overflow the node
-                if (xOffset + pillWidth > maxWidth) {
-                    // Add ellipsis indicator
-                    const more = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                    more.setAttribute('x', xOffset);
-                    more.setAttribute('y', y + 4);
-                    more.setAttribute('class', 'node-hashtag-more');
-                    more.textContent = '…';
-                    hashtagGroup.appendChild(more);
-                    break;
-                }
-
-                // Pill background
-                const pill = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-                pill.setAttribute('x', xOffset);
-                pill.setAttribute('y', y - HASHTAG_PILL_PADDING_Y);
-                pill.setAttribute('width', pillWidth);
-                pill.setAttribute('height', 16);
-                pill.setAttribute('rx', HASHTAG_PILL_RADIUS);
-                pill.setAttribute('fill', color);
-                hashtagGroup.appendChild(pill);
-
-                // Pill text
-                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                text.setAttribute('x', xOffset + HASHTAG_PILL_PADDING_X);
-                text.setAttribute('y', y + 1);
-                text.setAttribute('class', 'node-hashtag-text');
-                text.textContent = displayTag;
-                hashtagGroup.appendChild(text);
-
-                xOffset += pillWidth + HASHTAG_PILL_SPACING;
-            }
-
-            g.appendChild(hashtagGroup);
-        }
-
-        // Completion indicator (clickable status icon)
-        if (node.completion) {
-            const comp = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-            comp.setAttribute('class', 'node-completion');
-            comp.setAttribute('data-action', 'cycle-completion');
-
-            // Background circle for click target
-            const bg = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-            bg.setAttribute('cx', NODE_WIDTH - NODE_COMPLETION_OFFSET_X);
-            bg.setAttribute('cy', 22);
-            bg.setAttribute('r', 12);
-            bg.setAttribute('class', 'node-completion-bg');
-            comp.appendChild(bg);
-
-            if (node.completion === 'yes') {
-                const icon = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                icon.setAttribute('x', NODE_WIDTH - NODE_COMPLETION_OFFSET_X);
-                icon.setAttribute('y', 28);
-                icon.setAttribute('text-anchor', 'middle');
-                icon.setAttribute('class', 'node-completion-icon completion-yes');
-                icon.textContent = '✓';
-                comp.appendChild(icon);
-            } else if (node.completion === 'partial') {
-                const icon = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                icon.setAttribute('x', NODE_WIDTH - NODE_COMPLETION_OFFSET_X);
-                icon.setAttribute('y', 29);
-                icon.setAttribute('text-anchor', 'middle');
-                icon.setAttribute('class', 'node-completion-icon completion-partial');
-                icon.textContent = '◐';
-                comp.appendChild(icon);
-            } else if (node.completion === 'cancelled') {
-                const icon = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                icon.setAttribute('x', NODE_WIDTH - NODE_COMPLETION_OFFSET_X);
-                icon.setAttribute('y', 28);
-                icon.setAttribute('text-anchor', 'middle');
-                icon.setAttribute('class', 'node-completion-icon completion-cancelled');
-                icon.textContent = '✕';
-                comp.appendChild(icon);
-            } else {
-                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                circle.setAttribute('cx', NODE_WIDTH - NODE_COMPLETION_OFFSET_X);
-                circle.setAttribute('cy', 22);
-                circle.setAttribute('r', 7);
-                circle.setAttribute('class', 'node-completion-circle completion-no');
-                comp.appendChild(circle);
-            }
-
-            g.appendChild(comp);
-        }
+        const g = createNodeGroup(node);
+        renderChildStackIndicators(g, node);
+        renderNodeBody(g, node);
+        renderNodeTitle(g, node);
+        renderNodeHashtags(g, node);
+        renderCompletionIndicator(g, node);
 
         layer.appendChild(g);
     }
@@ -2956,42 +3020,8 @@ function renderGhostNodes() {
         title.textContent = truncateText(node.title || 'Untitled', 20);
         g.appendChild(title);
 
-        // Hashtags as colored pills (simplified)
-        if (node.hashtags && node.hashtags.length > 0) {
-            const hashtagGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-            let xOffset = NODE_HASHTAG_OFFSET_X;
-            const y = NODE_HASHTAG_OFFSET_Y;
-            const maxWidth = NODE_WIDTH - 16;
-
-            for (const tag of node.hashtags) {
-                const color = getHashtagColor(tag, false);
-                const displayTag = tag.length > HASHTAG_TRUNCATE_LENGTH ? tag.substring(0, HASHTAG_TRUNCATE_LENGTH - 1) + '…' : tag;
-                const pillWidth = displayTag.length * HASHTAG_PILL_CHAR_WIDTH + (HASHTAG_PILL_PADDING_X * 2);
-
-                if (xOffset + pillWidth > maxWidth) break;
-
-                const pill = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-                pill.setAttribute('class', 'hashtag-pill');
-                pill.setAttribute('x', xOffset);
-                pill.setAttribute('y', y - HASHTAG_PILL_PADDING_Y);
-                pill.setAttribute('width', pillWidth);
-                pill.setAttribute('height', 16);
-                pill.setAttribute('rx', HASHTAG_PILL_RADIUS);
-                pill.setAttribute('fill', color);
-                hashtagGroup.appendChild(pill);
-
-                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                text.setAttribute('class', 'node-hashtag-text');
-                text.setAttribute('x', xOffset + HASHTAG_PILL_PADDING_X);
-                text.setAttribute('y', y + 1);
-                text.textContent = displayTag;
-                hashtagGroup.appendChild(text);
-
-                xOffset += pillWidth + HASHTAG_PILL_SPACING;
-            }
-
-            g.appendChild(hashtagGroup);
-        }
+        // Hashtags (reuse shared rendering function)
+        renderNodeHashtags(g, node);
 
         layer.appendChild(g);
     }

@@ -602,3 +602,19 @@ Reasoning:
 - Maintainability: Event handlers grouped by logical purpose
 
 ---
+
+## 2026-02-08: renderNodes() Refactoring - Extract Method Pattern
+
+DECISION: Refactor renderNodes() using Extract Method pattern with 8 focused helpers
+CHOSE: Extract 8 helpers for each visual element (186 → 20 lines, 89% reduction)
+NOT: Factory Pattern with render registry (over-engineering, unnecessary indirection)
+NOT: Hybrid with sub-renderers (12-14 functions, excessive granularity)
+
+Reasoning:
+- Proven pattern: Matches 5 successful refactorings (updateHashtagDisplay, showNodeContextMenu, importFromFile, placeGhostNodes, populateSidebar)
+- Eliminates duplication: renderNodeHashtags() shared with renderGhostNodes() (~25 lines saved)
+- Clear separation: Each helper renders one visual element (SRP)
+- Testable: Each render function independently testable
+- Right abstraction: Not too granular, not over-engineered
+
+---
