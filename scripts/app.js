@@ -815,75 +815,108 @@ async function openProject(projectId) {
  * @param {string|null} error - Optional error message to show in tooltip when status is 'error'
  * @returns {void}
  */
-function updateSaveStatus(status, error = null) {
+/**
+ * Gets and validates save status DOM elements.
+ * @returns {Object|null} Object with statusEl, iconEl, textEl or null if not found
+ */
+function getSaveStatusElements() {
     const statusEl = document.getElementById('save-status');
-    if (!statusEl) return;
+    if (!statusEl) return null;
 
-    const iconEl = statusEl.querySelector('.save-icon');
-    const textEl = statusEl.querySelector('.save-text');
+    return {
+        statusEl,
+        iconEl: statusEl.querySelector('.save-icon'),
+        textEl: statusEl.querySelector('.save-text')
+    };
+}
 
+/**
+ * Clears any existing saved status fade timeout.
+ */
+function clearSaveFadeTimeout() {
+    if (state.savedFadeTimeout) {
+        clearTimeout(state.savedFadeTimeout);
+        state.savedFadeTimeout = null;
+    }
+}
+
+/**
+ * Resets save status CSS classes.
+ * @param {HTMLElement} statusEl - Status container element
+ * @param {string} newStatus - New status to apply
+ */
+function resetSaveStatusClasses(statusEl, newStatus) {
     // Remove all status classes
     statusEl.classList.remove('saved', 'pending', 'saving', 'error');
 
     // Only remove fade-out if we're changing to a non-saved state
-    if (status !== 'saved') {
+    if (newStatus !== 'saved') {
         statusEl.classList.remove('fade-out');
     }
 
-    // Add new status class
-    statusEl.classList.add(status);
+    statusEl.classList.add(newStatus);
+}
 
-    // Update icon and text based on status
-    switch (status) {
-        case 'saved':
-            iconEl.textContent = '✓';
-            textEl.textContent = 'Saved';
+/**
+ * Applies status-specific content (icon, text, tooltip).
+ * @param {Object} elements - DOM elements from getSaveStatusElements()
+ * @param {string} status - Status identifier (saved, pending, saving, error)
+ * @param {string|null} error - Error message for tooltip (error status only)
+ */
+function applyStatusContent(elements, status, error) {
+    const statusConfig = {
+        saved: { icon: '✓', text: 'Saved' },
+        pending: { icon: '●', text: 'Pending...' },
+        saving: { icon: '⟳', text: 'Saving...' },
+        error: { icon: '✕', text: 'Error' }
+    };
 
-            // Clear any existing fade timeout to prevent flicker
-            if (state.savedFadeTimeout) {
-                clearTimeout(state.savedFadeTimeout);
-                state.savedFadeTimeout = null;
-            }
+    const config = statusConfig[status];
+    elements.iconEl.textContent = config.icon;
+    elements.textEl.textContent = config.text;
 
-            // Remove fade-out first (make visible)
-            statusEl.classList.remove('fade-out');
+    if (status === 'error' && error) {
+        elements.statusEl.title = error;
+    }
+}
 
-            // Auto-fade after 2 seconds
-            state.savedFadeTimeout = setTimeout(() => {
-                statusEl.classList.add('fade-out');
-                state.savedFadeTimeout = null;
-            }, SAVE_FADE_DELAY);
-            break;
-        case 'pending':
-            iconEl.textContent = '●';
-            textEl.textContent = 'Pending...';
-            // Clear saved fade timeout when transitioning away
-            if (state.savedFadeTimeout) {
-                clearTimeout(state.savedFadeTimeout);
-                state.savedFadeTimeout = null;
-            }
-            break;
-        case 'saving':
-            iconEl.textContent = '⟳';
-            textEl.textContent = 'Saving...';
-            // Clear saved fade timeout when transitioning away
-            if (state.savedFadeTimeout) {
-                clearTimeout(state.savedFadeTimeout);
-                state.savedFadeTimeout = null;
-            }
-            break;
-        case 'error':
-            iconEl.textContent = '✕';
-            textEl.textContent = 'Error';
-            if (error) {
-                statusEl.title = error;
-            }
-            // Clear saved fade timeout when transitioning away
-            if (state.savedFadeTimeout) {
-                clearTimeout(state.savedFadeTimeout);
-                state.savedFadeTimeout = null;
-            }
-            break;
+/**
+ * Schedules saved status fade-out animation.
+ * @param {HTMLElement} statusEl - Status container element
+ */
+function scheduleSavedFadeOut(statusEl) {
+    // Remove fade-out first (make visible)
+    statusEl.classList.remove('fade-out');
+
+    // Auto-fade after 2 seconds
+    state.savedFadeTimeout = setTimeout(() => {
+        statusEl.classList.add('fade-out');
+        state.savedFadeTimeout = null;
+    }, SAVE_FADE_DELAY);
+}
+
+/**
+ * Updates the save status indicator in the toolbar.
+ * @param {string} status - Status to display (saved, pending, saving, error)
+ * @param {string|null} error - Error message for tooltip (error status only)
+ */
+function updateSaveStatus(status, error = null) {
+    // 1. Get elements (guard clause)
+    const elements = getSaveStatusElements();
+    if (!elements) return;
+
+    // 2. Clean up any existing fade timeout
+    clearSaveFadeTimeout();
+
+    // 3. Update CSS classes
+    resetSaveStatusClasses(elements.statusEl, status);
+
+    // 4. Update icon and text
+    applyStatusContent(elements, status, error);
+
+    // 5. Handle saved status fade animation
+    if (status === 'saved') {
+        scheduleSavedFadeOut(elements.statusEl);
     }
 }
 
@@ -1200,85 +1233,123 @@ function hideNewProjectModal() {
  * @param {number} [delay=0] - Optional delay in seconds before Yes button becomes enabled
  * @returns {Promise<boolean>} - Resolves to true if user confirms, false if user cancels
  */
-function showConfirmation(message, delay = 0) {
-    return new Promise((resolve) => {
-        const modal = document.getElementById('confirm-modal');
-        const messageEl = document.getElementById('confirm-message');
-        const yesBtn = document.getElementById('confirm-yes');
-        const noBtn = document.getElementById('confirm-no');
+/**
+ * Gets all DOM elements needed for the confirmation modal.
+ * @returns {Object} Object containing modal elements (modal, messageEl, yesBtn, noBtn)
+ */
+function getConfirmModalElements() {
+    return {
+        modal: document.getElementById('confirm-modal'),
+        messageEl: document.getElementById('confirm-message'),
+        yesBtn: document.getElementById('confirm-yes'),
+        noBtn: document.getElementById('confirm-no')
+    };
+}
 
-        messageEl.textContent = message;
-        modal.classList.remove('hidden');
+/**
+ * Configures the confirmation modal with content and shows it.
+ * @param {Object} elements - DOM elements from getConfirmModalElements()
+ * @param {string} message - The confirmation message to display
+ */
+function configureConfirmModal(elements, message) {
+    elements.messageEl.textContent = message;
+    elements.modal.classList.remove('hidden');
+}
 
-        // Handle delay if specified
+/**
+ * Creates event handlers for the confirmation modal, including countdown logic.
+ * @param {Object} elements - DOM elements from getConfirmModalElements()
+ * @param {Function} resolve - Promise resolve function
+ * @param {number} delay - Optional countdown delay in seconds
+ * @returns {Object} Object containing handler functions
+ */
+function createConfirmHandlers(elements, resolve, delay) {
+    let intervalId = null;
+    const originalYesText = elements.yesBtn.textContent;
+
+    // Start countdown if delay specified
+    if (delay > 0) {
         let countdown = delay;
-        let intervalId = null;
-        const originalYesText = yesBtn.textContent;
+        elements.yesBtn.disabled = true;
+        elements.yesBtn.textContent = `Yes (${countdown})`;
+        elements.yesBtn.style.opacity = '0.5';
+        elements.yesBtn.style.cursor = 'not-allowed';
 
-        if (delay > 0) {
-            yesBtn.disabled = true;
-            yesBtn.textContent = `Yes (${countdown})`;
-            yesBtn.style.opacity = '0.5';
-            yesBtn.style.cursor = 'not-allowed';
+        intervalId = setInterval(() => {
+            countdown--;
+            if (countdown > 0) {
+                elements.yesBtn.textContent = `Yes (${countdown})`;
+            } else {
+                elements.yesBtn.disabled = false;
+                elements.yesBtn.textContent = originalYesText;
+                elements.yesBtn.style.opacity = '';
+                elements.yesBtn.style.cursor = '';
+                clearInterval(intervalId);
+                elements.yesBtn.focus();
+            }
+        }, 1000);
+    } else {
+        elements.yesBtn.focus();
+    }
 
-            intervalId = setInterval(() => {
-                countdown--;
-                if (countdown > 0) {
-                    yesBtn.textContent = `Yes (${countdown})`;
-                } else {
-                    yesBtn.disabled = false;
-                    yesBtn.textContent = originalYesText;
-                    yesBtn.style.opacity = '';
-                    yesBtn.style.cursor = '';
-                    clearInterval(intervalId);
-                    yesBtn.focus();
-                }
-            }, 1000);
-        } else {
-            // Focus Yes button by default if no delay
-            yesBtn.focus();
-        }
+    const cleanup = () => {
+        if (intervalId) clearInterval(intervalId);
+        elements.yesBtn.disabled = false;
+        elements.yesBtn.textContent = originalYesText;
+        elements.yesBtn.style.opacity = '';
+        elements.yesBtn.style.cursor = '';
+        elements.modal.classList.add('hidden');
+        elements.yesBtn.removeEventListener('click', handlers.handleYes);
+        elements.noBtn.removeEventListener('click', handlers.handleNo);
+        document.removeEventListener('keydown', handlers.handleKey);
+    };
 
-        // Handle Yes
-        const handleYes = () => {
+    const handlers = {
+        handleYes: () => {
             cleanup();
             resolve(true);
-        };
-
-        // Handle No/Cancel
-        const handleNo = () => {
+        },
+        handleNo: () => {
             cleanup();
             resolve(false);
-        };
-
-        // Handle keyboard
-        const handleKey = (e) => {
+        },
+        handleKey: (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
-                handleYes();
+                handlers.handleYes();
             } else if (e.key === 'Escape') {
                 e.preventDefault();
-                handleNo();
+                handlers.handleNo();
             }
-        };
+        }
+    };
 
-        // Cleanup function
-        const cleanup = () => {
-            if (intervalId) clearInterval(intervalId);
-            yesBtn.disabled = false;
-            yesBtn.textContent = originalYesText;
-            yesBtn.style.opacity = '';
-            yesBtn.style.cursor = '';
-            modal.classList.add('hidden');
-            yesBtn.removeEventListener('click', handleYes);
-            noBtn.removeEventListener('click', handleNo);
-            document.removeEventListener('keydown', handleKey);
-        };
+    return handlers;
+}
 
-        // Attach listeners
-        yesBtn.addEventListener('click', handleYes);
-        noBtn.addEventListener('click', handleNo);
-        document.addEventListener('keydown', handleKey);
+/**
+ * Attaches event listeners to the confirmation modal.
+ * @param {Object} elements - DOM elements from getConfirmModalElements()
+ * @param {Object} handlers - Event handlers from createConfirmHandlers()
+ */
+function attachConfirmListeners(elements, handlers) {
+    elements.yesBtn.addEventListener('click', handlers.handleYes);
+    elements.noBtn.addEventListener('click', handlers.handleNo);
+    document.addEventListener('keydown', handlers.handleKey);
+}
+
+/**
+ * Shows a confirmation modal dialog and returns user choice.
+ * @param {string} message - The confirmation message to display
+ * @param {number} delay - Optional countdown delay in seconds before Yes button is enabled
+ * @returns {Promise<boolean>} True if user confirmed, false if cancelled
+ */
+function showConfirmation(message, delay = 0) {
+    return new Promise((resolve) => {
+        const elements = getConfirmModalElements();
+        configureConfirmModal(elements, message);
+        const handlers = createConfirmHandlers(elements, resolve, delay);
+        attachConfirmListeners(elements, handlers);
     });
 }
 
@@ -1912,78 +1983,96 @@ function deleteHashtag(tag) {
  * @param {number} x - Screen X coordinate for menu position
  * @param {number} y - Screen Y coordinate for menu position
  */
-function showHashtagContextMenu(tag, x, y) {
-    // Remove existing menu if any
-    const existingMenu = document.getElementById('hashtag-context-menu');
-    if (existingMenu) {
-        existingMenu.remove();
-    }
-
-    const menu = document.createElement('div');
-    menu.id = 'hashtag-context-menu';
-    menu.style.position = 'fixed';
-    menu.style.left = x + 'px';
-    menu.style.top = y + 'px';
-
-    const menuItems = [
+/**
+ * Gets menu item definitions for hashtag context menu.
+ * @returns {Array<{action: string, text: string}>} Menu item definitions
+ */
+function getHashtagContextMenuItems() {
+    return [
         { action: 'rename', text: 'Rename tag...' },
         { action: 'delete', text: 'Delete tag...' },
         { action: 'color', text: 'Change color...' }
     ];
+}
 
-    menuItems.forEach(item => {
-        const div = document.createElement('div');
-        div.className = 'context-menu-item';
-        div.dataset.action = item.action;
-        div.textContent = item.text;
-        menu.appendChild(div);
-    });
+/**
+ * Executes hashtag context menu action.
+ * Handles async operations: rename, delete, and color picker.
+ * @param {string} action - Action identifier ('rename', 'delete', 'color')
+ * @param {string} tag - The hashtag to operate on
+ */
+async function executeHashtagMenuAction(action, tag) {
+    if (action === 'rename') {
+        const newTag = await showPrompt(`Enter new name for tag "${tag}":`, tag, 'Rename Tag');
+        if (newTag && newTag.trim()) {
+            await renameHashtag(tag, newTag);
+        }
+    } else if (action === 'delete') {
+        const confirmed = await showConfirmation(`Delete tag "${tag}" from all notes?`);
+        if (confirmed) {
+            deleteHashtag(tag);
+        }
+    } else if (action === 'color') {
+        // Open sidebar if not already open
+        const sidebar = document.getElementById('hashtag-sidebar');
+        if (sidebar.classList.contains('hidden')) {
+            showSidebar();
+        }
 
-    document.body.appendChild(menu);
-
-    // Adjust position if menu goes off screen
-    const rect = menu.getBoundingClientRect();
-    if (rect.right > window.innerWidth) {
-        menu.style.left = (x - rect.width) + 'px';
+        // Wait for sidebar to render, then open color picker
+        setTimeout(() => {
+            const list = document.getElementById('hashtag-list');
+            const colorBtn = list.querySelector(`.hashtag-color-btn[data-tag="${tag}"]`);
+            if (colorBtn) {
+                colorBtn.click();
+            }
+        }, 0);
     }
-    if (rect.bottom > window.innerHeight) {
-        menu.style.top = (y - rect.height) + 'px';
-    }
+}
 
-    // Handle menu actions
+/**
+ * Attaches click handler to hashtag context menu.
+ * Handles action execution and menu cleanup.
+ * @param {HTMLElement} menu - Menu element
+ * @param {string} tag - The hashtag for action callbacks
+ */
+function attachHashtagMenuHandler(menu, tag) {
     menu.querySelectorAll('.context-menu-item').forEach(item => {
         item.addEventListener('click', async (e) => {
             const action = e.target.dataset.action;
             hideHashtagContextMenu();
-
-            if (action === 'rename') {
-                const newTag = await showPrompt(`Enter new name for tag "${tag}":`, tag, 'Rename Tag');
-                if (newTag && newTag.trim()) {
-                    await renameHashtag(tag, newTag);
-                }
-            } else if (action === 'delete') {
-                const confirmed = await showConfirmation(`Delete tag "${tag}" from all notes?`);
-                if (confirmed) {
-                    deleteHashtag(tag);
-                }
-            } else if (action === 'color') {
-                // Open sidebar if not already open
-                const sidebar = document.getElementById('hashtag-sidebar');
-                if (sidebar.classList.contains('hidden')) {
-                    showSidebar();
-                }
-
-                // Wait for sidebar to render, then open color picker
-                setTimeout(() => {
-                    const list = document.getElementById('hashtag-list');
-                    const colorBtn = list.querySelector(`.hashtag-color-btn[data-tag="${tag}"]`);
-                    if (colorBtn) {
-                        colorBtn.click();
-                    }
-                }, 0);
-            }
+            await executeHashtagMenuAction(action, tag);
         });
     });
+}
+
+/**
+ * Display the hashtag context menu at a specific screen position.
+ * Menu provides options for rename, delete, and change color. Position is adjusted
+ * if menu would extend beyond screen boundaries.
+ *
+ * @param {string} tag - The hashtag to show menu for (e.g., "#example")
+ * @param {number} x - Screen X coordinate for menu position
+ * @param {number} y - Screen Y coordinate for menu position
+ */
+function showHashtagContextMenu(tag, x, y) {
+    hideHashtagContextMenu(); // Guard: cleanup existing menu
+
+    // 1. Get menu configuration
+    const items = getHashtagContextMenuItems();
+
+    // 2. Create menu structure
+    const menu = createContextMenuContainer('hashtag-context-menu', x, y);
+    populateContextMenu(menu, items);
+
+    // 3. Add to DOM (required for position adjustment)
+    document.body.appendChild(menu);
+
+    // 4. Adjust position to prevent off-screen rendering
+    adjustContextMenuPosition(menu, x, y);
+
+    // 5. Attach event handler
+    attachHashtagMenuHandler(menu, tag);
 }
 
 /**
@@ -5014,33 +5103,44 @@ function storePendingMove(movePackage) {
  * @param {string} targetProjectId - ID of destination notebook
  * @returns {Promise<void>}
  */
-async function initiateMoveToNotebook(targetProjectId) {
-    // Guard clauses - validate preconditions
+/**
+ * Validate all preconditions for move operation.
+ * @param {string} targetProjectId - Target project ID
+ * @returns {{valid: boolean, projectsList: Array|null}} Validation result and projects list
+ */
+function validateMoveOperation(targetProjectId) {
     if (!targetProjectId) {
         console.error('No target project ID provided');
-        return;
+        return { valid: false, projectsList: null };
     }
 
     if (!state.currentProjectId) {
         console.error('No current project open');
-        return;
+        return { valid: false, projectsList: null };
     }
 
     if (state.selectedNodes.length === 0) {
         console.error('No nodes selected to move');
-        return;
+        return { valid: false, projectsList: null };
     }
 
     const projectsList = getProjectsList();
     const targetExists = projectsList.some(p => p.id === targetProjectId);
     if (!targetExists) {
         console.error('Target project does not exist');
-        return;
+        return { valid: false, projectsList: null };
     }
 
-    // Command execution - pure operations first, then side effects
+    return { valid: true, projectsList };
+}
 
-    // 1. Data transformation
+/**
+ * Prepare all data needed for move operation.
+ * @param {Object[]} projectsList - List of all projects
+ * @returns {Object} Complete data package for move
+ */
+function prepareMoveData(projectsList) {
+    // Data transformation
     const originalIds = [...state.selectedNodes];
     const { nodes, idMapping } = createNodeCopiesWithMapping(
         state.selectedNodes,
@@ -5052,7 +5152,7 @@ async function initiateMoveToNotebook(targetProjectId) {
         state.selectedNodes
     );
 
-    // 2. Geometric calculations
+    // Geometric calculations
     const boundingBox = calculateBoundingBox(nodes);
     const relativeOffsets = calculateRelativeOffsets(
         nodes,
@@ -5060,25 +5160,45 @@ async function initiateMoveToNotebook(targetProjectId) {
         boundingBox.centerY
     );
 
-    // 3. Data assembly
+    // Metadata
     const sourceProjectName = getSourceProjectName(
         state.currentProjectId,
         projectsList
     );
-    const movePackage = buildMovePackage({
+
+    return {
         sourceProjectId: state.currentProjectId,
-        sourceProjectName: sourceProjectName,
-        originalIds: originalIds,
-        nodes: nodes,
-        edges: edges,
+        sourceProjectName,
+        originalIds,
+        nodes,
+        edges,
         boundingBox: {
             centerX: boundingBox.centerX,
             centerY: boundingBox.centerY
         },
-        relativeOffsets: relativeOffsets
-    });
+        relativeOffsets
+    };
+}
 
-    // 4. Side effects - storage and navigation
+/**
+ * Initiate move operation to transfer selected nodes to another notebook.
+ * Creates deep copies with new IDs, preserves edges between moved nodes, calculates
+ * bounding box and relative offsets for cursor following, stores pending move in
+ * sessionStorage, and switches to target project.
+ *
+ * @param {string} targetProjectId - ID of destination notebook
+ * @returns {Promise<void>}
+ */
+async function initiateMoveToNotebook(targetProjectId) {
+    // Validate all preconditions
+    const { valid, projectsList } = validateMoveOperation(targetProjectId);
+    if (!valid) return;
+
+    // Prepare move data (transformation, calculations, metadata)
+    const moveData = prepareMoveData(projectsList);
+    const movePackage = buildMovePackage(moveData);
+
+    // Execute move: store and navigate
     storePendingMove(movePackage);
     await openProject(targetProjectId);
 }
@@ -5399,35 +5519,47 @@ function removeNodesFromSourceNotebook(sourceProjectId, nodeIds) {
  * @param {string} message - Notification message text
  * @param {Object} options - Optional config: linkText, linkOnClick, duration, hasLink
  */
-function showToast(message, options = {}) {
-    // Toast notification with optional link
-    const existingToast = document.getElementById('toast-notification');
-    if (existingToast) existingToast.remove();
-
+/**
+ * Creates the base toast notification element with message.
+ * @param {string} message - Notification message text
+ * @returns {HTMLDivElement} Toast element
+ */
+function createToastElement(message) {
     const toast = document.createElement('div');
     toast.id = 'toast-notification';
-
-    // Always use textContent for base message
     toast.textContent = message;
+    return toast;
+}
 
-    // If a link is needed, append it programmatically
-    if (options.linkText && options.linkOnClick) {
-        toast.appendChild(document.createElement('br'));
-        const link = document.createElement('a');
-        link.href = '#';
-        link.style.cssText = 'color: var(--highlight); text-decoration: underline; cursor: pointer;';
-        link.textContent = options.linkText;
-        link.addEventListener('click', (e) => {
-            e.preventDefault();
-            toast.remove();
-            options.linkOnClick();
-        });
-        toast.appendChild(link);
-    }
+/**
+ * Appends an interactive link to the toast notification.
+ * Link dismisses toast and executes provided callback.
+ * @param {HTMLDivElement} toast - Toast element
+ * @param {string} linkText - Link text to display
+ * @param {Function} linkOnClick - Callback to execute on click
+ */
+function appendToastLink(toast, linkText, linkOnClick) {
+    toast.appendChild(document.createElement('br'));
+    const link = document.createElement('a');
+    link.href = '#';
+    link.style.cssText = 'color: var(--highlight); text-decoration: underline; cursor: pointer;';
+    link.textContent = linkText;
+    link.addEventListener('click', (e) => {
+        e.preventDefault();
+        toast.remove();
+        linkOnClick();
+    });
+    toast.appendChild(link);
+}
 
-    // Enable pointer events if there's a link
-    const pointerEvents = (options.linkText && options.linkOnClick) ? 'auto' : 'none';
-
+/**
+ * Applies CSS styling to the toast notification.
+ * Sets positioning, appearance, and pointer events based on link presence.
+ * @param {HTMLDivElement} toast - Toast element to style
+ * @param {boolean} hasLink - Whether toast has an interactive link
+ */
+function styleToastElement(toast, hasLink) {
+    const pointerEvents = hasLink ? 'auto' : 'none';
     toast.style.cssText = `
         position: fixed;
         top: 80px;
@@ -5444,9 +5576,15 @@ function showToast(message, options = {}) {
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
         text-align: center;
     `;
-    document.body.appendChild(toast);
+}
 
-    // ESC key handler to dismiss toast
+/**
+ * Sets up ESC key handler to dismiss toast.
+ * Handler removes itself after execution.
+ * @param {HTMLDivElement} toast - Toast element to dismiss
+ * @returns {Function} ESC key handler for cleanup
+ */
+function setupToastKeyboardHandler(toast) {
     const escHandler = (e) => {
         if (e.key === 'Escape' && document.getElementById('toast-notification')) {
             toast.remove();
@@ -5454,15 +5592,57 @@ function showToast(message, options = {}) {
         }
     };
     document.addEventListener('keydown', escHandler);
+    return escHandler;
+}
 
-    // Auto-remove after duration (default 4s, or longer if has link)
+/**
+ * Sets up auto-removal timer for toast notification.
+ * Duration based on options, skips timer for "Click to place" messages.
+ * @param {HTMLDivElement} toast - Toast element to remove
+ * @param {string} message - Toast message (checked for "Click to place")
+ * @param {Object} options - Options object with duration/hasLink
+ * @param {Function} escHandler - ESC key handler to cleanup
+ * @returns {number|null} Timer ID or null if skipped
+ */
+function setupToastAutoRemove(toast, message, options, escHandler) {
     const duration = options.duration || (options.hasLink ? TOAST_DURATION_WITH_LINK : TOAST_DURATION_DEFAULT);
     const autoRemoveTimer = !message.includes('Click to place') ? setTimeout(() => {
         toast.remove();
         document.removeEventListener('keydown', escHandler);
     }, duration) : null;
+    return autoRemoveTimer;
+}
 
-    // Override toast.remove to clean up listener
+/**
+ * Display a toast notification with optional link.
+ * Positioned at top center, auto-removes after duration (4s default, 6s with link).
+ * Supports ESC key to dismiss. Link enables pointer events and cancels auto-remove
+ * for certain messages.
+ *
+ * @param {string} message - Notification message text
+ * @param {Object} options - Optional config: linkText, linkOnClick, duration, hasLink
+ */
+function showToast(message, options = {}) {
+    // Remove any existing toast
+    const existingToast = document.getElementById('toast-notification');
+    if (existingToast) existingToast.remove();
+
+    // Create and configure toast element
+    const toast = createToastElement(message);
+    const hasLink = !!(options.linkText && options.linkOnClick);
+
+    if (hasLink) {
+        appendToastLink(toast, options.linkText, options.linkOnClick);
+    }
+
+    styleToastElement(toast, hasLink);
+    document.body.appendChild(toast);
+
+    // Setup keyboard and auto-removal handlers
+    const escHandler = setupToastKeyboardHandler(toast);
+    const autoRemoveTimer = setupToastAutoRemove(toast, message, options, escHandler);
+
+    // Override toast.remove to clean up listeners and timer
     const originalRemove = toast.remove.bind(toast);
     toast.remove = () => {
         document.removeEventListener('keydown', escHandler);

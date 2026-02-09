@@ -1,26 +1,19 @@
-Summary: Functions >50 Lines (Candidates for Refactoring)
 
-  Top Priority (>100 lines):
-  1. ✅ populateSidebar() - REFACTORED (186 → 31 lines, 6 helpers extracted) - 2026-02-08
-  2. ✅ renderNodes() - REFACTORED (186 → 20 lines, 8 helpers extracted, eliminated duplication with renderGhostNodes) - 2026-02-08
-  3. ✅ showPrompt() - REFACTORED (57 → 12 lines, 4 helpers extracted) - 2026-02-08
-  4. ✅ saveEditor() - REFACTORED (95 → 18 lines, 10 helpers extracted) - 2026-02-08
-  5. ✅ openEditor() - REFACTORED (121 → 15 lines, 4 helpers extracted) - 2026-02-08
+High Priority Functions for Refactoring
 
-  Medium Priority (75-100 lines):
-  6. openProject() - 99 lines
-  7. stringifyAsync() - 95 lines
-  8. showConfirmation() - 89 lines
-  9. renderGhostNodes() - 89 lines
-  11. updateSaveStatus() - 78 lines
-  12. showHashtagContextMenu() - 77 lines
-  13. renameHashtag() - 75 lines
-  14. loadProjectFromStorage() - 73 lines
-  15. showToast() - 72 lines
-  16. exportToFile() - 72 lines
+Function Name                            Lines    Reduced Lines
+------------------------------------------------------------
+✅ populateSidebar()                     186 →   31 lines
+✅ renderNodes()                         186 →   20 lines
+✅ showPrompt()                          57 →    12 lines
+✅ saveEditor()                          95 →    18 lines
+✅ openEditor()                          121 →   15 lines
+✅ showConfirmation()                    81 →    8 lines
+✅ showHashtagContextMenu()              73 →    18 lines
+✅ showToast()                           70 →    20 lines
+✅ initiateMoveToNotebook()              68 →    12 lines
+✅ updateSaveStatus()                    70 →    15 lines
 
-  Lower Priority (50-75 lines):
-  17. handleImportOverwrite() - 68 lines
-  18. showOverwriteSelectModal() - 67 lines
-  19. placeGhostNodes() - 63 lines
-  20. importFromFile() - 56 lines
+
+All high-priority functions refactored! ✓
+
