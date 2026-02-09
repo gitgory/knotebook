@@ -4,6 +4,69 @@ This file tracks work across Claude Code sessions for continuity.
 
 ---
 
+## Session 2026-02-08 - Function Refactoring Testing & Bug Fixes
+
+### Summary
+Completed comprehensive testing of all 5 refactored functions (37 test cases). Found and fixed critical bug in nested node removal. Implemented UX improvement for hashtag pill auto-focus. Achieved 100% test pass rate. All code production ready. Cleaned up documentation structure.
+
+### Tasks Completed
+- [x] **Comprehensive Refactoring Tests (37/37 PASS - 100%)**
+  - processSaveQueue(): 7/7 PASS - Async queue, race conditions, error handling
+  - showAutocomplete(): 9/9 PASS - Display, sorting, keyboard/mouse selection, positioning
+  - updateHashtagDisplay(): 9/9 PASS - Pill display, toggle workflow, event delegation, memory management
+  - showNodeContextMenu(): 5/5 PASS - Menu display, positioning, actions, lifecycle
+  - initiateMoveToNotebook(): 7/7 PASS - Guard clauses, data preservation, ghost workflow (after bug fix)
+
+- [x] **Bug Fix: Nested Node Removal (Bug #2)**
+  - Issue: removeNodesFromSourceNotebook() only searched root level, left duplicates when moving nested nodes
+  - Fix: Created removeNodesRecursively() helper function
+  - Pattern: Follows countNotes() recursive approach
+  - Impact: Moving nodes from nested levels now properly removes from source
+  - Tests: TC5.5 Part A & B now PASS
+  - Commit: 9045caf
+
+- [x] **UX Improvement: Auto-focus Textarea (Task #1)**
+  - Added textarea.focus() after hashtag pill click
+  - Users can continue typing immediately without manual click-back
+  - Improves editing flow and reduces friction
+  - Commit: f6f13ef
+  - Verified working on live site
+
+- [x] **Documentation Updates**
+  - Updated TEST_REFACTORING_ALL.md with all results
+  - Documented Bug #2 discovery and fix
+  - Marked all refactored code as production ready
+  - Cleaned up root-level documentation files
+  - Moved planning documents to appropriate locations
+
+- [x] **Version Management**
+  - v151 → v152: Bug fix (nested node removal)
+  - v152 → v153: UX improvement (auto-focus)
+  - All changes committed and pushed
+
+### Commits (8 total)
+1. b2bed54 - Test results: 36/37 PASS
+2. 9045caf - Bug fix: Recursive nested node removal
+3. 7f1e467 - Version bump v152
+4. e44aca3 - Test results: 37/37 PASS (100%)
+5. f6f13ef - UX: Auto-focus textarea
+6. eef4d61 - Version bump v153
+7. 1dc951e - Documentation cleanup
+
+### Production Status
+- ✅ All refactored functions tested and working
+- ✅ All bugs fixed
+- ✅ UX improvements implemented
+- ✅ Ready for production use
+
+### Major Lessons Learned
+- Systematic testing finds edge cases (nested node removal bug)
+- Test all scenarios before fixing (got complete picture first)
+- Recursive helpers follow existing patterns (countNotes)
+- Small UX improvements have big impact (auto-focus)
+
+---
+
 ## Session 2026-02-06 - Late Evening (Magic Numbers Refactor + Testing)
 
 ### Summary

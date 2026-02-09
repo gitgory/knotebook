@@ -466,82 +466,83 @@ function attachHashtagPillHandlers(display, textarea)  // line 4079
         // Create new AbortController for this listener
         // Create delegated handler
         // Check if clicked element is a pill
+        // Return focus to textarea for better editing flow
         // Attach listener with abort signal
-function cleanupHashtagPillHandlers()  // line 4118
-function updateHashtagDisplay(hashtags, isBatchMode = false, totalNodes = 1, tagCounts = {})  // line 4137
+function cleanupHashtagPillHandlers()  // line 4121
+function updateHashtagDisplay(hashtags, isBatchMode = false, totalNodes = 1, tagCounts = {})  // line 4140
         // Helper function to remove a tag from content textarea
-function removeTagFromContent(tag)  // line 4155
+function removeTagFromContent(tag)  // line 4158
         // Remove tag + optional trailing space, preserving leading space (unless at start)
         // Clean up multiple spaces
-function updateCompletionButtons(value)  // line 4167
+function updateCompletionButtons(value)  // line 4170
         // In batch mode with mixed completion states, show all buttons as inactive
 // ============================================================================
-// HASHTAG AUTOCOMPLETE (line 4180)
+// HASHTAG AUTOCOMPLETE (line 4183)
 // ============================================================================
-function getAutocompleteSuggestions(query)  // line 4192
-function updateAutocompleteState(suggestions, inputElement)  // line 4217
-function renderEmptyAutocomplete()  // line 4230
-function createAutocompleteItem(suggestion, index)  // line 4245
-function attachAutocompleteItemHandler(itemElement, index)  // line 4276
-function populateAutocompleteList(suggestions)  // line 4289
-function displayAutocompleteDropdown(inputElement)  // line 4311
-function showAutocomplete(inputElement)  // line 4324
-function positionAutocomplete(inputElement)  // line 4339
+function getAutocompleteSuggestions(query)  // line 4195
+function updateAutocompleteState(suggestions, inputElement)  // line 4220
+function renderEmptyAutocomplete()  // line 4233
+function createAutocompleteItem(suggestion, index)  // line 4248
+function attachAutocompleteItemHandler(itemElement, index)  // line 4279
+function populateAutocompleteList(suggestions)  // line 4292
+function displayAutocompleteDropdown(inputElement)  // line 4314
+function showAutocomplete(inputElement)  // line 4327
+function positionAutocomplete(inputElement)  // line 4342
         // Filter input: position below the input
         // Textarea: position near caret
         // Viewport clamping
-function getTextareaCaretCoords(textarea, position)  // line 4378
-function hideAutocomplete()  // line 4413
-function selectAutocompleteItem(index)  // line 4431
+function getTextareaCaretCoords(textarea, position)  // line 4381
+function hideAutocomplete()  // line 4416
+function selectAutocompleteItem(index)  // line 4434
         // Assign color when user commits a tag via autocomplete selection
         // Scan forward from cursor to skip any remaining word characters
         // Set cursor after inserted text
         // Dispatch input event to trigger existing handlers
-function updateAutocompleteFromInput(inputElement)  // line 4474
+function updateAutocompleteFromInput(inputElement)  // line 4477
         // Skip if autocomplete is suppressed (synthetic event from tag pill clicks)
         // Scan backwards from cursor to find '#'
         // Check if we found a '#' at a word boundary
         // Word boundary check: '#' must be at position 0 or preceded by whitespace
         // No valid '#' found — hide
-function handleAutocompleteKeydown(e)  // line 4516
+function handleAutocompleteKeydown(e)  // line 4519
         // If an item is highlighted, insert it
         // If only one suggestion remains, insert it automatically
         // Otherwise, let Enter/Tab pass through
-function highlightAutocompleteItem(index)  // line 4560
+function highlightAutocompleteItem(index)  // line 4563
         // Scroll into view
 // ============================================================================
-// HELP MODAL (line 4573)
+// HELP MODAL (line 4576)
 // ============================================================================
-function showHelp()  // line 4582
-function hideHelp()  // line 4591
+function showHelp()  // line 4585
+function hideHelp()  // line 4594
 // ============================================================================
-// MOVE TO NOTEBOOK MODAL (line 4595)
+// MOVE TO NOTEBOOK MODAL (line 4598)
 // ============================================================================
-function showMoveToModal()  // line 4604
+function showMoveToModal()  // line 4607
         // Get all projects except the current one
         // Populate the list
-function hideMoveToModal()  // line 4644
-function createNodeCopiesWithMapping(selectedNodeIds, allNodes)  // line 4656
-function filterAndRemapEdges(edges, idMapping, selectedNodeIds)  // line 4675
-function calculateBoundingBox(nodes)  // line 4690
-function calculateRelativeOffsets(nodes, centerX, centerY)  // line 4710
-function getSourceProjectName(projectId, projectsList)  // line 4728
-function buildMovePackage(data)  // line 4739
-function storePendingMove(movePackage)  // line 4756
+function hideMoveToModal()  // line 4647
+function createNodeCopiesWithMapping(selectedNodeIds, allNodes)  // line 4659
+function filterAndRemapEdges(edges, idMapping, selectedNodeIds)  // line 4678
+function calculateBoundingBox(nodes)  // line 4693
+function calculateRelativeOffsets(nodes, centerX, centerY)  // line 4713
+function getSourceProjectName(projectId, projectsList)  // line 4731
+function buildMovePackage(data)  // line 4742
+function storePendingMove(movePackage)  // line 4759
         // Guard clauses - validate preconditions
         // Command execution - pure operations first, then side effects
         // 1. Data transformation
         // 2. Geometric calculations
         // 3. Data assembly
         // 4. Side effects - storage and navigation
-function checkForPendingMove()  // line 4843
+function checkForPendingMove()  // line 4846
         // Set up ghost nodes
         // Store pending move data for later use
         // Remove from sessionStorage
         // Add ghost drag cursor
         // Show toast notification
         // Initial render with ghosts
-function placeGhostNodes()  // line 4881
+function placeGhostNodes()  // line 4884
         // Add ghost nodes to current notebook as real nodes
         // Add edges
         // Select the newly placed nodes
@@ -551,17 +552,19 @@ function placeGhostNodes()  // line 4881
         // Clear any selection box state
         // Remove ghost drag cursor
         // Save immediately to target notebook (don't wait for auto-save)
-function cancelGhostDrag()  // line 4944
+function cancelGhostDrag()  // line 4947
         // Store source info before clearing state
         // Remove ghost drag cursor
         // Show toast with link back to source notebook
-function removeNodesFromSourceNotebook(sourceProjectId, nodeIds)  // line 4980
+function removeNodesRecursively(nodes, nodeIdsToRemove)  // line 4991
+        // If node has children, recursively remove from children too
+function removeNodesFromSourceNotebook(sourceProjectId, nodeIds)  // line 5012
         // Load source project data
-        // Remove nodes by ID
+        // Remove nodes by ID recursively (searches all nesting levels)
         // Remove edges that reference removed nodes
         // Save back to localStorage
         // Update note count in projects index
-function showToast(message, options = {})  // line 5020
+function showToast(message, options = {})  // line 5052
         // Toast notification with optional link
         // Always use textContent for base message
         // If a link is needed, append it programmatically
@@ -570,20 +573,20 @@ function showToast(message, options = {})  // line 5020
         // Auto-remove after duration (default 4s, or longer if has link)
         // Override toast.remove to clean up listener
 // ============================================================================
-// SETTINGS MODAL (line 5092)
+// SETTINGS MODAL (line 5124)
 // ============================================================================
-function showSettings(projectId)  // line 5103
+function showSettings(projectId)  // line 5135
         // Opened from context menu for a non-open project
         // Opened from toolbar for the current project
-function hideSettings()  // line 5125
-function updateSettingsToggle(toggle, isOn)  // line 5138
-function toggleSettingsTask()  // line 5148
+function hideSettings()  // line 5157
+function updateSettingsToggle(toggle, isOn)  // line 5170
+function toggleSettingsTask()  // line 5180
         // Update in-memory settings for the currently open project
         // Update localStorage directly for a non-open project
 // ============================================================================
-// FILE OPERATIONS (line 5172)
+// FILE OPERATIONS (line 5204)
 // ============================================================================
-function downloadAsFile(filename, data)  // line 5183
+function downloadAsFile(filename, data)  // line 5215
         // Ensure root state is captured
         // Get project name for filename
         // Try File System Access API first, fall back to data URL download
@@ -595,11 +598,11 @@ function downloadAsFile(filename, data)  // line 5183
         // Show import modal
         // Hide overwrite button if no projects exist
         // Fallback for mobile/unsupported browsers
-function importFromFileFallback()  // line 5365
+function importFromFileFallback()  // line 5397
         // Store for import flow
         // Show import modal
         // Hide overwrite button if no projects exist
-function hideImportModal()  // line 5406
+function hideImportModal()  // line 5438
         // Save imported data to the new project
         // Update note count
         // Save import data before hiding modal (hideImportModal clears state.pendingImportData)
@@ -608,7 +611,7 @@ function hideImportModal()  // line 5406
         // Confirm with 3-second delay
         // Save imported data to the existing project
         // Update note count
-function showOverwriteSelectModal(projects)  // line 5511
+function showOverwriteSelectModal(projects)  // line 5543
         // Populate the list
         // Handle item selection
         // Handle cancel
@@ -616,9 +619,9 @@ function showOverwriteSelectModal(projects)  // line 5511
         // Cleanup
         // Attach listeners
 // ============================================================================
-// EVENT HANDLERS (line 5578)
+// EVENT HANDLERS (line 5610)
 // ============================================================================
-function initEventListeners()  // line 5582
+function initEventListeners()  // line 5614
         // Mouse down on canvas
         // Click on children indicator - enter the node
         // Click on completion indicator - cycle state
@@ -649,9 +652,9 @@ function initEventListeners()  // line 5582
         // Mouse wheel for zooming
         // Touch state for mobile
         // Helper to get distance between two touches
-function getTouchDistance(touches)  // line 5976
+function getTouchDistance(touches)  // line 6008
         // Helper to get center point between two touches
-function getTouchCenter(touches)  // line 5983
+function getTouchCenter(touches)  // line 6015
         // Touch start (for mobile drag and pan)
         // Close hashtag sidebar on touch (mobile UX)
         // Handle pinch zoom (2 fingers)
@@ -758,9 +761,9 @@ function getTouchCenter(touches)  // line 5983
         // Debug tools buttons
         // Error recovery modal buttons
 // ============================================================================
-// INITIALIZATION (line 7084)
+// INITIALIZATION (line 7116)
 // ============================================================================
-function init()  // line 7094
+function init()  // line 7126
         // Check if localStorage is available
         // Clear any stale pending move operations from browser refresh
         // Start the app when DOM is ready
