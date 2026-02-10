@@ -338,6 +338,94 @@ function cyclePriority(current) {
     return getNextPriorityState(current);
 }
 
+// ============================================================================
+// GENERIC FIRST CLASS FIELD HELPERS
+// ============================================================================
+
+/**
+ * Gets active button value for any First Class Field.
+ * @param {string} fieldName - Field name from FIRST_CLASS_FIELDS (e.g., 'completion')
+ * @returns {string} - Active button's data-value or empty string
+ */
+function getFieldValue(fieldName) {
+    const activeBtn = document.querySelector(`.${fieldName}-btn.active`);
+    return activeBtn ? activeBtn.dataset.value : '';
+}
+
+/**
+ * Sets active button for any First Class Field.
+ * @param {string} fieldName - Field name from FIRST_CLASS_FIELDS
+ * @param {string} value - Field value to set active
+ */
+function setFieldButtons(fieldName, value) {
+    const buttons = document.querySelectorAll(`.${fieldName}-btn`);
+    buttons.forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.value === (value || ''));
+    });
+}
+
+/**
+ * Gets all First Class Field values from editor.
+ * @returns {Object} - Object with fieldName: value pairs
+ */
+function getAllFieldValues() {
+    const values = {};
+    for (const fieldName in FIRST_CLASS_FIELDS) {
+        values[fieldName] = getFieldValue(fieldName) || null;
+    }
+    return values;
+}
+
+/**
+ * Loads all First Class Field values into editor buttons.
+ * @param {Object} node - Node object with field values
+ */
+function loadAllFieldValues(node) {
+    for (const fieldName in FIRST_CLASS_FIELDS) {
+        const value = node[fieldName] || '';
+        setFieldButtons(fieldName, value);
+    }
+}
+
+/**
+ * Updates all First Class Fields on a node.
+ * @param {Object} node - Node to update
+ * @param {Object} fieldValues - Object with fieldName: value pairs
+ */
+function updateNodeFields(node, fieldValues) {
+    for (const fieldName in FIRST_CLASS_FIELDS) {
+        if (fieldName in fieldValues) {
+            node[fieldName] = fieldValues[fieldName] || null;
+        }
+    }
+}
+
+/**
+ * Generic batch field updater.
+ * @param {Array} nodes - Nodes to update
+ * @param {string} fieldName - Field name
+ * @param {string} value - Field value
+ */
+function updateBatchField(nodes, fieldName, value) {
+    if (!value) return;
+    nodes.forEach(node => {
+        node[fieldName] = value || null;
+    });
+}
+
+/**
+ * Initializes button event listeners for all First Class Fields.
+ */
+function initializeFieldButtons() {
+    for (const fieldName in FIRST_CLASS_FIELDS) {
+        document.querySelectorAll(`.${fieldName}-btn`).forEach(btn => {
+            btn.addEventListener('click', () => {
+                setFieldButtons(fieldName, btn.dataset.value);
+            });
+        });
+    }
+}
+
 // Autocomplete state (kept separate as it's transient UI state)
 const autocomplete = {
     active: false,
@@ -4126,14 +4214,18 @@ function openBatchEditor(nodes) {
     if (nodes.length === 0) return;
 
     // Snapshot all nodes for cancel/revert
-    state.editorSnapshot = {
-        batchMode: true,
-        nodes: nodes.map(node => ({
+    const snapshots = nodes.map(node => {
+        const snapshot = {
             id: node.id,
-            hashtags: [...(node.hashtags || [])],
-            completion: node.completion || null
-        }))
-    };
+            hashtags: [...(node.hashtags || [])]
+        };
+        // Add all First Class Fields to snapshot
+        for (const fieldName in FIRST_CLASS_FIELDS) {
+            snapshot[fieldName] = node[fieldName] || null;
+        }
+        return snapshot;
+    });
+    state.editorSnapshot = { batchMode: true, nodes: snapshots };
 
     const elements = getEditorElements();
 
@@ -4170,18 +4262,12 @@ function openBatchEditor(nodes) {
 
     updateHashtagDisplay(allTags, true, nodes.length, tagCounts);
 
-    // Check completion status - if all same, show it; otherwise show mixed
-    const completions = nodes.map(n => n.completion || null);
-    const allSame = completions.every(c => c === completions[0]);
-    updateCompletionButtons(allSame ? completions[0] : 'mixed');
-
-    // Check priority status - if all same, show it; otherwise show first (or mixed later if needed)
-    const priorities = nodes.map(n => n.priority || null);
-    const allSamePriority = priorities.every(p => p === priorities[0]);
-    const priorityValue = allSamePriority ? (priorities[0] || '') : '';
-    document.querySelectorAll('.priority-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.value === priorityValue);
-    });
+    // Load field values (show value if all same, otherwise clear)
+    for (const fieldName in FIRST_CLASS_FIELDS) {
+        const values = nodes.map(n => n[fieldName] || null);
+        const allSame = values.every(v => v === values[0]);
+        setFieldButtons(fieldName, allSame ? (values[0] || '') : '');
+    }
 
     // Show modal and focus textarea
     elements.modal.classList.remove('hidden');
@@ -4198,13 +4284,17 @@ function openSingleEditor(node, nodeId) {
     if (!node) return;
 
     // Snapshot current state for cancel/revert
-    state.editorSnapshot = {
+    const snapshot = {
         batchMode: false,
         title: node.title || '',
         content: node.content || '',
-        hashtags: [...(node.hashtags || [])],
-        completion: node.completion || null
+        hashtags: [...(node.hashtags || [])]
     };
+    // Add all First Class Fields to snapshot
+    for (const fieldName in FIRST_CLASS_FIELDS) {
+        snapshot[fieldName] = node[fieldName] || null;
+    }
+    state.editorSnapshot = snapshot;
 
     const elements = getEditorElements();
 
@@ -4220,13 +4310,9 @@ function openSingleEditor(node, nodeId) {
     elements.textarea.placeholder = '';
 
     updateHashtagDisplay(node.hashtags || [], false, 1, {});
-    updateCompletionButtons(node.completion || '');
 
-    // Set priority button active state
-    const priorityValue = node.priority || '';
-    document.querySelectorAll('.priority-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.value === priorityValue);
-    });
+    // Load all field values into editor
+    loadAllFieldValues(node);
 
     // Update enter button based on whether node has children
     if (node.children && node.children.length > 0) {
@@ -4278,9 +4364,9 @@ function closeEditor() {
 
 /**
  * Cancel editor and revert all changes.
- * In batch mode, restores hashtags and completion for all edited nodes. In single mode,
- * restores node to snapshot state and deletes empty nodes (never filled in). Closes
- * editor and triggers render.
+ * In batch mode, restores hashtags and all First Class Fields for all edited nodes.
+ * In single mode, restores node to snapshot state and deletes empty nodes (never filled in).
+ * Closes editor and triggers render.
  */
 function cancelEditor() {
     const modal = document.getElementById('editor-modal');
@@ -4291,7 +4377,10 @@ function cancelEditor() {
             const node = state.nodes.find(n => n.id === snapshot.id);
             if (node) {
                 node.hashtags = snapshot.hashtags;
-                node.completion = snapshot.completion;
+                // Restore all First Class Fields
+                for (const fieldName in FIRST_CLASS_FIELDS) {
+                    node[fieldName] = snapshot[fieldName];
+                }
             }
         });
     } else {
@@ -4304,7 +4393,10 @@ function cancelEditor() {
             node.title = state.editorSnapshot.title;
             node.content = state.editorSnapshot.content;
             node.hashtags = state.editorSnapshot.hashtags;
-            node.completion = state.editorSnapshot.completion;
+            // Restore all First Class Fields
+            for (const fieldName in FIRST_CLASS_FIELDS) {
+                node[fieldName] = state.editorSnapshot[fieldName];
+            }
         }
 
         // Delete empty nodes (new node that was never filled in)
@@ -4345,18 +4437,14 @@ function getEditorMode() {
 function getEditorFormData() {
     const titleInput = document.getElementById('note-title');
     const textarea = document.getElementById('note-text');
-    const activeBtn = document.querySelector('.completion-btn.active');
-    const completionValue = activeBtn ? activeBtn.dataset.value : '';
-    const activePriorityBtn = document.querySelector('.priority-btn.active');
-    const priorityValue = activePriorityBtn ? activePriorityBtn.dataset.value : '';
     const newTags = parseHashtags(textarea.value);
+    const fieldValues = getAllFieldValues(); // Gets all fields dynamically
 
     return {
         titleInput: titleInput.value,
         textarea: textarea.value,
-        completionValue,
-        priorityValue,
-        newTags
+        newTags,
+        ...fieldValues  // Spreads completion, priority, and any future fields
     };
 }
 
@@ -4408,32 +4496,6 @@ function addBatchTags(nodes, tagsToAdd) {
 }
 
 /**
- * Updates completion state for nodes in batch mode.
- * @param {Array} nodes - Array of node objects
- * @param {string} completionValue - Completion value to set
- */
-function updateBatchCompletion(nodes, completionValue) {
-    if (!completionValue || completionValue === 'mixed') return;
-
-    nodes.forEach(node => {
-        node.completion = completionValue || null;
-    });
-}
-
-/**
- * Updates priority state for nodes in batch mode.
- * @param {Array} nodes - Array of node objects
- * @param {string} priorityValue - Priority value to set
- */
-function updateBatchPriority(nodes, priorityValue) {
-    if (!priorityValue) return;
-
-    nodes.forEach(node => {
-        node.priority = priorityValue || null;
-    });
-}
-
-/**
  * Updates modified timestamps for nodes in batch mode.
  * @param {Array} nodes - Array of node objects
  */
@@ -4476,18 +4538,18 @@ async function validateSingleNodeInput(titleValue, contentValue) {
  * @param {string} nodeId - The node's ID
  * @param {string} titleValue - Title input value
  * @param {string} contentValue - Content textarea value
- * @param {string} completionValue - Completion state value
- * @param {string} priorityValue - Priority state value
+ * @param {Object} fieldValues - Object with First Class Field values
  */
-function saveSingleNode(node, nodeId, titleValue, contentValue, completionValue, priorityValue) {
+function saveSingleNode(node, nodeId, titleValue, contentValue, fieldValues) {
     if (!node) return;
 
     node.title = titleValue;
     node.content = contentValue;
     node.hashtags = parseHashtags(contentValue);
     node.modified = new Date().toISOString();
-    node.completion = completionValue || null;
-    node.priority = priorityValue || null;
+
+    // Update all First Class Fields
+    updateNodeFields(node, fieldValues);
 
     // Delete empty nodes (created but never filled in)
     if (!node.title.trim() && !node.content.trim()) {
@@ -4506,9 +4568,9 @@ function cleanupEditorState() {
 
 /**
  * Save editor changes and close.
- * In batch mode, adds/removes hashtags and updates completion for all selected nodes.
- * In single mode, validates and saves title/content/hashtags/completion. Updates
- * modified timestamp, deletes empty nodes, closes editor, and triggers render.
+ * In batch mode, adds/removes hashtags and updates all First Class Fields for all selected nodes.
+ * In single mode, validates and saves title/content/hashtags/fields. Updates modified timestamp,
+ * deletes empty nodes, closes editor, and triggers render.
  * @returns {Promise<void>}
  */
 async function saveEditor() {
@@ -4518,12 +4580,25 @@ async function saveEditor() {
     if (isBatchMode) {
         removeBatchTags(nodes, state.removedTagsInSession);
         addBatchTags(nodes, formData.newTags);
-        updateBatchCompletion(nodes, formData.completionValue);
-        updateBatchPriority(nodes, formData.priorityValue);
+
+        // Update all First Class Fields in batch
+        for (const fieldName in FIRST_CLASS_FIELDS) {
+            if (formData[fieldName]) {
+                updateBatchField(nodes, fieldName, formData[fieldName]);
+            }
+        }
+
         updateBatchTimestamps(nodes);
     } else {
         if (!await validateSingleNodeInput(formData.titleInput, formData.textarea)) return;
-        saveSingleNode(node, nodeId, formData.titleInput, formData.textarea, formData.completionValue, formData.priorityValue);
+
+        // Extract field values object
+        const fieldValues = {};
+        for (const fieldName in FIRST_CLASS_FIELDS) {
+            fieldValues[fieldName] = formData[fieldName];
+        }
+
+        saveSingleNode(node, nodeId, formData.titleInput, formData.textarea, fieldValues);
     }
 
     cleanupEditorState();
@@ -4743,19 +4818,6 @@ function removeTagFromContent(tag) {
 
     // Clean up multiple spaces
     textarea.value = textarea.value.replace(/\s+/g, ' ');
-}
-
-function updateCompletionButtons(value) {
-    if (value === 'mixed') {
-        // In batch mode with mixed completion states, show all buttons as inactive
-        document.querySelectorAll('.completion-btn').forEach(btn => {
-            btn.classList.remove('active');
-        });
-    } else {
-        document.querySelectorAll('.completion-btn').forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.value === value);
-        });
-    }
 }
 
 // ============================================================================
@@ -7601,14 +7663,10 @@ function initEventListeners() {
             node.content = textarea.value;
             node.hashtags = parseHashtags(textarea.value);
             node.modified = new Date().toISOString();
-            const activeBtn = document.querySelector('.completion-btn.active');
-            const val = activeBtn ? activeBtn.dataset.value : '';
-            node.completion = val || null;
 
-            // Save priority
-            const activePriorityBtn = document.querySelector('.priority-btn.active');
-            const priorityVal = activePriorityBtn ? activePriorityBtn.dataset.value : '';
-            node.priority = priorityVal || null;
+            // Update all First Class Fields
+            const fieldValues = getAllFieldValues();
+            updateNodeFields(node, fieldValues);
         }
 
         state.editorSnapshot = null;
@@ -7694,20 +7752,8 @@ function initEventListeners() {
         updateAutocompleteFromInput(e.target);
     });
 
-    // Completion buttons in editor
-    document.querySelectorAll('.completion-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            updateCompletionButtons(btn.dataset.value);
-        });
-    });
-
-    // Priority buttons in editor
-    document.querySelectorAll('.priority-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.priority-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-        });
-    });
+    // Initialize all First Class Field button handlers
+    initializeFieldButtons();
 
     // Breadcrumbs click to go back
     document.getElementById('breadcrumbs').addEventListener('click', () => {
