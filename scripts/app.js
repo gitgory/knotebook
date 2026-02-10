@@ -378,30 +378,33 @@ function getAllFieldValues() {
 
 /**
  * Loads all First Class Field values into editor buttons.
+ * Uses unified field storage (node.fields).
  * @param {Object} node - Node object with field values
  */
 function loadAllFieldValues(node) {
     for (const fieldName in FIRST_CLASS_FIELDS) {
-        const value = node[fieldName] || '';
+        const value = getNodeFieldValue(node, fieldName) || '';
         setFieldButtons(fieldName, value);
     }
 }
 
 /**
  * Updates all First Class Fields on a node.
+ * Uses unified field storage (node.fields).
  * @param {Object} node - Node to update
  * @param {Object} fieldValues - Object with fieldName: value pairs
  */
 function updateNodeFields(node, fieldValues) {
     for (const fieldName in FIRST_CLASS_FIELDS) {
         if (fieldName in fieldValues) {
-            node[fieldName] = fieldValues[fieldName] || null;
+            setNodeFieldValue(node, fieldName, fieldValues[fieldName]);
         }
     }
 }
 
 /**
  * Generic batch field updater.
+ * Uses unified field storage (node.fields).
  * @param {Array} nodes - Nodes to update
  * @param {string} fieldName - Field name
  * @param {string} value - Field value
@@ -409,7 +412,7 @@ function updateNodeFields(node, fieldValues) {
 function updateBatchField(nodes, fieldName, value) {
     if (!value) return;
     nodes.forEach(node => {
-        node[fieldName] = value || null;
+        setNodeFieldValue(node, fieldName, value);
     });
 }
 
@@ -423,6 +426,80 @@ function initializeFieldButtons() {
                 setFieldButtons(fieldName, btn.dataset.value);
             });
         });
+    }
+}
+
+// ============================================================================
+// UNIFIED FIELD STORAGE (node.fields.{fieldName})
+// ============================================================================
+
+/**
+ * Gets a field value from a node using unified storage.
+ * All fields (First-Class and Second-Class) are stored in node.fields.{}.
+ * @param {Object} node - Node object
+ * @param {string} fieldName - Field name
+ * @returns {*} - Field value or null
+ */
+function getNodeFieldValue(node, fieldName) {
+    return node.fields?.[fieldName] ?? null;
+}
+
+/**
+ * Sets a field value on a node using unified storage.
+ * @param {Object} node - Node object
+ * @param {string} fieldName - Field name
+ * @param {*} value - Value to set (null/undefined removes the field)
+ */
+function setNodeFieldValue(node, fieldName, value) {
+    if (!node.fields) node.fields = {};
+    if (value === null || value === undefined || value === '') {
+        delete node.fields[fieldName];
+    } else {
+        node.fields[fieldName] = value;
+    }
+}
+
+/**
+ * Migrates a node from legacy storage (top-level completion/priority) to unified storage (node.fields).
+ * Called during data load to ensure backwards compatibility.
+ * @param {Object} node - Node object to migrate
+ */
+function migrateNodeFields(node) {
+    // Skip if already migrated (has fields object with data, or no legacy fields)
+    if (node.fields && Object.keys(node.fields).length > 0) return;
+
+    // Initialize fields object if needed
+    if (!node.fields) node.fields = {};
+
+    // Migrate completion from top-level
+    if (node.completion !== undefined) {
+        if (node.completion) {
+            node.fields.completion = node.completion;
+        }
+        delete node.completion;
+    }
+
+    // Migrate priority from top-level
+    if (node.priority !== undefined) {
+        if (node.priority) {
+            node.fields.priority = node.priority;
+        }
+        delete node.priority;
+    }
+}
+
+/**
+ * Migrates all nodes in an array from legacy to unified field storage.
+ * Recursively migrates children.
+ * @param {Array} nodes - Array of nodes to migrate
+ */
+function migrateAllNodeFields(nodes) {
+    if (!nodes) return;
+    for (const node of nodes) {
+        migrateNodeFields(node);
+        if (node.children && node.children.length > 0) {
+            migrateAllNodeFields(node.children);
+        }
     }
 }
 
@@ -983,6 +1060,9 @@ async function openProject(projectId) {
     // Load data
     state.nodes = data.nodes || [];
     state.edges = data.edges || [];
+
+    // Migrate legacy field storage (completion/priority at top-level) to unified storage (node.fields)
+    migrateAllNodeFields(state.nodes);
     state.rootNodes = state.nodes;
     state.rootEdges = state.edges;
     state.hashtagColors = data.hashtagColors || {};
@@ -2986,7 +3066,7 @@ function createNodeGroup(node) {
     g.setAttribute('class', 'node' +
         (state.selectedNodes.includes(node.id) ? ' selected' : '') +
         (node.children && node.children.length > 0 ? ' has-children' : '') +
-        (isCompletedState(node.completion) ? ' completed' : ''));
+        (isCompletedState(getNodeFieldValue(node, 'completion')) ? ' completed' : ''));
     g.setAttribute('data-id', node.id);
     g.setAttribute('transform', `translate(${node.position.x}, ${node.position.y})`);
     return g;
@@ -3177,8 +3257,9 @@ function appendCompletionIcon(group, config, position) {
  * @param {Object} node - The node object
  */
 function renderCompletionIndicator(g, node) {
-    if (!node.completion) return;
-    const config = getCompletionStateConfig(node.completion);
+    const completion = getNodeFieldValue(node, 'completion');
+    if (!completion) return;
+    const config = getCompletionStateConfig(completion);
     if (!config) return;
 
     const position = FIRST_CLASS_FIELDS.completion.position;
@@ -3236,8 +3317,9 @@ function appendPriorityIcon(group, config, position) {
  * @param {Object} node - The node object
  */
 function renderPriorityIndicator(g, node) {
-    if (!node.priority) return;
-    const config = getPriorityStateConfig(node.priority);
+    const priority = getNodeFieldValue(node, 'priority');
+    if (!priority) return;
+    const config = getPriorityStateConfig(priority);
     if (!config) return;
 
     const position = FIRST_CLASS_FIELDS.priority.position;
@@ -3520,7 +3602,7 @@ function createNode(x, y) {
         title: '',
         content: '',
         hashtags: [],
-        completion: state.projectSettings.defaultCompletion,
+        fields: {},  // Unified field storage
         position: { x, y },
         zIndex: 0,
         children: [],
@@ -3528,6 +3610,10 @@ function createNode(x, y) {
         created: new Date().toISOString(),
         modified: new Date().toISOString()
     };
+    // Apply default completion if set
+    if (state.projectSettings.defaultCompletion) {
+        node.fields.completion = state.projectSettings.defaultCompletion;
+    }
     state.nodes.push(node);
     render();
     return node;
@@ -3549,7 +3635,7 @@ function deepCopyNode(node, offsetX = 0, offsetY = 0) {
         title: node.title,
         content: node.content,
         hashtags: [...(node.hashtags || [])],
-        completion: node.completion || null,
+        fields: { ...(node.fields || {}) },  // Copy all fields
         position: {
             x: node.position.x + offsetX,
             y: node.position.y + offsetY
@@ -4217,12 +4303,9 @@ function openBatchEditor(nodes) {
     const snapshots = nodes.map(node => {
         const snapshot = {
             id: node.id,
-            hashtags: [...(node.hashtags || [])]
+            hashtags: [...(node.hashtags || [])],
+            fields: { ...(node.fields || {}) }  // Copy all fields
         };
-        // Add all First Class Fields to snapshot
-        for (const fieldName in FIRST_CLASS_FIELDS) {
-            snapshot[fieldName] = node[fieldName] || null;
-        }
         return snapshot;
     });
     state.editorSnapshot = { batchMode: true, nodes: snapshots };
@@ -4264,7 +4347,7 @@ function openBatchEditor(nodes) {
 
     // Load field values (show value if all same, otherwise clear)
     for (const fieldName in FIRST_CLASS_FIELDS) {
-        const values = nodes.map(n => n[fieldName] || null);
+        const values = nodes.map(n => getNodeFieldValue(n, fieldName));
         const allSame = values.every(v => v === values[0]);
         setFieldButtons(fieldName, allSame ? (values[0] || '') : '');
     }
@@ -4288,12 +4371,9 @@ function openSingleEditor(node, nodeId) {
         batchMode: false,
         title: node.title || '',
         content: node.content || '',
-        hashtags: [...(node.hashtags || [])]
+        hashtags: [...(node.hashtags || [])],
+        fields: { ...(node.fields || {}) }  // Copy all fields
     };
-    // Add all First Class Fields to snapshot
-    for (const fieldName in FIRST_CLASS_FIELDS) {
-        snapshot[fieldName] = node[fieldName] || null;
-    }
     state.editorSnapshot = snapshot;
 
     const elements = getEditorElements();
@@ -4377,10 +4457,8 @@ function cancelEditor() {
             const node = state.nodes.find(n => n.id === snapshot.id);
             if (node) {
                 node.hashtags = snapshot.hashtags;
-                // Restore all First Class Fields
-                for (const fieldName in FIRST_CLASS_FIELDS) {
-                    node[fieldName] = snapshot[fieldName];
-                }
+                // Restore all fields from snapshot
+                node.fields = { ...snapshot.fields };
             }
         });
     } else {
@@ -4393,10 +4471,8 @@ function cancelEditor() {
             node.title = state.editorSnapshot.title;
             node.content = state.editorSnapshot.content;
             node.hashtags = state.editorSnapshot.hashtags;
-            // Restore all First Class Fields
-            for (const fieldName in FIRST_CLASS_FIELDS) {
-                node[fieldName] = state.editorSnapshot[fieldName];
-            }
+            // Restore all fields from snapshot
+            node.fields = { ...state.editorSnapshot.fields };
         }
 
         // Delete empty nodes (new node that was never filled in)
@@ -6521,7 +6597,8 @@ function initEventListeners() {
             if (target.closest('.node-completion')) {
                 const node = state.nodes.find(n => n.id === nodeId);
                 if (node) {
-                    node.completion = cycleCompletion(node.completion);
+                    const current = getNodeFieldValue(node, 'completion');
+                    setNodeFieldValue(node, 'completion', cycleCompletion(current));
                     node.modified = new Date().toISOString();
                     render();
                     scheduleAutoSave();
@@ -6533,7 +6610,8 @@ function initEventListeners() {
             if (target.closest('.node-priority')) {
                 const node = state.nodes.find(n => n.id === nodeId);
                 if (node) {
-                    node.priority = cyclePriority(node.priority);
+                    const current = getNodeFieldValue(node, 'priority');
+                    setNodeFieldValue(node, 'priority', cyclePriority(current));
                     node.modified = new Date().toISOString();
                     render();
                     scheduleAutoSave();
@@ -6967,7 +7045,8 @@ function initEventListeners() {
             if (target?.closest('.node-completion')) {
                 const node = state.nodes.find(n => n.id === nodeId);
                 if (node) {
-                    node.completion = cycleCompletion(node.completion);
+                    const current = getNodeFieldValue(node, 'completion');
+                    setNodeFieldValue(node, 'completion', cycleCompletion(current));
                     node.modified = new Date().toISOString();
                     render();
                     scheduleAutoSave();
@@ -6979,7 +7058,8 @@ function initEventListeners() {
             if (target?.closest('.node-priority')) {
                 const node = state.nodes.find(n => n.id === nodeId);
                 if (node) {
-                    node.priority = cyclePriority(node.priority);
+                    const current = getNodeFieldValue(node, 'priority');
+                    setNodeFieldValue(node, 'priority', cyclePriority(current));
                     node.modified = new Date().toISOString();
                     render();
                     scheduleAutoSave();
