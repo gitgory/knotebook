@@ -2,8 +2,30 @@
 KNOTEBOOK - CUSTOM FIELDS DESIGN SPECIFICATION
 ================================================================================
 Created: 2026-01-30
-Status: Planning - Not Yet Implemented
+Updated: 2026-02-09
+Status: Partially Implemented (see IMPLEMENTATION STATUS below)
 Related: design-spec.txt (current), design-spec-future.txt (planned architecture)
+
+================================================================================
+IMPLEMENTATION STATUS
+================================================================================
+
+**COMPLETED:**
+- [x] Phase 0: Unified field storage (node.fields.{fieldName}) - v168
+- [x] Phase 1: Priority field (First Class) - v166
+- [x] Phase 1b: Generalized First Class Fields architecture - v167
+- [x] Phase 1c: Generalized field infrastructure for Second Class - v169-170
+- [x] Settings UI for First Class field defaults - v171
+
+**IN PROGRESS:**
+- [ ] Phase 2: Custom Fields (Second Class) Settings UI
+
+**NOT STARTED:**
+- [ ] Phase 3: Editor integration for custom fields
+- [ ] Phase 4: Export/Import with custom fields
+- [ ] Phase 5: Fields Sidebar
+- [ ] Phase 6: Hashtag Migration Tool
+- [ ] Future: Required fields, default values, advanced filtering, list view
 
 ================================================================================
 OVERVIEW
@@ -70,26 +92,25 @@ visual treatment. Available to all notebooks automatically.
 
 **Examples:**
 
-1. **Completion** (already exists)
+1. **Completion** (IMPLEMENTED)
    - Type: single-select
-   - Options: null, 'no', 'yes', 'partial'
-   - Display: Checkmark icons (○ ✓ ◐)
+   - Options: null, 'no', 'partial', 'yes', 'cancelled'
+   - Display: Checkmark icons (○ ◐ ✓ ✕)
    - Location: Top-right of node
    - Interaction: Click on node to cycle states
    - Visual: Grayscale filter on completed notes
 
-2. **Priority** (planned)
+2. **Priority** (IMPLEMENTED - v166)
    - Type: single-select
-   - Options: null, 'low', 'normal', 'high', 'urgent'
-   - Display: Colored dot or badge
-   - Location: Top-left of node (TBD)
+   - Options: null, 'low', 'medium', 'high'
+   - Display: Arrow icons (▼ ▬ ▲) with colored background
+   - Location: Bottom-right of node
    - Color coding:
-     * Urgent: Red (#ef4444)
-     * High: Orange (#f97316)
-     * Normal: Yellow (#eab308)
+     * High: Red (#ef4444)
+     * Medium: Yellow (#eab308)
      * Low: Blue (#3b82f6)
      * None: No indicator
-   - Interaction: Set via editor dropdown (not clickable on node)
+   - Interaction: Click on node to cycle states (like completion)
 
 **Future Candidates:**
 - **Flagged:** boolean, star icon, click to toggle
@@ -228,53 +249,66 @@ const FIRST_CLASS_FIELDS = {
 ## Second Class Fields (Per-Notebook)
 
 ```javascript
-// Stored in notebook settings
-notebookSettings: {
-  defaultCompletion: null,  // Existing setting
-
-  customFields: [
+// IMPLEMENTED (v169-171) - Stored in notebook settings
+projectSettings: {
+  fieldDefaults: {           // Default values for First-Class fields
+    completion: null,        // e.g., 'no' for "To do" by default
+    priority: null           // e.g., 'medium' for "Medium" by default
+  },
+  customFields: [            // Second-Class field definitions
     {
-      id: 'field-1',  // Unique ID for field definition
-      name: 'effort',
-      label: 'Effort',  // Display name
-      type: 'single-select',
-      options: ['low', 'medium', 'high'],
-      default: null,
-      required: false,
-      helpText: 'Estimated effort level'
+      id: 'field-1',         // Unique ID for field definition
+      name: 'effort',        // Internal name (no spaces)
+      label: 'Effort',       // Display name
+      type: 'single-select', // Field type
+      options: ['low', 'medium', 'high'],  // Predefined options
+      allowNew: true         // Allow adding new values (hybrid mode)
     },
     {
       id: 'field-2',
       name: 'author',
       label: 'Author',
       type: 'text',
-      maxLength: 100,
-      default: '',
-      required: false,
-      helpText: ''
+      maxLength: 100
     },
     {
       id: 'field-3',
-      name: 'dateRead',
-      label: 'Date Read',
-      type: 'date',
-      default: null,
-      required: false,
-      helpText: ''
+      name: 'technologies',
+      label: 'Technologies',
+      type: 'multi-select',  // Multiple values can be selected
+      options: ['React', 'Node', 'Python']
     },
     {
       id: 'field-4',
+      name: 'dateRead',
+      label: 'Date Read',
+      type: 'date'
+    },
+    {
+      id: 'field-5',
       name: 'rating',
       label: 'Rating',
       type: 'number',
       min: 1,
-      max: 5,
-      default: null,
-      required: false,
-      helpText: 'Rate from 1-5 stars'
+      max: 5
+    },
+    {
+      id: 'field-6',
+      name: 'verified',
+      label: 'Verified',
+      type: 'checkbox'
     }
   ]
 }
+
+// Supported field types:
+// - single-select: Button group, one active (like completion/priority)
+// - multi-select: Button group, multiple active
+// - text: Text input
+// - number: Number input with optional min/max
+// - date: Date picker
+// - checkbox: Boolean toggle
+```
 ```
 
 ---
@@ -282,6 +316,7 @@ notebookSettings: {
 ## Note Instance
 
 ```javascript
+// IMPLEMENTED (v168) - Unified field storage
 {
   id: "note-123",
   title: "The Phoenix Project",
@@ -291,12 +326,20 @@ notebookSettings: {
   created: "2026-01-15T10:00:00Z",
   modified: "2026-01-30T14:30:00Z",
 
-  // First Class Fields (top-level properties)
-  completion: "yes",    // ✓ Done
-  priority: "high",     // ⬤ High priority (orange dot)
+  // ALL fields stored in unified location (First-Class AND Second-Class)
+  fields: {
+    completion: "yes",              // First-Class: ✓ Done
+    priority: "high",               // First-Class: ▲ High priority
+    effort: "medium",               // Second-Class: custom field
+    author: "Gene Kim",             // Second-Class: custom field
+    technologies: ["Node", "React"],// Second-Class: multi-select
+    rating: 5                       // Second-Class: custom field
+  },
 
-  // Second Class Fields (nested object)
-  customFields: {
+  // LEGACY (auto-migrated on load):
+  // completion: "yes",   // Migrated to fields.completion
+  // priority: "high",    // Migrated to fields.priority
+  // customFields: {...}  // Would be merged into fields.{}
     effort: "medium",
     author: "Gene Kim",
     dateRead: "2026-01-15",
@@ -864,49 +907,103 @@ priority:! OR priority:null → No priority set
 IMPLEMENTATION PLAN
 ================================================================================
 
-## Phase 1: Priority Field (First Class)
+## Phase 0: Unified Field Storage [COMPLETED - v168]
 
-**Goal:** Add priority as the first new First Class Field
+**Goal:** Unify storage for First-Class and Second-Class fields
 
-**Tasks:**
-1. Define FIRST_CLASS_FIELDS constant with priority
-2. Add priority to note data model (top-level property)
-3. Add priority selector to note editor (dropdown)
-4. Render priority indicator on node (colored dot - option 1)
-5. Update save/load to persist priority
-6. Update export/import to include priority
-7. Test with existing notebooks (backwards compatible)
-
-**Estimated Effort:** Low-Medium (4-6 hours)
-**Files Changed:** app.js, main.css, index.html
+**Completed:**
+- All fields stored in node.fields.{fieldName}
+- Migration function for legacy top-level completion/priority
+- getNodeFieldValue() / setNodeFieldValue() unified accessors
+- Backwards compatible (auto-migrates on load)
 
 ---
 
-## Phase 2: Custom Fields Infrastructure
+## Phase 1: Priority Field (First Class) [COMPLETED - v166]
+
+**Goal:** Add priority as the first new First Class Field
+
+**Completed:**
+- FIRST_CLASS_FIELDS config with completion + priority
+- Priority indicator on node (bottom-right, arrow icons)
+- Click to cycle priority states
+- Editor buttons for priority selection
+- Export/import includes priority
+
+---
+
+## Phase 1b: Generalized First Class Fields [COMPLETED - v167]
+
+**Goal:** Generalize save/load for any First-Class field
+
+**Completed:**
+- Generic helpers: getAllFieldValues(), loadAllFieldValues(), etc.
+- Adding new First-Class field requires only config + HTML
+- No changes to save/load/snapshot logic
+
+---
+
+## Phase 1c: Generalized Field Infrastructure [COMPLETED - v169-170]
+
+**Goal:** Extend infrastructure for Second-Class fields
+
+**Completed:**
+- getFieldDefinitions() - returns all field definitions
+- getCustomFieldInputValue() / setCustomFieldInputValue()
+- getFieldUsedValues() - collects values for auto-complete
+- getFieldOptions() - hybrid predefined + auto-collected
+- hasFieldSelection() - for batch mode None handling
+- Settings UI for First-Class field defaults (v171)
+
+---
+
+## Phase 2: Custom Fields Settings UI [IN PROGRESS]
 
 **Goal:** Allow users to define Second Class Fields per notebook
 
 **Tasks:**
-1. Add customFields array to notebook settings data model
-2. Create "Custom Fields" tab in settings modal
-3. Build UI for adding/editing/deleting field definitions
-4. Add field type selector (single-select, text, date, etc.)
-5. Generic field renderer for note editor
-6. Update save/load to persist field definitions and values
-7. Test field creation and value setting
+1. [x] Add customFields array to notebook settings data model
+2. [ ] Add "Custom Fields" section in settings modal
+3. [ ] Build UI for adding/editing/deleting field definitions
+4. [ ] Add field type selector (single-select, multi-select, text, etc.)
+5. [ ] Drag-to-reorder field definitions
+6. [ ] Field options editor (for select types)
 
-**Estimated Effort:** Medium-High (8-12 hours)
+**Estimated Effort:** Medium (4-6 hours)
 **Files Changed:** app.js, main.css, index.html
-
-**Sub-phases:**
-- 2a: Data model + settings UI (4 hours)
-- 2b: Field rendering in editor (4 hours)
-- 2c: Save/load/export (2 hours)
-- 2d: Testing & polish (2 hours)
 
 ---
 
-## Phase 3: Fields Sidebar
+## Phase 3: Editor Integration [PENDING]
+
+**Goal:** Render Second-Class fields in note editor
+
+**Tasks:**
+1. Add custom-fields-container to editor HTML
+2. Dynamically render field controls based on definitions
+3. Support all field types with appropriate inputs
+4. Handle batch mode (show if unanimous, empty if mixed)
+5. Style custom field controls
+
+**Estimated Effort:** Medium (3-4 hours)
+
+---
+
+## Phase 4: Export/Import [PENDING]
+
+**Goal:** Include custom fields in export/import
+
+**Tasks:**
+1. Include field definitions in JSON export
+2. Include node.fields values in export
+3. Handle import of notebooks with different field schemas
+4. Backwards compatibility with old exports
+
+**Estimated Effort:** Low (1-2 hours)
+
+---
+
+## Phase 5: Fields Sidebar [FUTURE]
 
 **Goal:** Provide UI for viewing field values and filtering
 
@@ -921,11 +1018,10 @@ IMPLEMENTATION PLAN
 8. Style sidebar (similar to hashtag sidebar)
 
 **Estimated Effort:** Medium (6-8 hours)
-**Files Changed:** app.js, main.css, index.html
 
 ---
 
-## Phase 4: Hashtag Migration Tool
+## Phase 6: Hashtag Migration Tool [FUTURE]
 
 **Goal:** Convert existing hashtag patterns to custom fields
 
@@ -940,11 +1036,10 @@ IMPLEMENTATION PLAN
 8. Test with various hashtag patterns
 
 **Estimated Effort:** Medium (6-8 hours)
-**Files Changed:** app.js, main.css, index.html
 
 ---
 
-## Phase 5: Advanced Filtering (Future)
+## Phase 7: Advanced Filtering [FUTURE]
 
 **Goal:** Filter by field values, combine with zones
 
@@ -961,7 +1056,7 @@ IMPLEMENTATION PLAN
 
 ---
 
-## Phase 6: List View with Fields (Future)
+## Phase 8: List View with Fields [FUTURE]
 
 **Goal:** Show fields as columns in table view
 
