@@ -240,6 +240,37 @@ const FIRST_CLASS_FIELDS = {
         },
         cycleOrder: ['no', 'partial', 'yes', 'cancelled'],
         noneState: { label: 'None', value: null }
+    },
+    priority: {
+        position: {
+            offsetX: 18,  // From right edge
+            offsetY: 18   // From bottom edge (measured from NODE_HEIGHT)
+        },
+        states: {
+            'low': {
+                label: 'Low',
+                icon: '▼',
+                iconType: 'text',
+                color: '#3b82f6',
+                cssClass: 'priority-low'
+            },
+            'medium': {
+                label: 'Medium',
+                icon: '▬',
+                iconType: 'text',
+                color: '#eab308',
+                cssClass: 'priority-medium'
+            },
+            'high': {
+                label: 'High',
+                icon: '▲',
+                iconType: 'text',
+                color: '#ef4444',
+                cssClass: 'priority-high'
+            }
+        },
+        cycleOrder: ['low', 'medium', 'high'],
+        noneState: { label: 'None', value: null }
     }
 };
 
@@ -273,6 +304,38 @@ function getCompletionStateConfig(state) {
 function isCompletedState(state) {
     const config = getCompletionStateConfig(state);
     return config ? config.marksCompleted : false;
+}
+
+/**
+ * Gets the next priority state in the cycle.
+ * @param {string|null} current - Current priority state
+ * @returns {string|null} - Next priority state, or null after 'high'
+ */
+function getNextPriorityState(current) {
+    const cycle = FIRST_CLASS_FIELDS.priority.cycleOrder;
+    if (current === null || current === undefined) return cycle[0];
+    const idx = cycle.indexOf(current);
+    // After last item, return null (none state)
+    return idx === cycle.length - 1 ? null : cycle[idx + 1];
+}
+
+/**
+ * Gets priority state configuration.
+ * @param {string|null} state - Priority state value
+ * @returns {Object|null} - State config or null
+ */
+function getPriorityStateConfig(state) {
+    if (!state) return null;
+    return FIRST_CLASS_FIELDS.priority.states[state] || null;
+}
+
+/**
+ * Cycles to the next priority state.
+ * @param {string|null} current - Current priority state
+ * @returns {string|null} - Next priority state in the cycle
+ */
+function cyclePriority(current) {
+    return getNextPriorityState(current);
 }
 
 // Autocomplete state (kept separate as it's transient UI state)
@@ -3038,6 +3101,65 @@ function renderCompletionIndicator(g, node) {
 }
 
 /**
+ * Creates the priority indicator group element.
+ * @returns {SVGGElement}
+ */
+function createPriorityGroup() {
+    const comp = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    comp.setAttribute('class', 'node-priority');
+    comp.setAttribute('data-action', 'cycle-priority');
+    return comp;
+}
+
+/**
+ * Appends background circle for priority indicator.
+ * @param {SVGGElement} group - Priority group element
+ * @param {Object} position - Position config {offsetX, offsetY}
+ */
+function appendPriorityBackground(group, position) {
+    const bg = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    bg.setAttribute('cx', NODE_WIDTH - position.offsetX);
+    bg.setAttribute('cy', NODE_HEIGHT - position.offsetY);
+    bg.setAttribute('r', 12);
+    bg.setAttribute('class', 'node-priority-bg');
+    group.appendChild(bg);
+}
+
+/**
+ * Appends priority icon (text symbol).
+ * @param {SVGGElement} group - Priority group element
+ * @param {Object} config - State config
+ * @param {Object} position - Position config {offsetX, offsetY}
+ */
+function appendPriorityIcon(group, config, position) {
+    const icon = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    icon.setAttribute('x', NODE_WIDTH - position.offsetX);
+    icon.setAttribute('y', NODE_HEIGHT - position.offsetY + 5);
+    icon.setAttribute('text-anchor', 'middle');
+    icon.setAttribute('class', `node-priority-icon ${config.cssClass}`);
+    icon.textContent = config.icon;
+    group.appendChild(icon);
+}
+
+/**
+ * Renders priority indicator on node.
+ * Config-driven implementation using FIRST_CLASS_FIELDS.
+ * @param {SVGGElement} g - The node's SVG group element
+ * @param {Object} node - The node object
+ */
+function renderPriorityIndicator(g, node) {
+    if (!node.priority) return;
+    const config = getPriorityStateConfig(node.priority);
+    if (!config) return;
+
+    const position = FIRST_CLASS_FIELDS.priority.position;
+    const comp = createPriorityGroup();
+    appendPriorityBackground(comp, position);
+    appendPriorityIcon(comp, config, position);
+    g.appendChild(comp);
+}
+
+/**
  * Renders all visible nodes to the SVG canvas.
  * Orchestrates node rendering by delegating to specialized helper functions.
  */
@@ -3054,6 +3176,7 @@ function renderNodes() {
         renderNodeTitle(g, node);
         renderNodeHashtags(g, node);
         renderCompletionIndicator(g, node);
+        renderPriorityIndicator(g, node);
 
         layer.appendChild(g);
     }
@@ -4052,6 +4175,14 @@ function openBatchEditor(nodes) {
     const allSame = completions.every(c => c === completions[0]);
     updateCompletionButtons(allSame ? completions[0] : 'mixed');
 
+    // Check priority status - if all same, show it; otherwise show first (or mixed later if needed)
+    const priorities = nodes.map(n => n.priority || null);
+    const allSamePriority = priorities.every(p => p === priorities[0]);
+    const priorityValue = allSamePriority ? (priorities[0] || '') : '';
+    document.querySelectorAll('.priority-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.value === priorityValue);
+    });
+
     // Show modal and focus textarea
     elements.modal.classList.remove('hidden');
     elements.modal.dataset.batchMode = 'true';
@@ -4090,6 +4221,12 @@ function openSingleEditor(node, nodeId) {
 
     updateHashtagDisplay(node.hashtags || [], false, 1, {});
     updateCompletionButtons(node.completion || '');
+
+    // Set priority button active state
+    const priorityValue = node.priority || '';
+    document.querySelectorAll('.priority-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.value === priorityValue);
+    });
 
     // Update enter button based on whether node has children
     if (node.children && node.children.length > 0) {
@@ -4210,12 +4347,15 @@ function getEditorFormData() {
     const textarea = document.getElementById('note-text');
     const activeBtn = document.querySelector('.completion-btn.active');
     const completionValue = activeBtn ? activeBtn.dataset.value : '';
+    const activePriorityBtn = document.querySelector('.priority-btn.active');
+    const priorityValue = activePriorityBtn ? activePriorityBtn.dataset.value : '';
     const newTags = parseHashtags(textarea.value);
 
     return {
         titleInput: titleInput.value,
         textarea: textarea.value,
         completionValue,
+        priorityValue,
         newTags
     };
 }
@@ -4277,6 +4417,19 @@ function updateBatchCompletion(nodes, completionValue) {
 
     nodes.forEach(node => {
         node.completion = completionValue || null;
+    });
+}
+
+/**
+ * Updates priority state for nodes in batch mode.
+ * @param {Array} nodes - Array of node objects
+ * @param {string} priorityValue - Priority value to set
+ */
+function updateBatchPriority(nodes, priorityValue) {
+    if (!priorityValue) return;
+
+    nodes.forEach(node => {
+        node.priority = priorityValue || null;
     });
 }
 
@@ -4364,6 +4517,7 @@ async function saveEditor() {
         removeBatchTags(nodes, state.removedTagsInSession);
         addBatchTags(nodes, formData.newTags);
         updateBatchCompletion(nodes, formData.completionValue);
+        updateBatchPriority(nodes, formData.priorityValue);
         updateBatchTimestamps(nodes);
     } else {
         if (!await validateSingleNodeInput(formData.titleInput, formData.textarea)) return;
@@ -6304,7 +6458,21 @@ function initEventListeners() {
                 const node = state.nodes.find(n => n.id === nodeId);
                 if (node) {
                     node.completion = cycleCompletion(node.completion);
+                    node.modified = new Date().toISOString();
                     render();
+                    scheduleAutoSave();
+                }
+                return;
+            }
+
+            // Click on priority indicator - cycle state
+            if (target.closest('.node-priority')) {
+                const node = state.nodes.find(n => n.id === nodeId);
+                if (node) {
+                    node.priority = cyclePriority(node.priority);
+                    node.modified = new Date().toISOString();
+                    render();
+                    scheduleAutoSave();
                 }
                 return;
             }
@@ -6736,7 +6904,21 @@ function initEventListeners() {
                 const node = state.nodes.find(n => n.id === nodeId);
                 if (node) {
                     node.completion = cycleCompletion(node.completion);
+                    node.modified = new Date().toISOString();
                     render();
+                    scheduleAutoSave();
+                }
+                return;
+            }
+
+            // Touch on priority indicator - cycle state
+            if (target?.closest('.node-priority')) {
+                const node = state.nodes.find(n => n.id === nodeId);
+                if (node) {
+                    node.priority = cyclePriority(node.priority);
+                    node.modified = new Date().toISOString();
+                    render();
+                    scheduleAutoSave();
                 }
                 return;
             }
@@ -7420,6 +7602,11 @@ function initEventListeners() {
             const activeBtn = document.querySelector('.completion-btn.active');
             const val = activeBtn ? activeBtn.dataset.value : '';
             node.completion = val || null;
+
+            // Save priority
+            const activePriorityBtn = document.querySelector('.priority-btn.active');
+            const priorityVal = activePriorityBtn ? activePriorityBtn.dataset.value : '';
+            node.priority = priorityVal || null;
         }
 
         state.editorSnapshot = null;
@@ -7509,6 +7696,14 @@ function initEventListeners() {
     document.querySelectorAll('.completion-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             updateCompletionButtons(btn.dataset.value);
+        });
+    });
+
+    // Priority buttons in editor
+    document.querySelectorAll('.priority-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.priority-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
         });
     });
 
