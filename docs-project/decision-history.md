@@ -4,6 +4,81 @@ This file tracks significant technical and design decisions made during developm
 
 ---
 
+## 2026-02-09: First Class Fields - Generalized Save/Load Architecture
+
+DECISION: Generalize editor save/load workflow to automatically handle ANY field in FIRST_CLASS_FIELDS
+CHOSE: Generic helper functions that loop over FIRST_CLASS_FIELDS config
+NOT: Keep explicit field-specific code (updateBatchCompletion, updateBatchPriority, updateCompletionButtons)
+NOT: Wait to generalize until adding 3rd field
+
+Reasoning:
+- True extensibility: Add new field by ONLY updating config and HTML (zero save/load code changes)
+- Maintainability: Single loop pattern replaces copy-paste for each field
+- Code reduction: Net ~50 lines saved, 3 obsolete functions deleted
+- Consistency: All fields handled identically through same code path
+- Future-proof: Supports unlimited fields (due date, assignee, tags, etc.)
+
+Implementation:
+- 7 new generic helpers: getFieldValue(), setFieldButtons(), getAllFieldValues(), loadAllFieldValues(), updateNodeFields(), updateBatchField(), initializeFieldButtons()
+- Refactored 8 functions: getEditorFormData(), saveSingleNode(), openSingleEditor(), openBatchEditor(), saveEditor(), cancelEditor(), editor-enter handler, button event setup
+- Deleted 3 obsolete functions: updateBatchCompletion(), updateBatchPriority(), updateCompletionButtons()
+- Snapshot structure: Dynamically includes all FIRST_CLASS_FIELDS in editorSnapshot
+- FormData structure: Spreads all field values into return object
+- Event handlers: Single initializeFieldButtons() replaces individual button handlers
+
+Example - Adding due date field (future):
+1. Add to FIRST_CLASS_FIELDS config
+2. Add HTML buttons to editor
+3. Done! Save/load works automatically
+
+---
+
+## 2026-02-09: Priority as Second First Class Field
+
+DECISION: Add priority field using established FIRST_CLASS_FIELDS pattern
+CHOSE: Bottom-right position with Unicode symbols (▲▬▼) and traffic light colors
+NOT: Top-left (conflicts with dog-ear), left edge stripe (too prominent)
+NOT: Colored numbers or exclamation marks (less intuitive than directional arrows)
+
+Reasoning:
+- Architecture validation: Proves Phase 1 pattern is truly extensible
+- Code reuse: Same 3+4 helper pattern as completion (config + render)
+- Position: Bottom-right available space, no conflicts with completion (top-right) or hashtags (bottom-left)
+- Visual clarity: Directional symbols (up=high, down=low) are intuitive
+- Color semantics: Red/yellow/blue traffic light metaphor for urgency
+
+Implementation:
+- 4 states: None, Low, Medium, High (cycle returns to None)
+- Position: offsetX:18, offsetY:18 from bottom-right
+- Symbols: ▲ (U+25B2 high red), ▬ (U+25AC medium yellow), ▼ (U+25BC low blue)
+- Full editor integration (batch + single mode)
+- Data model: Optional `priority` field (null, 'low', 'medium', 'high')
+
+---
+
+## 2026-02-09: First Class Fields Architecture - Completion Refactor
+
+DECISION: Refactor completion field to use data-driven FIRST_CLASS_FIELDS configuration
+CHOSE: Extract hardcoded logic into config object with helper functions
+NOT: Keep completion logic hardcoded in multiple functions
+NOT: Wait to refactor until adding second First Class Field
+
+Reasoning:
+- Extensibility: Establishes pattern for future First Class Fields (priority, due date, etc.)
+- Single source of truth: All completion config (states, icons, colors, position) in one object
+- Maintainability: cycleCompletion 7→2 lines, renderCompletionIndicator 50→11 lines
+- Testability: Config helpers independently testable
+- Data-driven: Config lookup replaces if-chains and hardcoded constants
+- Pure refactor: No functional changes, same behavior, same data format
+
+Implementation:
+- FIRST_CLASS_FIELDS config object with states (no/partial/yes/cancelled)
+- 3 config helpers: getNextCompletionState(), getCompletionStateConfig(), isCompletedState()
+- 3 render helpers: createCompletionGroup(), appendCompletionBackground(), appendCompletionIcon()
+- Removed NODE_COMPLETION_OFFSET_X/Y constants (now in config)
+
+---
+
 ## 2026-02-09: Complete Refactoring - Final 5 Functions
 
 DECISION: Refactor remaining 5 high-priority functions using Extract Method pattern
