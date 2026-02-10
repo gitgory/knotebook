@@ -353,6 +353,16 @@ function getFieldValue(fieldName) {
 }
 
 /**
+ * Checks if a field has an active button selection.
+ * Used in batch mode to distinguish "no selection" from "None selected".
+ * @param {string} fieldName - Field name
+ * @returns {boolean} - True if any button is active
+ */
+function hasFieldSelection(fieldName) {
+    return document.querySelector(`.${fieldName}-btn.active`) !== null;
+}
+
+/**
  * Sets active button for any First Class Field.
  * @param {string} fieldName - Field name from FIRST_CLASS_FIELDS
  * @param {string} value - Field value to set active
@@ -4885,10 +4895,14 @@ async function saveEditor() {
         removeBatchTags(nodes, state.removedTagsInSession);
         addBatchTags(nodes, formData.newTags);
 
-        // Update all First-Class fields in batch
+        // Update all First-Class fields in batch (only if user made a selection)
         for (const fieldName in FIRST_CLASS_FIELDS) {
-            if (formData[fieldName]) {
-                updateBatchField(nodes, fieldName, formData[fieldName]);
+            if (hasFieldSelection(fieldName)) {
+                // User selected something (including "None")
+                const value = formData[fieldName];
+                nodes.forEach(node => {
+                    setNodeFieldValue(node, fieldName, value);
+                });
             }
         }
 
