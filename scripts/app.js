@@ -193,6 +193,88 @@ const HASHTAG_COLORS = [
     '#fb923c', // Amber (replaces gray - reserved for unassigned tags)
 ];
 
+/**
+ * First Class Field Definitions
+ * Data-driven configuration for node fields with visual indicators.
+ */
+const FIRST_CLASS_FIELDS = {
+    completion: {
+        position: {
+            offsetX: 20,  // From right edge
+            offsetY: 22   // From top
+        },
+        states: {
+            'no': {
+                label: 'To do',
+                icon: null,
+                iconType: 'circle',
+                color: 'var(--text-secondary)',
+                cssClass: 'completion-no',
+                marksCompleted: false
+            },
+            'partial': {
+                label: 'Partial',
+                icon: '◐',
+                iconType: 'text',
+                color: '#f97316',
+                cssClass: 'completion-partial',
+                marksCompleted: false,
+                iconYOffset: 1
+            },
+            'yes': {
+                label: 'Done',
+                icon: '✓',
+                iconType: 'text',
+                color: '#22c55e',
+                cssClass: 'completion-yes',
+                marksCompleted: true
+            },
+            'cancelled': {
+                label: 'Cancelled',
+                icon: '✕',
+                iconType: 'text',
+                color: '#ef4444',
+                cssClass: 'completion-cancelled',
+                marksCompleted: true
+            }
+        },
+        cycleOrder: ['no', 'partial', 'yes', 'cancelled'],
+        noneState: { label: 'None', value: null }
+    }
+};
+
+/**
+ * Gets the next completion state in the cycle.
+ * @param {string|null} current - Current completion state
+ * @returns {string} - Next completion state
+ */
+function getNextCompletionState(current) {
+    const cycle = FIRST_CLASS_FIELDS.completion.cycleOrder;
+    if (current === null || current === undefined) return cycle[0];
+    const idx = cycle.indexOf(current);
+    return cycle[(idx + 1) % cycle.length];
+}
+
+/**
+ * Gets completion state configuration.
+ * @param {string|null} state - Completion state value
+ * @returns {Object|null} - State config or null
+ */
+function getCompletionStateConfig(state) {
+    if (!state) return null;
+    return FIRST_CLASS_FIELDS.completion.states[state] || null;
+}
+
+/**
+ * Checks if a completion state marks node as completed (grayscale).
+ * @param {string|null} state - Completion state value
+ * @returns {boolean}
+ */
+function isCompletedState(state) {
+    const config = getCompletionStateConfig(state);
+    return config ? config.marksCompleted : false;
+}
+
 // Autocomplete state (kept separate as it's transient UI state)
 const autocomplete = {
     active: false,
@@ -241,8 +323,6 @@ const NODE_CONTENT_PADDING_X = 10; // Horizontal padding inside node
 const NODE_CONTENT_PADDING_TOP = 25; // Top padding for node title
 const NODE_HASHTAG_OFFSET_X = 8; // Starting X offset for hashtag pills
 const NODE_HASHTAG_OFFSET_Y = 44; // Y offset for hashtag pills
-const NODE_COMPLETION_OFFSET_X = 20; // Offset from right edge for completion indicator
-const NODE_COMPLETION_OFFSET_Y = 22; // Y offset for completion indicator
 const NODE_STACK_OFFSET_1 = 3; // First stack layer offset
 const NODE_STACK_OFFSET_2 = 6; // Second stack layer offset
 const CHILD_NODE_VERTICAL_OFFSET = 20; // Vertical space below parent when promoting children
@@ -1661,11 +1741,7 @@ function hasBodyText(node) {
  * @returns {string} - Next completion state in the cycle
  */
 function cycleCompletion(current) {
-    if (current === null || current === undefined) return 'no';
-    if (current === 'no') return 'partial';
-    if (current === 'partial') return 'yes';
-    if (current === 'yes') return 'cancelled';
-    return 'no';
+    return getNextCompletionState(current);
 }
 
 /**
@@ -2759,7 +2835,7 @@ function createNodeGroup(node) {
     g.setAttribute('class', 'node' +
         (state.selectedNodes.includes(node.id) ? ' selected' : '') +
         (node.children && node.children.length > 0 ? ' has-children' : '') +
-        (node.completion === 'yes' || node.completion === 'cancelled' ? ' completed' : ''));
+        (isCompletedState(node.completion) ? ' completed' : ''));
     g.setAttribute('data-id', node.id);
     g.setAttribute('transform', `translate(${node.position.x}, ${node.position.y})`);
     return g;
@@ -2894,58 +2970,70 @@ function renderNodeHashtags(g, node) {
 }
 
 /**
- * Renders the completion indicator icon for the node.
+ * Creates the completion indicator group element.
+ * @returns {SVGGElement}
+ */
+function createCompletionGroup() {
+    const comp = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    comp.setAttribute('class', 'node-completion');
+    comp.setAttribute('data-action', 'cycle-completion');
+    return comp;
+}
+
+/**
+ * Appends background circle for completion indicator.
+ * @param {SVGGElement} group - Completion group element
+ * @param {Object} position - Position config {offsetX, offsetY}
+ */
+function appendCompletionBackground(group, position) {
+    const bg = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    bg.setAttribute('cx', NODE_WIDTH - position.offsetX);
+    bg.setAttribute('cy', position.offsetY);
+    bg.setAttribute('r', 12);
+    bg.setAttribute('class', 'node-completion-bg');
+    group.appendChild(bg);
+}
+
+/**
+ * Appends completion icon (circle or text).
+ * @param {SVGGElement} group - Completion group element
+ * @param {Object} config - State config
+ * @param {Object} position - Position config {offsetX, offsetY}
+ */
+function appendCompletionIcon(group, config, position) {
+    if (config.iconType === 'circle') {
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('cx', NODE_WIDTH - position.offsetX);
+        circle.setAttribute('cy', position.offsetY);
+        circle.setAttribute('r', 7);
+        circle.setAttribute('class', `node-completion-circle ${config.cssClass}`);
+        group.appendChild(circle);
+    } else {
+        const icon = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        icon.setAttribute('x', NODE_WIDTH - position.offsetX);
+        icon.setAttribute('y', position.offsetY + 6 + (config.iconYOffset || 0));
+        icon.setAttribute('text-anchor', 'middle');
+        icon.setAttribute('class', `node-completion-icon ${config.cssClass}`);
+        icon.textContent = config.icon;
+        group.appendChild(icon);
+    }
+}
+
+/**
+ * Renders completion indicator on node.
+ * Config-driven implementation using FIRST_CLASS_FIELDS.
  * @param {SVGGElement} g - The node's SVG group element
  * @param {Object} node - The node object
  */
 function renderCompletionIndicator(g, node) {
     if (!node.completion) return;
+    const config = getCompletionStateConfig(node.completion);
+    if (!config) return;
 
-    const comp = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-    comp.setAttribute('class', 'node-completion');
-    comp.setAttribute('data-action', 'cycle-completion');
-
-    // Background circle for click target
-    const bg = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    bg.setAttribute('cx', NODE_WIDTH - NODE_COMPLETION_OFFSET_X);
-    bg.setAttribute('cy', 22);
-    bg.setAttribute('r', 12);
-    bg.setAttribute('class', 'node-completion-bg');
-    comp.appendChild(bg);
-
-    if (node.completion === 'yes') {
-        const icon = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        icon.setAttribute('x', NODE_WIDTH - NODE_COMPLETION_OFFSET_X);
-        icon.setAttribute('y', 28);
-        icon.setAttribute('text-anchor', 'middle');
-        icon.setAttribute('class', 'node-completion-icon completion-yes');
-        icon.textContent = '✓';
-        comp.appendChild(icon);
-    } else if (node.completion === 'partial') {
-        const icon = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        icon.setAttribute('x', NODE_WIDTH - NODE_COMPLETION_OFFSET_X);
-        icon.setAttribute('y', 29);
-        icon.setAttribute('text-anchor', 'middle');
-        icon.setAttribute('class', 'node-completion-icon completion-partial');
-        icon.textContent = '◐';
-        comp.appendChild(icon);
-    } else if (node.completion === 'cancelled') {
-        const icon = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        icon.setAttribute('x', NODE_WIDTH - NODE_COMPLETION_OFFSET_X);
-        icon.setAttribute('y', 28);
-        icon.setAttribute('text-anchor', 'middle');
-        icon.setAttribute('class', 'node-completion-icon completion-cancelled');
-        icon.textContent = '✕';
-        comp.appendChild(icon);
-    } else {
-        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        circle.setAttribute('cx', NODE_WIDTH - NODE_COMPLETION_OFFSET_X);
-        circle.setAttribute('cy', 22);
-        circle.setAttribute('r', 7);
-        circle.setAttribute('class', 'node-completion-circle completion-no');
-        comp.appendChild(circle);
-    }
-
+    const position = FIRST_CLASS_FIELDS.completion.position;
+    const comp = createCompletionGroup();
+    appendCompletionBackground(comp, position);
+    appendCompletionIcon(comp, config, position);
     g.appendChild(comp);
 }
 
