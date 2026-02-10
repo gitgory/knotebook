@@ -1523,6 +1523,26 @@ body {
     background: #16a34a;
 }
 
+.settings-select {
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 6px 12px;
+    font-size: 13px;
+    background: var(--surface);
+    color: var(--text-primary);
+    cursor: pointer;
+    min-width: 100px;
+}
+
+.settings-select:hover {
+    border-color: var(--text-secondary);
+}
+
+.settings-select:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
 #settings-close {
     display: block;
     width: 100%;

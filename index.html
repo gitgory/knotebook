@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>knotebook</title>
     <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
-    <link rel="stylesheet" href="styles/main.css?v=148">
+    <link rel="stylesheet" href="styles/main.css?v=149">
 </head>
 <body>
     <div id="app">
@@ -22,7 +22,7 @@
                     <h2>Your Notebooks</h2>
                     <div id="projects-list"></div>
                 </div>
-                <div id="version-info">CSS v148 | JS v170</div>
+                <div id="version-info">CSS v149 | JS v171</div>
 
                 <!-- Debug Tools (hidden by default) -->
                 <div id="debug-tools" class="hidden">
@@ -184,8 +184,23 @@
             <div id="settings-content">
                 <h3>Notebook Settings</h3>
                 <div class="settings-row">
-                    <span class="settings-label">New notes are tasks by default</span>
-                    <button id="settings-task-toggle" class="toggle-btn">Off</button>
+                    <span class="settings-label">Default completion status</span>
+                    <select id="settings-completion-default" class="settings-select">
+                        <option value="">None</option>
+                        <option value="no">To do</option>
+                        <option value="partial">Partial</option>
+                        <option value="yes">Done</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                </div>
+                <div class="settings-row">
+                    <span class="settings-label">Default priority level</span>
+                    <select id="settings-priority-default" class="settings-select">
+                        <option value="">None</option>
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                    </select>
                 </div>
                 <div id="settings-buttons">
                     <button id="settings-close">Close</button>
@@ -355,6 +370,6 @@
         </div>
     </div>
 
-    <script src="scripts/app.js?v=170"></script>
+    <script src="scripts/app.js?v=171"></script>
 </body>
 </html>

@@ -137,7 +137,10 @@ const state = {
     // Project state (per-notebook)
     currentProjectId: null,        // Currently open project ID
     hashtagColors: {},             // Hashtag -> color mappings
-    projectSettings: { defaultCompletion: null, customFields: [] }, // Per-project settings
+    projectSettings: {
+        fieldDefaults: { completion: null, priority: null },  // Default values for First-Class fields
+        customFields: []  // Second-Class field definitions
+    },
     rootNodes: [],                 // Root level nodes (when navigated into children)
     rootEdges: [],                 // Root level edges (when navigated into children)
 
@@ -1196,7 +1199,7 @@ async function createProject(name) {
         nodes: [],
         edges: [],
         hashtagColors: {},
-        settings: { defaultCompletion: null, customFields: [] },
+        settings: { fieldDefaults: { completion: null, priority: null }, customFields: [] },
         hiddenHashtags: []
     };
 
@@ -1292,8 +1295,21 @@ async function openProject(projectId) {
     state.rootNodes = state.nodes;
     state.rootEdges = state.edges;
     state.hashtagColors = data.hashtagColors || {};
-    state.projectSettings = data.settings || { defaultCompletion: null, customFields: [] };
-    // Ensure customFields array exists for backwards compatibility
+    state.projectSettings = data.settings || { fieldDefaults: { completion: null, priority: null }, customFields: [] };
+
+    // Migrate legacy defaultCompletion to new fieldDefaults structure
+    if (state.projectSettings.defaultCompletion !== undefined) {
+        if (!state.projectSettings.fieldDefaults) {
+            state.projectSettings.fieldDefaults = { completion: null, priority: null };
+        }
+        state.projectSettings.fieldDefaults.completion = state.projectSettings.defaultCompletion;
+        delete state.projectSettings.defaultCompletion;
+    }
+
+    // Ensure fieldDefaults and customFields exist for backwards compatibility
+    if (!state.projectSettings.fieldDefaults) {
+        state.projectSettings.fieldDefaults = { completion: null, priority: null };
+    }
     if (!state.projectSettings.customFields) {
         state.projectSettings.customFields = [];
     }
@@ -3841,8 +3857,12 @@ function createNode(x, y) {
         modified: new Date().toISOString()
     };
     // Apply default completion if set
-    if (state.projectSettings.defaultCompletion) {
-        node.fields.completion = state.projectSettings.defaultCompletion;
+    // Apply default field values from settings
+    const fieldDefaults = state.projectSettings.fieldDefaults || {};
+    for (const fieldName in fieldDefaults) {
+        if (fieldDefaults[fieldName]) {
+            node.fields[fieldName] = fieldDefaults[fieldName];
+        }
     }
     state.nodes.push(node);
     render();
@@ -6284,27 +6304,49 @@ function showToast(message, options = {}) {
 // ============================================================================
 
 /**
+ * Gets the settings object for a project (from memory or storage).
+ * @param {string} projectId - Project ID
+ * @returns {Object} - Settings object with fieldDefaults and customFields
+ */
+function getProjectSettings(projectId) {
+    if (projectId === state.currentProjectId) {
+        return state.projectSettings;
+    } else {
+        const data = loadProjectFromStorage(projectId);
+        const settings = (data && data.settings) || {};
+        // Ensure structure exists
+        if (!settings.fieldDefaults) {
+            settings.fieldDefaults = { completion: null, priority: null };
+        }
+        // Migrate legacy defaultCompletion
+        if (settings.defaultCompletion !== undefined) {
+            settings.fieldDefaults.completion = settings.defaultCompletion;
+        }
+        return settings;
+    }
+}
+
+/**
  * Display the settings modal for a project.
- * Loads settings for target project (current or from context menu), updates toggle
- * UI to reflect current defaultCompletion setting.
+ * Loads settings for target project (current or from context menu), updates
+ * dropdown selects to reflect current field default values.
  *
  * @param {string} projectId - ID of project to show settings for
  */
 function showSettings(projectId) {
     const modal = document.getElementById('settings-modal');
-    const toggle = document.getElementById('settings-task-toggle');
+    const completionSelect = document.getElementById('settings-completion-default');
+    const prioritySelect = document.getElementById('settings-priority-default');
 
-    if (projectId && projectId !== state.currentProjectId) {
-        // Opened from context menu for a non-open project
-        const data = loadProjectFromStorage(projectId);
-        const settings = (data && data.settings) || { defaultCompletion: null };
-        modal.dataset.projectId = projectId;
-        updateSettingsToggle(toggle, settings.defaultCompletion === 'no');
-    } else {
-        // Opened from toolbar for the current project
-        modal.dataset.projectId = state.currentProjectId;
-        updateSettingsToggle(toggle, state.projectSettings.defaultCompletion === 'no');
-    }
+    const targetId = projectId || state.currentProjectId;
+    modal.dataset.projectId = targetId;
+
+    const settings = getProjectSettings(targetId);
+    const fieldDefaults = settings.fieldDefaults || {};
+
+    // Set dropdown values
+    completionSelect.value = fieldDefaults.completion || '';
+    prioritySelect.value = fieldDefaults.priority || '';
 
     modal.classList.remove('hidden');
 }
@@ -6319,41 +6361,33 @@ function hideSettings() {
 }
 
 /**
- * Update the task toggle button UI.
- * Sets text to "On"/"Off" and adds/removes 'active' class.
- *
- * @param {HTMLElement} toggle - Toggle button element
- * @param {boolean} isOn - Whether toggle is on
- */
-function updateSettingsToggle(toggle, isOn) {
-    toggle.textContent = isOn ? 'On' : 'Off';
-    toggle.classList.toggle('active', isOn);
-}
-
-/**
- * Toggle the task mode setting (defaultCompletion).
+ * Handle change to a field default setting.
  * Updates in-memory settings for current project or directly in localStorage for
- * non-open project. Sets defaultCompletion to 'no' when on, null when off.
+ * non-open project.
+ * @param {string} fieldName - Field name (e.g., 'completion', 'priority')
+ * @param {string} value - New default value (empty string for null)
  */
-function toggleSettingsTask() {
+function updateFieldDefault(fieldName, value) {
     const modal = document.getElementById('settings-modal');
-    const toggle = document.getElementById('settings-task-toggle');
-    const isOn = !toggle.classList.contains('active');
-
-    updateSettingsToggle(toggle, isOn);
-    const newValue = isOn ? 'no' : null;
-
     const targetId = modal.dataset.projectId;
+    const newValue = value || null;
+
     if (targetId === state.currentProjectId) {
         // Update in-memory settings for the currently open project
-        state.projectSettings.defaultCompletion = newValue;
+        if (!state.projectSettings.fieldDefaults) {
+            state.projectSettings.fieldDefaults = {};
+        }
+        state.projectSettings.fieldDefaults[fieldName] = newValue;
         scheduleAutoSave();
     } else {
         // Update localStorage directly for a non-open project
         const data = loadProjectFromStorage(targetId);
         if (data) {
             if (!data.settings) data.settings = {};
-            data.settings.defaultCompletion = newValue;
+            if (!data.settings.fieldDefaults) data.settings.fieldDefaults = {};
+            data.settings.fieldDefaults[fieldName] = newValue;
+            // Clean up legacy field if present
+            delete data.settings.defaultCompletion;
             localStorage.setItem(STORAGE_KEY_PREFIX + targetId, JSON.stringify(data));
         }
     }
@@ -6660,12 +6694,18 @@ async function handleImportAsNew() {
     const projectId = await createProject(name);
 
     // Save imported data to the new project
+    const importedSettings = state.pendingImportData.settings || {};
+    // Migrate legacy defaultCompletion if present
+    if (importedSettings.defaultCompletion !== undefined && !importedSettings.fieldDefaults) {
+        importedSettings.fieldDefaults = { completion: importedSettings.defaultCompletion, priority: null };
+        delete importedSettings.defaultCompletion;
+    }
     const projectData = {
         version: 1,
         nodes: state.pendingImportData.nodes || [],
         edges: state.pendingImportData.edges || [],
         hashtagColors: state.pendingImportData.hashtagColors || {},
-        settings: state.pendingImportData.settings || { defaultCompletion: null },
+        settings: importedSettings,
         hiddenHashtags: state.pendingImportData.hiddenHashtags || [],
         theme: state.pendingImportData.theme || getCurrentTheme()
     };
@@ -6721,12 +6761,18 @@ async function handleImportOverwrite() {
     }
 
     // Save imported data to the existing project
+    const importedSettings = importData.settings || {};
+    // Migrate legacy defaultCompletion if present
+    if (importedSettings.defaultCompletion !== undefined && !importedSettings.fieldDefaults) {
+        importedSettings.fieldDefaults = { completion: importedSettings.defaultCompletion, priority: null };
+        delete importedSettings.defaultCompletion;
+    }
     const projectData = {
         version: 1,
         nodes: importData.nodes || [],
         edges: importData.edges || [],
         hashtagColors: importData.hashtagColors || {},
-        settings: importData.settings || { defaultCompletion: null },
+        settings: importedSettings,
         hiddenHashtags: importData.hiddenHashtags || [],
         theme: importData.theme || getCurrentTheme()
     };
@@ -7859,7 +7905,12 @@ function initEventListeners() {
     // Settings modal
     document.getElementById('settings-btn').addEventListener('click', () => showSettings());
     document.getElementById('settings-close').addEventListener('click', hideSettings);
-    document.getElementById('settings-task-toggle').addEventListener('click', toggleSettingsTask);
+    document.getElementById('settings-completion-default').addEventListener('change', (e) => {
+        updateFieldDefault('completion', e.target.value);
+    });
+    document.getElementById('settings-priority-default').addEventListener('change', (e) => {
+        updateFieldDefault('priority', e.target.value);
+    });
     document.getElementById('settings-modal').addEventListener('click', (e) => {
         if (e.target.id === 'settings-modal') {
             hideSettings();
