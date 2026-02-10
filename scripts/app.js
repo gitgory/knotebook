@@ -137,7 +137,7 @@ const state = {
     // Project state (per-notebook)
     currentProjectId: null,        // Currently open project ID
     hashtagColors: {},             // Hashtag -> color mappings
-    projectSettings: { defaultCompletion: null }, // Per-project settings
+    projectSettings: { defaultCompletion: null, customFields: [] }, // Per-project settings
     rootNodes: [],                 // Root level nodes (when navigated into children)
     rootEdges: [],                 // Root level edges (when navigated into children)
 
@@ -365,39 +365,65 @@ function setFieldButtons(fieldName, value) {
 }
 
 /**
- * Gets all First Class Field values from editor.
+ * Gets all field values from editor (First-Class and Second-Class).
  * @returns {Object} - Object with fieldName: value pairs
  */
 function getAllFieldValues() {
     const values = {};
+
+    // Get First-Class field values (button-based)
     for (const fieldName in FIRST_CLASS_FIELDS) {
         values[fieldName] = getFieldValue(fieldName) || null;
     }
+
+    // Get Second-Class field values (various input types)
+    const customFields = getCustomFieldDefinitions();
+    for (const fieldDef of customFields) {
+        values[fieldDef.name] = getCustomFieldInputValue(fieldDef);
+    }
+
     return values;
 }
 
 /**
- * Loads all First Class Field values into editor buttons.
+ * Loads all field values into editor controls (First-Class and Second-Class).
  * Uses unified field storage (node.fields).
  * @param {Object} node - Node object with field values
  */
 function loadAllFieldValues(node) {
+    // Load First-Class field values into buttons
     for (const fieldName in FIRST_CLASS_FIELDS) {
         const value = getNodeFieldValue(node, fieldName) || '';
         setFieldButtons(fieldName, value);
     }
+
+    // Load Second-Class field values into their inputs
+    const customFields = getCustomFieldDefinitions();
+    for (const fieldDef of customFields) {
+        const value = getNodeFieldValue(node, fieldDef.name);
+        setCustomFieldInputValue(fieldDef, value);
+    }
 }
 
 /**
- * Updates all First Class Fields on a node.
+ * Updates all fields on a node (First-Class and Second-Class).
  * Uses unified field storage (node.fields).
  * @param {Object} node - Node to update
  * @param {Object} fieldValues - Object with fieldName: value pairs
  */
 function updateNodeFields(node, fieldValues) {
+    // Update First-Class fields
     for (const fieldName in FIRST_CLASS_FIELDS) {
         if (fieldName in fieldValues) {
             setNodeFieldValue(node, fieldName, fieldValues[fieldName]);
+        }
+    }
+
+    // Update Second-Class fields
+    const customFields = getCustomFieldDefinitions();
+    for (const fieldDef of customFields) {
+        if (fieldDef.name in fieldValues) {
+            setNodeFieldValue(node, fieldDef.name, fieldValues[fieldDef.name]);
         }
     }
 }
@@ -501,6 +527,196 @@ function migrateAllNodeFields(nodes) {
             migrateAllNodeFields(node.children);
         }
     }
+}
+
+// ============================================================================
+// UNIFIED FIELD DEFINITIONS (First-Class + Second-Class)
+// ============================================================================
+
+/**
+ * Gets all field definitions for the current notebook.
+ * Combines First-Class (global) and Second-Class (per-notebook) fields.
+ * Returns normalized field definition objects for uniform handling.
+ *
+ * @param {Object} options - Options
+ * @param {boolean} options.includeFirstClass - Include First Class Fields (default: true)
+ * @param {boolean} options.includeSecondClass - Include Second Class Fields (default: true)
+ * @returns {Array} - Array of normalized field definition objects
+ */
+function getFieldDefinitions({ includeFirstClass = true, includeSecondClass = true } = {}) {
+    const fields = [];
+
+    if (includeFirstClass) {
+        for (const fieldName in FIRST_CLASS_FIELDS) {
+            const config = FIRST_CLASS_FIELDS[fieldName];
+            fields.push({
+                name: fieldName,
+                label: fieldName.charAt(0).toUpperCase() + fieldName.slice(1),
+                type: 'single-select',
+                options: config.cycleOrder || [],
+                isFirstClass: true,
+                _config: config // Original config for rendering
+            });
+        }
+    }
+
+    if (includeSecondClass) {
+        const customFields = state.projectSettings?.customFields || [];
+        for (const field of customFields) {
+            fields.push({
+                ...field,
+                isFirstClass: false
+            });
+        }
+    }
+
+    return fields;
+}
+
+/**
+ * Gets the custom field definitions for the current notebook.
+ * @returns {Array} - Array of custom field definitions
+ */
+function getCustomFieldDefinitions() {
+    return state.projectSettings?.customFields || [];
+}
+
+/**
+ * Gets value from a custom field input in the editor.
+ * Handles different field types (single-select, text, number, date, checkbox, multi-select).
+ * @param {Object} fieldDef - Field definition
+ * @returns {*} - Field value
+ */
+function getCustomFieldInputValue(fieldDef) {
+    switch (fieldDef.type) {
+        case 'single-select':
+            const activeBtn = document.querySelector(`.${fieldDef.name}-btn.active`);
+            return activeBtn ? (activeBtn.dataset.value || null) : null;
+
+        case 'multi-select':
+            const selectedBtns = document.querySelectorAll(`.${fieldDef.name}-btn.active`);
+            const values = [];
+            selectedBtns.forEach(btn => {
+                if (btn.dataset.value) values.push(btn.dataset.value);
+            });
+            return values.length > 0 ? values : null;
+
+        case 'text':
+            const textInput = document.querySelector(`input.field-input[data-field-name="${fieldDef.name}"]`);
+            return textInput?.value || null;
+
+        case 'number':
+            const numInput = document.querySelector(`input.field-input[data-field-name="${fieldDef.name}"]`);
+            if (!numInput || numInput.value === '') return null;
+            return Number(numInput.value);
+
+        case 'date':
+            const dateInput = document.querySelector(`input.field-input[data-field-name="${fieldDef.name}"]`);
+            return dateInput?.value || null;
+
+        case 'checkbox':
+            const checkbox = document.querySelector(`input.field-checkbox[data-field-name="${fieldDef.name}"]`);
+            return checkbox ? checkbox.checked : false;
+
+        default:
+            return null;
+    }
+}
+
+/**
+ * Sets value in a custom field input in the editor.
+ * Handles different field types.
+ * @param {Object} fieldDef - Field definition
+ * @param {*} value - Value to set
+ */
+function setCustomFieldInputValue(fieldDef, value) {
+    switch (fieldDef.type) {
+        case 'single-select':
+            setFieldButtons(fieldDef.name, value || '');
+            break;
+
+        case 'multi-select':
+            // Clear all buttons first
+            document.querySelectorAll(`.${fieldDef.name}-btn`).forEach(btn => {
+                btn.classList.remove('active');
+            });
+            // Activate selected values
+            if (Array.isArray(value)) {
+                value.forEach(v => {
+                    const btn = document.querySelector(`.${fieldDef.name}-btn[data-value="${v}"]`);
+                    if (btn) btn.classList.add('active');
+                });
+            }
+            break;
+
+        case 'text':
+        case 'date':
+            const textInput = document.querySelector(`input.field-input[data-field-name="${fieldDef.name}"]`);
+            if (textInput) textInput.value = value ?? '';
+            break;
+
+        case 'number':
+            const numInput = document.querySelector(`input.field-input[data-field-name="${fieldDef.name}"]`);
+            if (numInput) numInput.value = value ?? '';
+            break;
+
+        case 'checkbox':
+            const checkbox = document.querySelector(`input.field-checkbox[data-field-name="${fieldDef.name}"]`);
+            if (checkbox) checkbox.checked = !!value;
+            break;
+    }
+}
+
+/**
+ * Collects all used values for a custom field across all nodes.
+ * Used for auto-complete/suggestions in single-select fields with allowNew.
+ * @param {string} fieldName - Field name
+ * @returns {Array} - Array of unique values used in this field
+ */
+function getFieldUsedValues(fieldName) {
+    const values = new Set();
+
+    function collectFromNodes(nodes) {
+        for (const node of nodes) {
+            const value = node.fields?.[fieldName];
+            if (value !== null && value !== undefined) {
+                if (Array.isArray(value)) {
+                    value.forEach(v => values.add(v));
+                } else {
+                    values.add(value);
+                }
+            }
+            if (node.children && node.children.length > 0) {
+                collectFromNodes(node.children);
+            }
+        }
+    }
+
+    // Collect from current level and root
+    collectFromNodes(state.nodes);
+    if (state.rootNodes && state.rootNodes !== state.nodes) {
+        collectFromNodes(state.rootNodes);
+    }
+
+    return Array.from(values).sort();
+}
+
+/**
+ * Gets available options for a field, combining predefined options with used values.
+ * For hybrid option handling (predefined + auto-collected).
+ * @param {Object} fieldDef - Field definition
+ * @returns {Array} - Array of option values
+ */
+function getFieldOptions(fieldDef) {
+    const options = new Set(fieldDef.options || []);
+
+    // Add used values if field allows new entries or has no predefined options
+    if (fieldDef.allowNew || options.size === 0) {
+        const usedValues = getFieldUsedValues(fieldDef.name);
+        usedValues.forEach(v => options.add(v));
+    }
+
+    return Array.from(options).sort();
 }
 
 // Autocomplete state (kept separate as it's transient UI state)
@@ -970,7 +1186,7 @@ async function createProject(name) {
         nodes: [],
         edges: [],
         hashtagColors: {},
-        settings: { defaultCompletion: null },
+        settings: { defaultCompletion: null, customFields: [] },
         hiddenHashtags: []
     };
 
@@ -1066,7 +1282,11 @@ async function openProject(projectId) {
     state.rootNodes = state.nodes;
     state.rootEdges = state.edges;
     state.hashtagColors = data.hashtagColors || {};
-    state.projectSettings = data.settings || { defaultCompletion: null };
+    state.projectSettings = data.settings || { defaultCompletion: null, customFields: [] };
+    // Ensure customFields array exists for backwards compatibility
+    if (!state.projectSettings.customFields) {
+        state.projectSettings.customFields = [];
+    }
     state.hiddenHashtags = data.hiddenHashtags || [];
 
     // Apply notebook's theme (or use current global theme if not set)
@@ -4345,11 +4565,19 @@ function openBatchEditor(nodes) {
 
     updateHashtagDisplay(allTags, true, nodes.length, tagCounts);
 
-    // Load field values (show value if all same, otherwise clear)
+    // Load First-Class field values (show value if all same, otherwise clear)
     for (const fieldName in FIRST_CLASS_FIELDS) {
         const values = nodes.map(n => getNodeFieldValue(n, fieldName));
         const allSame = values.every(v => v === values[0]);
         setFieldButtons(fieldName, allSame ? (values[0] || '') : '');
+    }
+
+    // Load Second-Class field values (show value if all same, otherwise clear)
+    const customFields = getCustomFieldDefinitions();
+    for (const fieldDef of customFields) {
+        const values = nodes.map(n => getNodeFieldValue(n, fieldDef.name));
+        const allSame = values.every(v => JSON.stringify(v) === JSON.stringify(values[0]));
+        setCustomFieldInputValue(fieldDef, allSame ? values[0] : null);
     }
 
     // Show modal and focus textarea
@@ -4614,7 +4842,7 @@ async function validateSingleNodeInput(titleValue, contentValue) {
  * @param {string} nodeId - The node's ID
  * @param {string} titleValue - Title input value
  * @param {string} contentValue - Content textarea value
- * @param {Object} fieldValues - Object with First Class Field values
+ * @param {Object} fieldValues - Object with all field values (First-Class and Second-Class)
  */
 function saveSingleNode(node, nodeId, titleValue, contentValue, fieldValues) {
     if (!node) return;
@@ -4624,7 +4852,7 @@ function saveSingleNode(node, nodeId, titleValue, contentValue, fieldValues) {
     node.hashtags = parseHashtags(contentValue);
     node.modified = new Date().toISOString();
 
-    // Update all First Class Fields
+    // Update all fields (First-Class and Second-Class)
     updateNodeFields(node, fieldValues);
 
     // Delete empty nodes (created but never filled in)
@@ -4644,7 +4872,7 @@ function cleanupEditorState() {
 
 /**
  * Save editor changes and close.
- * In batch mode, adds/removes hashtags and updates all First Class Fields for all selected nodes.
+ * In batch mode, adds/removes hashtags and updates all fields for all selected nodes.
  * In single mode, validates and saves title/content/hashtags/fields. Updates modified timestamp,
  * deletes empty nodes, closes editor, and triggers render.
  * @returns {Promise<void>}
@@ -4657,10 +4885,19 @@ async function saveEditor() {
         removeBatchTags(nodes, state.removedTagsInSession);
         addBatchTags(nodes, formData.newTags);
 
-        // Update all First Class Fields in batch
+        // Update all First-Class fields in batch
         for (const fieldName in FIRST_CLASS_FIELDS) {
             if (formData[fieldName]) {
                 updateBatchField(nodes, fieldName, formData[fieldName]);
+            }
+        }
+
+        // Update all Second-Class fields in batch
+        const customFields = getCustomFieldDefinitions();
+        for (const fieldDef of customFields) {
+            const value = formData[fieldDef.name];
+            if (value !== null && value !== undefined) {
+                updateBatchField(nodes, fieldDef.name, value);
             }
         }
 
@@ -4668,13 +4905,8 @@ async function saveEditor() {
     } else {
         if (!await validateSingleNodeInput(formData.titleInput, formData.textarea)) return;
 
-        // Extract field values object
-        const fieldValues = {};
-        for (const fieldName in FIRST_CLASS_FIELDS) {
-            fieldValues[fieldName] = formData[fieldName];
-        }
-
-        saveSingleNode(node, nodeId, formData.titleInput, formData.textarea, fieldValues);
+        // formData already contains all field values from getAllFieldValues()
+        saveSingleNode(node, nodeId, formData.titleInput, formData.textarea, formData);
     }
 
     cleanupEditorState();
