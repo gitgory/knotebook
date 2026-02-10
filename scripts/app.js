@@ -4477,8 +4477,9 @@ async function validateSingleNodeInput(titleValue, contentValue) {
  * @param {string} titleValue - Title input value
  * @param {string} contentValue - Content textarea value
  * @param {string} completionValue - Completion state value
+ * @param {string} priorityValue - Priority state value
  */
-function saveSingleNode(node, nodeId, titleValue, contentValue, completionValue) {
+function saveSingleNode(node, nodeId, titleValue, contentValue, completionValue, priorityValue) {
     if (!node) return;
 
     node.title = titleValue;
@@ -4486,6 +4487,7 @@ function saveSingleNode(node, nodeId, titleValue, contentValue, completionValue)
     node.hashtags = parseHashtags(contentValue);
     node.modified = new Date().toISOString();
     node.completion = completionValue || null;
+    node.priority = priorityValue || null;
 
     // Delete empty nodes (created but never filled in)
     if (!node.title.trim() && !node.content.trim()) {
@@ -4521,7 +4523,7 @@ async function saveEditor() {
         updateBatchTimestamps(nodes);
     } else {
         if (!await validateSingleNodeInput(formData.titleInput, formData.textarea)) return;
-        saveSingleNode(node, nodeId, formData.titleInput, formData.textarea, formData.completionValue);
+        saveSingleNode(node, nodeId, formData.titleInput, formData.textarea, formData.completionValue, formData.priorityValue);
     }
 
     cleanupEditorState();
