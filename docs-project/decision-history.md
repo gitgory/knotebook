@@ -4,6 +4,60 @@ This file tracks significant technical and design decisions made during developm
 
 ---
 
+## 2026-02-09: Unified Field Storage (node.fields)
+
+DECISION: Store ALL fields (First-Class and Second-Class) in node.fields.{fieldName}
+CHOSE: Unified storage with migration from legacy top-level properties
+NOT: Keep First-Class at top-level (node.completion, node.priority) and Second-Class nested
+
+Reasoning:
+- Symmetry: Same access pattern for all field types
+- Simplified code: Single getNodeFieldValue()/setNodeFieldValue() works for everything
+- Future-proof: Adding any new field works the same way
+- Migration: Automatic on load, backwards compatible
+
+Implementation:
+- node.fields.{fieldName} for all fields
+- migrateNodeFields() moves legacy node.completion/priority to node.fields
+- getNodeFieldValue(node, fieldName) / setNodeFieldValue(node, fieldName, value)
+
+---
+
+## 2026-02-09: Settings UI - Field Defaults as Dropdowns
+
+DECISION: Replace single "New notes are tasks by default" toggle with dropdown per field
+CHOSE: Dropdown selects for each First-Class field's default value
+NOT: Keep toggle approach, add more toggles per field
+
+Reasoning:
+- Flexibility: Can default to any state, not just on/off
+- Scalability: Same pattern works for any First-Class field
+- Clearer UI: Shows exact default value, not cryptic toggle
+
+Implementation:
+- projectSettings.fieldDefaults.{fieldName} structure
+- Settings modal with select dropdowns
+- Migrates legacy defaultCompletion to fieldDefaults.completion
+
+---
+
+## 2026-02-09: Second-Class Fields - Hybrid Options
+
+DECISION: Field options use hybrid approach (predefined + auto-collected)
+CHOSE: Combine predefined options with values used across nodes
+NOT: Only predefined options (rigid), only auto-collected (no suggestions)
+
+Reasoning:
+- Best of both: Suggestions for consistency, flexibility for new values
+- Like hashtags: Auto-complete from existing, can add new
+- Reduces typos: Dropdown with known values, but not locked
+
+Implementation:
+- getFieldOptions(fieldDef) combines predefined + getFieldUsedValues()
+- allowNew flag on field definition enables adding new values
+
+---
+
 ## 2026-02-09: First Class Fields - Generalized Save/Load Architecture
 
 DECISION: Generalize editor save/load workflow to automatically handle ANY field in FIRST_CLASS_FIELDS
