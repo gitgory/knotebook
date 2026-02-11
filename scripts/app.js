@@ -7014,9 +7014,8 @@ async function saveFieldFromModal() {
         // Check if type changed
         const typeChanged = field.type !== type;
         if (typeChanged) {
-            const confirmed = await showConfirm(
-                'Change field type?',
-                'Changing the field type may affect existing note values. Single-select stores one value, multi-select stores an array.'
+            const confirmed = await showConfirmation(
+                'Change field type?\n\nChanging the field type may affect existing note values. Single-select stores one value, multi-select stores an array.'
             );
             if (!confirmed) return;
         }
@@ -7070,9 +7069,8 @@ async function deleteCustomField(index) {
 
     if (!field) return;
 
-    const confirmed = await showConfirm(
-        `Delete field "${field.label || field.name}"?`,
-        'This will remove the field definition. Existing field values in notes will remain but will no longer be editable.'
+    const confirmed = await showConfirmation(
+        `Delete field "${field.label || field.name}"?\n\nThis will remove the field definition. Existing field values in notes will remain but will no longer be editable.`
     );
 
     if (!confirmed) return;
