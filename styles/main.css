@@ -1483,6 +1483,7 @@ body {
     max-width: 90%;
     max-height: 80vh;
     overflow-y: auto;
+    margin-top: 60px;
 }
 
 #settings-content h3 {
