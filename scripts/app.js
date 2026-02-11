@@ -4733,7 +4733,7 @@ function saveCustomFieldsFromEditor(node, nodes, isBatchMode) {
 // ----------------------------------------------------------------------------
 
 /**
- * Render a single-select field control (button group, one active).
+ * Render a single-select field control (dropdown, one choice).
  * @param {Object} fieldDef - Field definition from settings
  * @returns {HTMLElement} - The field control container
  */
@@ -4749,36 +4749,26 @@ function renderSingleSelectField(fieldDef) {
     label.textContent = `${fieldDef.label || fieldDef.name}:`;
     control.appendChild(label);
 
-    // None button
-    const noneBtn = document.createElement('button');
-    noneBtn.className = 'custom-field-btn';
-    noneBtn.dataset.value = '';
-    noneBtn.textContent = 'None';
-    noneBtn.type = 'button';
-    control.appendChild(noneBtn);
+    // Dropdown select
+    const select = document.createElement('select');
+    select.className = 'custom-field-select';
+    select.dataset.fieldName = fieldDef.name;
 
-    // Option buttons
+    // None option
+    const noneOption = document.createElement('option');
+    noneOption.value = '';
+    noneOption.textContent = 'None';
+    select.appendChild(noneOption);
+
+    // Field options
     (fieldDef.options || []).forEach(option => {
-        const btn = document.createElement('button');
-        btn.className = 'custom-field-btn';
-        btn.dataset.value = option;
-        btn.textContent = option;
-        btn.type = 'button';
-        control.appendChild(btn);
+        const optionEl = document.createElement('option');
+        optionEl.value = option;
+        optionEl.textContent = option;
+        select.appendChild(optionEl);
     });
 
-    // Click handler for single-select (radio behavior)
-    control.addEventListener('click', (e) => {
-        if (e.target.classList.contains('custom-field-btn')) {
-            // Remove active from all buttons in this control
-            control.querySelectorAll('.custom-field-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            // Add active to clicked button
-            e.target.classList.add('active');
-        }
-    });
-
+    control.appendChild(select);
     return control;
 }
 
@@ -4789,8 +4779,8 @@ function renderSingleSelectField(fieldDef) {
  * @param {boolean} isBatchMode - Batch mode flag
  */
 function loadSingleSelectFieldValue(fieldDef, nodeOrNodes, isBatchMode) {
-    const control = document.querySelector(`.custom-field-control[data-field-name="${fieldDef.name}"]`);
-    if (!control) return;
+    const select = document.querySelector(`.custom-field-select[data-field-name="${fieldDef.name}"]`);
+    if (!select) return;
 
     let valueToShow = null;
 
@@ -4801,21 +4791,14 @@ function loadSingleSelectFieldValue(fieldDef, nodeOrNodes, isBatchMode) {
         if (uniqueValues.length === 1) {
             valueToShow = uniqueValues[0];
         }
-        // If mixed, leave all buttons inactive
+        // If mixed, set to empty (None)
     } else {
         // Single mode: show node's current value
         valueToShow = getNodeFieldValue(nodeOrNodes, fieldDef.name);
     }
 
-    // Activate the button matching the value
-    const buttons = control.querySelectorAll('.custom-field-btn');
-    buttons.forEach(btn => {
-        if (btn.dataset.value === (valueToShow || '')) {
-            btn.classList.add('active');
-        } else {
-            btn.classList.remove('active');
-        }
-    });
+    // Set dropdown value
+    select.value = valueToShow || '';
 }
 
 /**
@@ -4825,20 +4808,16 @@ function loadSingleSelectFieldValue(fieldDef, nodeOrNodes, isBatchMode) {
  * @param {boolean} isBatchMode - Batch mode flag
  */
 function saveSingleSelectFieldValue(fieldDef, nodeOrNodes, isBatchMode) {
-    const control = document.querySelector(`.custom-field-control[data-field-name="${fieldDef.name}"]`);
-    if (!control) return;
+    const select = document.querySelector(`.custom-field-select[data-field-name="${fieldDef.name}"]`);
+    if (!select) return;
 
-    const activeBtn = control.querySelector('.custom-field-btn.active');
-    const value = activeBtn ? (activeBtn.dataset.value || null) : null;
+    const value = select.value || null;
 
     if (isBatchMode) {
-        // Only update if a button is active (user made a selection)
-        if (activeBtn) {
-            nodeOrNodes.forEach(node => {
-                setNodeFieldValue(node, fieldDef.name, value);
-            });
-        }
-        // If no button active, leave nodes unchanged (mixed values preserved)
+        // In batch mode: always save (user explicitly chose a value from dropdown)
+        nodeOrNodes.forEach(node => {
+            setNodeFieldValue(node, fieldDef.name, value);
+        });
     } else {
         // Single mode: always save the value
         setNodeFieldValue(nodeOrNodes, fieldDef.name, value);
@@ -4850,7 +4829,7 @@ function saveSingleSelectFieldValue(fieldDef, nodeOrNodes, isBatchMode) {
 // ----------------------------------------------------------------------------
 
 /**
- * Render a multi-select field control (button group, multiple can be active).
+ * Render a multi-select field control (dropdown with checkboxes).
  * @param {Object} fieldDef - Field definition from settings
  * @returns {HTMLElement} - The field control container
  */
@@ -4866,45 +4845,85 @@ function renderMultiSelectField(fieldDef) {
     label.textContent = `${fieldDef.label || fieldDef.name}:`;
     control.appendChild(label);
 
-    // None button (clears all selections)
-    const noneBtn = document.createElement('button');
-    noneBtn.className = 'custom-field-btn';
-    noneBtn.dataset.value = '';
-    noneBtn.textContent = 'None';
-    noneBtn.type = 'button';
-    control.appendChild(noneBtn);
+    // Dropdown wrapper
+    const dropdownWrapper = document.createElement('div');
+    dropdownWrapper.className = 'multi-select-dropdown';
+    dropdownWrapper.dataset.fieldName = fieldDef.name;
 
-    // Option buttons
+    // Display button (shows selected items)
+    const displayBtn = document.createElement('button');
+    displayBtn.type = 'button';
+    displayBtn.className = 'multi-select-display';
+    displayBtn.textContent = 'None';
+    dropdownWrapper.appendChild(displayBtn);
+
+    // Dropdown menu (contains checkboxes)
+    const menu = document.createElement('div');
+    menu.className = 'multi-select-menu hidden';
+
+    // Add checkbox for each option
     (fieldDef.options || []).forEach(option => {
-        const btn = document.createElement('button');
-        btn.className = 'custom-field-btn';
-        btn.dataset.value = option;
-        btn.textContent = option;
-        btn.type = 'button';
-        control.appendChild(btn);
+        const item = document.createElement('label');
+        item.className = 'multi-select-item';
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.value = option;
+        checkbox.dataset.fieldName = fieldDef.name;
+
+        const span = document.createElement('span');
+        span.textContent = option;
+
+        item.appendChild(checkbox);
+        item.appendChild(span);
+        menu.appendChild(item);
+
+        // Update display when checkbox changes
+        checkbox.addEventListener('change', () => {
+            updateMultiSelectDisplay(fieldDef.name);
+        });
     });
 
-    // Click handler for multi-select (checkbox behavior)
-    control.addEventListener('click', (e) => {
-        if (e.target.classList.contains('custom-field-btn')) {
-            if (e.target.dataset.value === '') {
-                // "None" button clicked - clear all
-                control.querySelectorAll('.custom-field-btn').forEach(btn => {
-                    btn.classList.remove('multi-active');
-                });
-            } else {
-                // Option button clicked - toggle it
-                e.target.classList.toggle('multi-active');
-                // Remove "None" active state if any option is selected
-                const noneButton = control.querySelector('.custom-field-btn[data-value=""]');
-                if (noneButton) {
-                    noneButton.classList.remove('multi-active');
-                }
-            }
+    dropdownWrapper.appendChild(menu);
+    control.appendChild(dropdownWrapper);
+
+    // Toggle dropdown on button click
+    displayBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        // Close other dropdowns
+        document.querySelectorAll('.multi-select-menu').forEach(m => {
+            if (m !== menu) m.classList.add('hidden');
+        });
+        menu.classList.toggle('hidden');
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!dropdownWrapper.contains(e.target)) {
+            menu.classList.add('hidden');
         }
     });
 
     return control;
+}
+
+/**
+ * Update the display text for a multi-select dropdown.
+ * @param {string} fieldName - Field name
+ */
+function updateMultiSelectDisplay(fieldName) {
+    const wrapper = document.querySelector(`.multi-select-dropdown[data-field-name="${fieldName}"]`);
+    if (!wrapper) return;
+
+    const displayBtn = wrapper.querySelector('.multi-select-display');
+    const checkboxes = wrapper.querySelectorAll('input[type="checkbox"]:checked');
+
+    if (checkboxes.length === 0) {
+        displayBtn.textContent = 'None';
+    } else {
+        const selected = Array.from(checkboxes).map(cb => cb.value);
+        displayBtn.textContent = selected.join(', ');
+    }
 }
 
 /**
@@ -4914,8 +4933,8 @@ function renderMultiSelectField(fieldDef) {
  * @param {boolean} isBatchMode - Batch mode flag
  */
 function loadMultiSelectFieldValue(fieldDef, nodeOrNodes, isBatchMode) {
-    const control = document.querySelector(`.custom-field-control[data-field-name="${fieldDef.name}"]`);
-    if (!control) return;
+    const wrapper = document.querySelector(`.multi-select-dropdown[data-field-name="${fieldDef.name}"]`);
+    if (!wrapper) return;
 
     let valuesToShow = [];
 
@@ -4933,30 +4952,20 @@ function loadMultiSelectFieldValue(fieldDef, nodeOrNodes, isBatchMode) {
         if (allSame) {
             valuesToShow = allValues[0];
         }
-        // If mixed, leave all buttons inactive
+        // If mixed, leave all checkboxes unchecked
     } else {
         // Single mode: show node's current values
         const val = getNodeFieldValue(nodeOrNodes, fieldDef.name);
         valuesToShow = Array.isArray(val) ? val : [];
     }
 
-    // Activate buttons matching the values
-    const buttons = control.querySelectorAll('.custom-field-btn');
-    buttons.forEach(btn => {
-        if (btn.dataset.value === '') {
-            // "None" button active if no values selected
-            if (valuesToShow.length === 0) {
-                btn.classList.add('multi-active');
-            }
-        } else {
-            // Option button active if in values array
-            if (valuesToShow.includes(btn.dataset.value)) {
-                btn.classList.add('multi-active');
-            } else {
-                btn.classList.remove('multi-active');
-            }
-        }
+    // Check the checkboxes matching the values
+    const checkboxes = wrapper.querySelectorAll('input[type="checkbox"]');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = valuesToShow.includes(checkbox.value);
     });
+
+    updateMultiSelectDisplay(fieldDef.name);
 }
 
 /**
@@ -4966,24 +4975,19 @@ function loadMultiSelectFieldValue(fieldDef, nodeOrNodes, isBatchMode) {
  * @param {boolean} isBatchMode - Batch mode flag
  */
 function saveMultiSelectFieldValue(fieldDef, nodeOrNodes, isBatchMode) {
-    const control = document.querySelector(`.custom-field-control[data-field-name="${fieldDef.name}"]`);
-    if (!control) return;
+    const wrapper = document.querySelector(`.multi-select-dropdown[data-field-name="${fieldDef.name}"]`);
+    if (!wrapper) return;
 
-    const activeButtons = control.querySelectorAll('.custom-field-btn.multi-active');
-    const values = Array.from(activeButtons)
-        .map(btn => btn.dataset.value)
-        .filter(v => v !== ''); // Exclude "None" button
+    const checkedBoxes = wrapper.querySelectorAll('input[type="checkbox"]:checked');
+    const values = Array.from(checkedBoxes).map(cb => cb.value);
 
     const finalValue = values.length > 0 ? values : null;
 
     if (isBatchMode) {
-        // Only update if user made a selection (any button is active)
-        if (activeButtons.length > 0) {
-            nodeOrNodes.forEach(node => {
-                setNodeFieldValue(node, fieldDef.name, finalValue);
-            });
-        }
-        // If no buttons active, leave nodes unchanged
+        // In batch mode: always save (user explicitly interacted with dropdown)
+        nodeOrNodes.forEach(node => {
+            setNodeFieldValue(node, fieldDef.name, finalValue);
+        });
     } else {
         // Single mode: always save the values
         setNodeFieldValue(nodeOrNodes, fieldDef.name, finalValue);
