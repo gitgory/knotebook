@@ -4602,13 +4602,8 @@ function openBatchEditor(nodes) {
         setFieldButtons(fieldName, allSame ? (values[0] || '') : '');
     }
 
-    // Load Second-Class field values (show value if all same, otherwise clear)
-    const customFields = getCustomFieldDefinitions();
-    for (const fieldDef of customFields) {
-        const values = nodes.map(n => getNodeFieldValue(n, fieldDef.name));
-        const allSame = values.every(v => JSON.stringify(v) === JSON.stringify(values[0]));
-        setCustomFieldInputValue(fieldDef, allSame ? values[0] : null);
-    }
+    // Render and load Second-Class custom fields
+    renderCustomFieldsInEditor(null, nodes, true);
 
     // Show modal and focus textarea
     elements.modal.classList.remove('hidden');
@@ -4649,8 +4644,11 @@ function openSingleEditor(node, nodeId) {
 
     updateHashtagDisplay(node.hashtags || [], false, 1, {});
 
-    // Load all field values into editor
+    // Load First-Class field values into editor
     loadAllFieldValues(node);
+
+    // Render and load Second-Class custom fields
+    renderCustomFieldsInEditor(node, null, false);
 
     // Update enter button based on whether node has children
     if (node.children && node.children.length > 0) {
@@ -4669,6 +4667,350 @@ function openSingleEditor(node, nodeId) {
     elements.titleInput.setSelectionRange(0, 0);
     elements.titleInput.scrollLeft = 0;
 }
+
+// ============================================================================
+// CUSTOM FIELDS RENDERING (Editor Integration)
+// ============================================================================
+
+/**
+ * Field type renderer registry.
+ * Each field type has render, load, and save functions.
+ */
+const FIELD_TYPE_RENDERERS = {
+    'single-select': {
+        render: renderSingleSelectField,
+        load: loadSingleSelectFieldValue,
+        save: saveSingleSelectFieldValue
+    },
+    'multi-select': {
+        render: renderMultiSelectField,
+        load: loadMultiSelectFieldValue,
+        save: saveMultiSelectFieldValue
+    }
+    // Future: 'text', 'number', 'date', 'checkbox', 'url'
+};
+
+/**
+ * Render all custom fields in the editor based on project settings.
+ * Called when opening editor (single or batch mode).
+ * @param {Object} node - The node being edited (null in batch mode)
+ * @param {Array} nodes - Array of nodes (batch mode only)
+ * @param {boolean} isBatchMode - Whether in batch editing mode
+ */
+function renderCustomFieldsInEditor(node, nodes, isBatchMode) {
+    const container = document.getElementById('custom-fields-container');
+    container.replaceChildren(); // Clear existing fields
+
+    const customFields = state.projectSettings.customFields || [];
+    if (customFields.length === 0) return; // No custom fields defined
+
+    customFields.forEach(fieldDef => {
+        const renderer = FIELD_TYPE_RENDERERS[fieldDef.type];
+        if (!renderer) {
+            console.warn(`No renderer for field type: ${fieldDef.type}`);
+            return;
+        }
+
+        // Render the field control
+        const fieldControl = renderer.render(fieldDef);
+        container.appendChild(fieldControl);
+
+        // Load current value(s) into the control
+        if (isBatchMode) {
+            renderer.load(fieldDef, nodes, true);
+        } else {
+            renderer.load(fieldDef, node, false);
+        }
+    });
+}
+
+/**
+ * Save all custom field values from editor controls to node(s).
+ * Called when saving editor.
+ * @param {Object} node - The node being saved (null in batch mode)
+ * @param {Array} nodes - Array of nodes (batch mode only)
+ * @param {boolean} isBatchMode - Whether in batch editing mode
+ */
+function saveCustomFieldsFromEditor(node, nodes, isBatchMode) {
+    const customFields = state.projectSettings.customFields || [];
+
+    customFields.forEach(fieldDef => {
+        const renderer = FIELD_TYPE_RENDERERS[fieldDef.type];
+        if (!renderer) return;
+
+        if (isBatchMode) {
+            renderer.save(fieldDef, nodes, true);
+        } else {
+            renderer.save(fieldDef, node, false);
+        }
+    });
+}
+
+// ----------------------------------------------------------------------------
+// Single-Select Field Type
+// ----------------------------------------------------------------------------
+
+/**
+ * Render a single-select field control (button group, one active).
+ * @param {Object} fieldDef - Field definition from settings
+ * @returns {HTMLElement} - The field control container
+ */
+function renderSingleSelectField(fieldDef) {
+    const control = document.createElement('div');
+    control.className = 'custom-field-control';
+    control.dataset.fieldName = fieldDef.name;
+    control.dataset.fieldType = 'single-select';
+
+    // Label
+    const label = document.createElement('span');
+    label.className = 'custom-field-label';
+    label.textContent = `${fieldDef.label || fieldDef.name}:`;
+    control.appendChild(label);
+
+    // None button
+    const noneBtn = document.createElement('button');
+    noneBtn.className = 'custom-field-btn';
+    noneBtn.dataset.value = '';
+    noneBtn.textContent = 'None';
+    noneBtn.type = 'button';
+    control.appendChild(noneBtn);
+
+    // Option buttons
+    (fieldDef.options || []).forEach(option => {
+        const btn = document.createElement('button');
+        btn.className = 'custom-field-btn';
+        btn.dataset.value = option;
+        btn.textContent = option;
+        btn.type = 'button';
+        control.appendChild(btn);
+    });
+
+    // Click handler for single-select (radio behavior)
+    control.addEventListener('click', (e) => {
+        if (e.target.classList.contains('custom-field-btn')) {
+            // Remove active from all buttons in this control
+            control.querySelectorAll('.custom-field-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            // Add active to clicked button
+            e.target.classList.add('active');
+        }
+    });
+
+    return control;
+}
+
+/**
+ * Load value into single-select field control.
+ * @param {Object} fieldDef - Field definition
+ * @param {Object|Array} nodeOrNodes - Node or array of nodes
+ * @param {boolean} isBatchMode - Batch mode flag
+ */
+function loadSingleSelectFieldValue(fieldDef, nodeOrNodes, isBatchMode) {
+    const control = document.querySelector(`.custom-field-control[data-field-name="${fieldDef.name}"]`);
+    if (!control) return;
+
+    let valueToShow = null;
+
+    if (isBatchMode) {
+        // Batch mode: show value if unanimous, otherwise show nothing
+        const values = nodeOrNodes.map(n => getNodeFieldValue(n, fieldDef.name));
+        const uniqueValues = [...new Set(values)];
+        if (uniqueValues.length === 1) {
+            valueToShow = uniqueValues[0];
+        }
+        // If mixed, leave all buttons inactive
+    } else {
+        // Single mode: show node's current value
+        valueToShow = getNodeFieldValue(nodeOrNodes, fieldDef.name);
+    }
+
+    // Activate the button matching the value
+    const buttons = control.querySelectorAll('.custom-field-btn');
+    buttons.forEach(btn => {
+        if (btn.dataset.value === (valueToShow || '')) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+}
+
+/**
+ * Save value from single-select field control to node(s).
+ * @param {Object} fieldDef - Field definition
+ * @param {Object|Array} nodeOrNodes - Node or array of nodes
+ * @param {boolean} isBatchMode - Batch mode flag
+ */
+function saveSingleSelectFieldValue(fieldDef, nodeOrNodes, isBatchMode) {
+    const control = document.querySelector(`.custom-field-control[data-field-name="${fieldDef.name}"]`);
+    if (!control) return;
+
+    const activeBtn = control.querySelector('.custom-field-btn.active');
+    const value = activeBtn ? (activeBtn.dataset.value || null) : null;
+
+    if (isBatchMode) {
+        // Only update if a button is active (user made a selection)
+        if (activeBtn) {
+            nodeOrNodes.forEach(node => {
+                setNodeFieldValue(node, fieldDef.name, value);
+            });
+        }
+        // If no button active, leave nodes unchanged (mixed values preserved)
+    } else {
+        // Single mode: always save the value
+        setNodeFieldValue(nodeOrNodes, fieldDef.name, value);
+    }
+}
+
+// ----------------------------------------------------------------------------
+// Multi-Select Field Type
+// ----------------------------------------------------------------------------
+
+/**
+ * Render a multi-select field control (button group, multiple can be active).
+ * @param {Object} fieldDef - Field definition from settings
+ * @returns {HTMLElement} - The field control container
+ */
+function renderMultiSelectField(fieldDef) {
+    const control = document.createElement('div');
+    control.className = 'custom-field-control';
+    control.dataset.fieldName = fieldDef.name;
+    control.dataset.fieldType = 'multi-select';
+
+    // Label
+    const label = document.createElement('span');
+    label.className = 'custom-field-label';
+    label.textContent = `${fieldDef.label || fieldDef.name}:`;
+    control.appendChild(label);
+
+    // None button (clears all selections)
+    const noneBtn = document.createElement('button');
+    noneBtn.className = 'custom-field-btn';
+    noneBtn.dataset.value = '';
+    noneBtn.textContent = 'None';
+    noneBtn.type = 'button';
+    control.appendChild(noneBtn);
+
+    // Option buttons
+    (fieldDef.options || []).forEach(option => {
+        const btn = document.createElement('button');
+        btn.className = 'custom-field-btn';
+        btn.dataset.value = option;
+        btn.textContent = option;
+        btn.type = 'button';
+        control.appendChild(btn);
+    });
+
+    // Click handler for multi-select (checkbox behavior)
+    control.addEventListener('click', (e) => {
+        if (e.target.classList.contains('custom-field-btn')) {
+            if (e.target.dataset.value === '') {
+                // "None" button clicked - clear all
+                control.querySelectorAll('.custom-field-btn').forEach(btn => {
+                    btn.classList.remove('multi-active');
+                });
+            } else {
+                // Option button clicked - toggle it
+                e.target.classList.toggle('multi-active');
+                // Remove "None" active state if any option is selected
+                const noneButton = control.querySelector('.custom-field-btn[data-value=""]');
+                if (noneButton) {
+                    noneButton.classList.remove('multi-active');
+                }
+            }
+        }
+    });
+
+    return control;
+}
+
+/**
+ * Load values into multi-select field control.
+ * @param {Object} fieldDef - Field definition
+ * @param {Object|Array} nodeOrNodes - Node or array of nodes
+ * @param {boolean} isBatchMode - Batch mode flag
+ */
+function loadMultiSelectFieldValue(fieldDef, nodeOrNodes, isBatchMode) {
+    const control = document.querySelector(`.custom-field-control[data-field-name="${fieldDef.name}"]`);
+    if (!control) return;
+
+    let valuesToShow = [];
+
+    if (isBatchMode) {
+        // Batch mode: show values only if unanimous across all nodes
+        const allValues = nodeOrNodes.map(n => {
+            const val = getNodeFieldValue(n, fieldDef.name);
+            return Array.isArray(val) ? val : [];
+        });
+
+        // Check if all nodes have the same set of values
+        const firstSet = JSON.stringify(allValues[0].sort());
+        const allSame = allValues.every(vals => JSON.stringify(vals.sort()) === firstSet);
+
+        if (allSame) {
+            valuesToShow = allValues[0];
+        }
+        // If mixed, leave all buttons inactive
+    } else {
+        // Single mode: show node's current values
+        const val = getNodeFieldValue(nodeOrNodes, fieldDef.name);
+        valuesToShow = Array.isArray(val) ? val : [];
+    }
+
+    // Activate buttons matching the values
+    const buttons = control.querySelectorAll('.custom-field-btn');
+    buttons.forEach(btn => {
+        if (btn.dataset.value === '') {
+            // "None" button active if no values selected
+            if (valuesToShow.length === 0) {
+                btn.classList.add('multi-active');
+            }
+        } else {
+            // Option button active if in values array
+            if (valuesToShow.includes(btn.dataset.value)) {
+                btn.classList.add('multi-active');
+            } else {
+                btn.classList.remove('multi-active');
+            }
+        }
+    });
+}
+
+/**
+ * Save values from multi-select field control to node(s).
+ * @param {Object} fieldDef - Field definition
+ * @param {Object|Array} nodeOrNodes - Node or array of nodes
+ * @param {boolean} isBatchMode - Batch mode flag
+ */
+function saveMultiSelectFieldValue(fieldDef, nodeOrNodes, isBatchMode) {
+    const control = document.querySelector(`.custom-field-control[data-field-name="${fieldDef.name}"]`);
+    if (!control) return;
+
+    const activeButtons = control.querySelectorAll('.custom-field-btn.multi-active');
+    const values = Array.from(activeButtons)
+        .map(btn => btn.dataset.value)
+        .filter(v => v !== ''); // Exclude "None" button
+
+    const finalValue = values.length > 0 ? values : null;
+
+    if (isBatchMode) {
+        // Only update if user made a selection (any button is active)
+        if (activeButtons.length > 0) {
+            nodeOrNodes.forEach(node => {
+                setNodeFieldValue(node, fieldDef.name, finalValue);
+            });
+        }
+        // If no buttons active, leave nodes unchanged
+    } else {
+        // Single mode: always save the values
+        setNodeFieldValue(nodeOrNodes, fieldDef.name, finalValue);
+    }
+}
+
+// ============================================================================
+// EDITOR
+// ============================================================================
 
 /**
  * Opens the note editor modal.
@@ -4926,14 +5268,8 @@ async function saveEditor() {
             }
         }
 
-        // Update all Second-Class fields in batch
-        const customFields = getCustomFieldDefinitions();
-        for (const fieldDef of customFields) {
-            const value = formData[fieldDef.name];
-            if (value !== null && value !== undefined) {
-                updateBatchField(nodes, fieldDef.name, value);
-            }
-        }
+        // Save all Second-Class custom fields from editor
+        saveCustomFieldsFromEditor(null, nodes, true);
 
         updateBatchTimestamps(nodes);
     } else {
@@ -4941,6 +5277,9 @@ async function saveEditor() {
 
         // formData already contains all field values from getAllFieldValues()
         saveSingleNode(node, nodeId, formData.titleInput, formData.textarea, formData);
+
+        // Save all Second-Class custom fields from editor
+        saveCustomFieldsFromEditor(node, null, false);
     }
 
     cleanupEditorState();
