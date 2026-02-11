@@ -1479,8 +1479,10 @@ body {
     border: 1px solid var(--surface);
     border-radius: 8px;
     padding: 20px;
-    width: 360px;
+    width: 480px;
     max-width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
 }
 
 #settings-content h3 {
@@ -1559,6 +1561,130 @@ body {
 
 #settings-close:hover {
     background: var(--surface-hover);
+}
+
+/* Settings Tabs */
+.settings-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+}
+
+.settings-tab {
+    flex: 1;
+    padding: 10px 16px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: color 0.2s, border-bottom 0.2s;
+    border-bottom: 2px solid transparent;
+}
+
+.settings-tab:hover {
+    color: var(--text-primary);
+}
+
+.settings-tab.active {
+    color: var(--accent);
+    border-bottom: 2px solid var(--accent);
+}
+
+.settings-tab-panel {
+    display: none;
+}
+
+.settings-tab-panel.active {
+    display: block;
+}
+
+/* Custom Fields Tab */
+.settings-description {
+    margin: 0 0 16px 0;
+    color: var(--text-secondary);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.settings-add-btn {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 16px;
+    border: 1px dashed var(--border);
+    border-radius: 4px;
+    background: transparent;
+    color: var(--accent);
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.settings-add-btn:hover {
+    background: var(--surface);
+    border-color: var(--accent);
+}
+
+#settings-custom-fields-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.custom-field-card {
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--surface);
+}
+
+.custom-field-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+}
+
+.custom-field-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.custom-field-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.custom-field-btn {
+    padding: 4px 10px;
+    border: none;
+    border-radius: 3px;
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 12px;
+    transition: background 0.2s, color 0.2s;
+}
+
+.custom-field-btn:hover {
+    background: var(--surface-hover);
+    color: var(--text-primary);
+}
+
+.custom-field-details {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+.custom-field-type {
+    font-weight: 500;
+    color: var(--text-primary);
 }
 
 /* ============================================================================

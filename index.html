@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>knotebook</title>
     <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
-    <link rel="stylesheet" href="styles/main.css?v=149">
+    <link rel="stylesheet" href="styles/main.css?v=150">
 </head>
 <body>
     <div id="app">
@@ -22,7 +22,7 @@
                     <h2>Your Notebooks</h2>
                     <div id="projects-list"></div>
                 </div>
-                <div id="version-info">CSS v149 | JS v171</div>
+                <div id="version-info">CSS v150 | JS v172</div>
 
                 <!-- Debug Tools (hidden by default) -->
                 <div id="debug-tools" class="hidden">
@@ -183,25 +183,45 @@
         <div id="settings-modal" class="hidden">
             <div id="settings-content">
                 <h3>Notebook Settings</h3>
-                <div class="settings-row">
-                    <span class="settings-label">Default completion status</span>
-                    <select id="settings-completion-default" class="settings-select">
-                        <option value="">None</option>
-                        <option value="no">To do</option>
-                        <option value="partial">Partial</option>
-                        <option value="yes">Done</option>
-                        <option value="cancelled">Cancelled</option>
-                    </select>
+
+                <!-- Tab Navigation -->
+                <div class="settings-tabs">
+                    <button class="settings-tab active" data-tab="general">General</button>
+                    <button class="settings-tab" data-tab="custom-fields">Custom Fields</button>
                 </div>
-                <div class="settings-row">
-                    <span class="settings-label">Default priority level</span>
-                    <select id="settings-priority-default" class="settings-select">
-                        <option value="">None</option>
-                        <option value="low">Low</option>
-                        <option value="medium">Medium</option>
-                        <option value="high">High</option>
-                    </select>
+
+                <!-- General Tab -->
+                <div id="settings-tab-general" class="settings-tab-panel active">
+                    <div class="settings-row">
+                        <span class="settings-label">Default completion status</span>
+                        <select id="settings-completion-default" class="settings-select">
+                            <option value="">None</option>
+                            <option value="no">To do</option>
+                            <option value="partial">Partial</option>
+                            <option value="yes">Done</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                    <div class="settings-row">
+                        <span class="settings-label">Default priority level</span>
+                        <select id="settings-priority-default" class="settings-select">
+                            <option value="">None</option>
+                            <option value="low">Low</option>
+                            <option value="medium">Medium</option>
+                            <option value="high">High</option>
+                        </select>
+                    </div>
                 </div>
+
+                <!-- Custom Fields Tab -->
+                <div id="settings-tab-custom-fields" class="settings-tab-panel">
+                    <p class="settings-description">
+                        Define fields for notes in this notebook. Fields appear in the note editor and can be used for filtering.
+                    </p>
+                    <button id="settings-add-field" class="settings-add-btn">+ Add Field</button>
+                    <div id="settings-custom-fields-list"></div>
+                </div>
+
                 <div id="settings-buttons">
                     <button id="settings-close">Close</button>
                 </div>
@@ -370,6 +390,6 @@
         </div>
     </div>
 
-    <script src="scripts/app.js?v=171"></script>
+    <script src="scripts/app.js?v=172"></script>
 </body>
 </html>

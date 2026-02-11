@@ -759,7 +759,7 @@ const IDLE_CALLBACK_TIMEOUT = 1000; // Timeout for requestIdleCallback fallback
 // Zoom & Viewport
 const ZOOM_FACTOR_IN = 0.9; // Zoom in multiplier
 const ZOOM_FACTOR_OUT = 1.1; // Zoom out multiplier
-const ZOOM_MIN = 0.5; // Minimum zoom level (50%)
+const ZOOM_MIN = 0.3; // Minimum zoom level (30%)
 const ZOOM_MAX = 2.5; // Maximum zoom level (250%)
 const ZOOM_MAX_FIT_TO_VIEW = 2; // Maximum zoom when fitting to view
 const ZOOM_MOBILE_MAX = 1.5; // Maximum zoom on mobile (pinch)
@@ -3196,7 +3196,7 @@ function fitToView() {
     // Calculate zoom to fit
     const zoomX = rect.width / graphWidth;
     const zoomY = rect.height / graphHeight;
-    const newZoom = Math.min(zoomX, zoomY, ZOOM_MAX_FIT_TO_VIEW); // Cap at 2x zoom
+    const newZoom = Math.min(zoomX, zoomY, ZOOM_MAX_FIT_TO_VIEW); 
 
     state.viewport.zoom = newZoom;
 
@@ -6348,6 +6348,9 @@ function showSettings(projectId) {
     completionSelect.value = fieldDefaults.completion || '';
     prioritySelect.value = fieldDefaults.priority || '';
 
+    // Render custom fields list
+    renderCustomFieldsList();
+
     modal.classList.remove('hidden');
 }
 
@@ -6391,6 +6394,277 @@ function updateFieldDefault(fieldName, value) {
             localStorage.setItem(STORAGE_KEY_PREFIX + targetId, JSON.stringify(data));
         }
     }
+}
+
+/**
+ * Switch between settings tabs (General / Custom Fields).
+ * @param {string} tabName - Tab name ('general' or 'custom-fields')
+ */
+function switchSettingsTab(tabName) {
+    // Update tab buttons
+    const tabs = document.querySelectorAll('.settings-tab');
+    tabs.forEach(tab => {
+        if (tab.dataset.tab === tabName) {
+            tab.classList.add('active');
+        } else {
+            tab.classList.remove('active');
+        }
+    });
+
+    // Update tab panels
+    const panels = document.querySelectorAll('.settings-tab-panel');
+    panels.forEach(panel => {
+        if (panel.id === `settings-tab-${tabName}`) {
+            panel.classList.add('active');
+        } else {
+            panel.classList.remove('active');
+        }
+    });
+}
+
+/**
+ * Render the list of custom fields in the settings modal.
+ * Reads from the current project settings and displays each field as a card.
+ */
+function renderCustomFieldsList() {
+    const modal = document.getElementById('settings-modal');
+    const targetId = modal.dataset.projectId;
+    const settings = getProjectSettings(targetId);
+    const customFields = settings.customFields || [];
+
+    const container = document.getElementById('settings-custom-fields-list');
+    container.replaceChildren(); // Clear existing content
+
+    if (customFields.length === 0) {
+        const emptyMsg = document.createElement('p');
+        emptyMsg.className = 'settings-description';
+        emptyMsg.style.textAlign = 'center';
+        emptyMsg.style.marginTop = '20px';
+        emptyMsg.textContent = 'No custom fields defined yet.';
+        container.appendChild(emptyMsg);
+        return;
+    }
+
+    customFields.forEach((field, index) => {
+        const card = document.createElement('div');
+        card.className = 'custom-field-card';
+
+        // Header with name and actions
+        const header = document.createElement('div');
+        header.className = 'custom-field-header';
+
+        const name = document.createElement('div');
+        name.className = 'custom-field-name';
+        name.textContent = field.label || field.name;
+
+        const actions = document.createElement('div');
+        actions.className = 'custom-field-actions';
+
+        const editBtn = document.createElement('button');
+        editBtn.className = 'custom-field-btn';
+        editBtn.textContent = 'Edit';
+        editBtn.addEventListener('click', () => editCustomField(index));
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'custom-field-btn';
+        deleteBtn.textContent = 'Delete';
+        deleteBtn.addEventListener('click', () => deleteCustomField(index));
+
+        actions.appendChild(editBtn);
+        actions.appendChild(deleteBtn);
+
+        header.appendChild(name);
+        header.appendChild(actions);
+
+        // Details
+        const details = document.createElement('div');
+        details.className = 'custom-field-details';
+
+        const typeLine = document.createElement('div');
+        const typeLabel = document.createElement('span');
+        typeLabel.className = 'custom-field-type';
+        typeLabel.textContent = 'Type: ';
+        typeLine.appendChild(typeLabel);
+        typeLine.appendChild(document.createTextNode(formatFieldType(field.type)));
+        details.appendChild(typeLine);
+
+        // Show options for select types
+        if ((field.type === 'single-select' || field.type === 'multi-select') && field.options && field.options.length > 0) {
+            const optionsLine = document.createElement('div');
+            optionsLine.textContent = `Options: ${field.options.join(', ')}`;
+            details.appendChild(optionsLine);
+        }
+
+        card.appendChild(header);
+        card.appendChild(details);
+        container.appendChild(card);
+    });
+}
+
+/**
+ * Format field type for display.
+ * @param {string} type - Field type (e.g., 'single-select')
+ * @returns {string} - Human-readable type name
+ */
+function formatFieldType(type) {
+    const typeMap = {
+        'single-select': 'Single-select',
+        'multi-select': 'Multi-select',
+        'text': 'Text',
+        'number': 'Number',
+        'date': 'Date',
+        'checkbox': 'Checkbox',
+        'url': 'URL'
+    };
+    return typeMap[type] || type;
+}
+
+/**
+ * Add a new custom field to the project settings.
+ * Opens a prompt-based dialog (simplified version).
+ */
+async function addCustomField() {
+    // TODO: Implement full field editor dialog
+    // For now, use simple prompts
+    const name = await showPrompt('Field name (no spaces):', '');
+    if (!name) return;
+
+    // Validate name
+    if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name)) {
+        await showAlert('Invalid field name. Use letters, numbers, and underscores only.', 'Error');
+        return;
+    }
+
+    // Check for duplicates
+    const modal = document.getElementById('settings-modal');
+    const targetId = modal.dataset.projectId;
+    const settings = getProjectSettings(targetId);
+    const customFields = settings.customFields || [];
+
+    if (customFields.some(f => f.name === name)) {
+        await showAlert('A field with this name already exists.', 'Error');
+        return;
+    }
+
+    // Check reserved names
+    if (name === 'completion' || name === 'priority') {
+        await showAlert('This field name is reserved.', 'Error');
+        return;
+    }
+
+    const label = await showPrompt('Display label:', name);
+    if (!label) return;
+
+    // For now, default to single-select with options
+    const optionsStr = await showPrompt('Options (comma-separated):', 'low, medium, high');
+    if (!optionsStr) return;
+
+    const options = optionsStr.split(',').map(s => s.trim()).filter(s => s.length > 0);
+
+    // Create field definition
+    const newField = {
+        id: `field-${Date.now()}`,
+        name: name,
+        label: label,
+        type: 'single-select',
+        options: options
+    };
+
+    // Add to settings
+    if (targetId === state.currentProjectId) {
+        if (!state.projectSettings.customFields) {
+            state.projectSettings.customFields = [];
+        }
+        state.projectSettings.customFields.push(newField);
+        scheduleAutoSave();
+    } else {
+        const data = loadProjectFromStorage(targetId);
+        if (data) {
+            if (!data.settings) data.settings = {};
+            if (!data.settings.customFields) data.settings.customFields = [];
+            data.settings.customFields.push(newField);
+            localStorage.setItem(STORAGE_KEY_PREFIX + targetId, JSON.stringify(data));
+        }
+    }
+
+    renderCustomFieldsList();
+}
+
+/**
+ * Edit an existing custom field.
+ * @param {number} index - Index of field in customFields array
+ */
+async function editCustomField(index) {
+    const modal = document.getElementById('settings-modal');
+    const targetId = modal.dataset.projectId;
+    const settings = getProjectSettings(targetId);
+    const customFields = settings.customFields || [];
+    const field = customFields[index];
+
+    if (!field) return;
+
+    // Simple edit - just update label and options
+    const label = await showPrompt('Display label:', field.label || field.name);
+    if (!label) return;
+
+    field.label = label;
+
+    // If select type, allow editing options
+    if (field.type === 'single-select' || field.type === 'multi-select') {
+        const currentOptions = (field.options || []).join(', ');
+        const optionsStr = await showPrompt('Options (comma-separated):', currentOptions);
+        if (optionsStr !== null) {
+            field.options = optionsStr.split(',').map(s => s.trim()).filter(s => s.length > 0);
+        }
+    }
+
+    // Save changes
+    if (targetId === state.currentProjectId) {
+        scheduleAutoSave();
+    } else {
+        const data = loadProjectFromStorage(targetId);
+        if (data) {
+            localStorage.setItem(STORAGE_KEY_PREFIX + targetId, JSON.stringify(data));
+        }
+    }
+
+    renderCustomFieldsList();
+}
+
+/**
+ * Delete a custom field from the project settings.
+ * @param {number} index - Index of field in customFields array
+ */
+async function deleteCustomField(index) {
+    const modal = document.getElementById('settings-modal');
+    const targetId = modal.dataset.projectId;
+    const settings = getProjectSettings(targetId);
+    const customFields = settings.customFields || [];
+    const field = customFields[index];
+
+    if (!field) return;
+
+    const confirmed = await showConfirm(
+        `Delete field "${field.label || field.name}"?`,
+        'This will remove the field definition. Existing field values in notes will remain but will no longer be editable.'
+    );
+
+    if (!confirmed) return;
+
+    // Remove field
+    customFields.splice(index, 1);
+
+    // Save changes
+    if (targetId === state.currentProjectId) {
+        scheduleAutoSave();
+    } else {
+        const data = loadProjectFromStorage(targetId);
+        if (data) {
+            localStorage.setItem(STORAGE_KEY_PREFIX + targetId, JSON.stringify(data));
+        }
+    }
+
+    renderCustomFieldsList();
 }
 
 // ============================================================================
@@ -7916,6 +8190,16 @@ function initEventListeners() {
             hideSettings();
         }
     });
+
+    // Settings tabs
+    document.querySelectorAll('.settings-tab').forEach(tab => {
+        tab.addEventListener('click', (e) => {
+            switchSettingsTab(e.target.dataset.tab);
+        });
+    });
+
+    // Custom fields
+    document.getElementById('settings-add-field').addEventListener('click', addCustomField);
 
     document.getElementById('save-btn').addEventListener('click', async () => {
         const btn = document.getElementById('save-btn');
