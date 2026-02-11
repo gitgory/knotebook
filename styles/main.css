@@ -1505,6 +1505,19 @@ body {
     cursor: pointer;
 }
 
+.multi-select-add-new {
+    color: var(--accent);
+    font-style: italic;
+    border-top: 1px solid var(--border);
+    margin-top: 4px;
+    padding-top: 10px;
+}
+
+.multi-select-add-new:hover {
+    background: var(--surface-hover);
+    color: var(--accent);
+}
+
 .custom-field-btn {
     padding: 4px 10px;
     border: 1px solid var(--surface);

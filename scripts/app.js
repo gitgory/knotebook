@@ -4768,6 +4768,26 @@ function renderSingleSelectField(fieldDef) {
         select.appendChild(optionEl);
     });
 
+    // Add new option
+    const addNewOption = document.createElement('option');
+    addNewOption.value = '__ADD_NEW__';
+    addNewOption.textContent = '(add new...)';
+    select.appendChild(addNewOption);
+
+    // Handle selection change
+    select.addEventListener('change', async (e) => {
+        if (e.target.value === '__ADD_NEW__') {
+            const newOption = await addNewFieldOption(fieldDef);
+            if (newOption) {
+                // Set the select to the new option
+                e.target.value = newOption;
+            } else {
+                // User cancelled, reset to None
+                e.target.value = '';
+            }
+        }
+    });
+
     control.appendChild(select);
     return control;
 }
@@ -4884,6 +4904,21 @@ function renderMultiSelectField(fieldDef) {
         });
     });
 
+    // Add "add new" option
+    const addNewItem = document.createElement('div');
+    addNewItem.className = 'multi-select-item multi-select-add-new';
+    addNewItem.textContent = '(add new...)';
+    addNewItem.addEventListener('click', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const newOption = await addNewFieldOption(fieldDef);
+        if (newOption) {
+            // Keep menu open and check the new option
+            // (The field will be re-rendered by addNewFieldOption)
+        }
+    });
+    menu.appendChild(addNewItem);
+
     dropdownWrapper.appendChild(menu);
     control.appendChild(dropdownWrapper);
 
@@ -4992,6 +5027,49 @@ function saveMultiSelectFieldValue(fieldDef, nodeOrNodes, isBatchMode) {
         // Single mode: always save the values
         setNodeFieldValue(nodeOrNodes, fieldDef.name, finalValue);
     }
+}
+
+/**
+ * Add a new option to a field definition.
+ * Prompts user for new option, validates, adds to field definition, and re-renders.
+ * @param {Object} fieldDef - Field definition to add option to
+ * @returns {Promise<string|null>} - The new option value, or null if cancelled
+ */
+async function addNewFieldOption(fieldDef) {
+    // Prompt for new option
+    const newOption = await showPrompt(
+        `Add new option to "${fieldDef.label || fieldDef.name}":`,
+        ''
+    );
+
+    if (!newOption || !newOption.trim()) {
+        return null;
+    }
+
+    const trimmedOption = newOption.trim();
+
+    // Check if option already exists
+    if (fieldDef.options && fieldDef.options.includes(trimmedOption)) {
+        await showAlert('This option already exists.', 'Error');
+        return null;
+    }
+
+    // Add option to field definition
+    if (!fieldDef.options) {
+        fieldDef.options = [];
+    }
+    fieldDef.options.push(trimmedOption);
+
+    // Save to project settings
+    scheduleAutoSave();
+
+    // Get current editor mode to preserve values
+    const { isBatchMode, nodes, node } = getEditorMode();
+
+    // Re-render custom fields to show new option
+    renderCustomFieldsInEditor(node, nodes, isBatchMode);
+
+    return trimmedOption;
 }
 
 /**
