@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>knotebook</title>
     <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
-    <link rel="stylesheet" href="styles/main.css?v=154">
+    <link rel="stylesheet" href="styles/main.css?v=155">
 </head>
 <body>
     <div id="app">
@@ -22,7 +22,7 @@
                     <h2>Your Notebooks</h2>
                     <div id="projects-list"></div>
                 </div>
-                <div id="version-info">CSS v154 | JS v175</div>
+                <div id="version-info">CSS v155 | JS v176</div>
 
                 <!-- Debug Tools (hidden by default) -->
                 <div id="debug-tools" class="hidden">
@@ -229,6 +229,38 @@
             </div>
         </div>
 
+        <!-- Field Editor modal -->
+        <div id="field-editor-modal" class="hidden">
+            <div id="field-editor-content">
+                <h3 id="field-editor-title">Add Custom Field</h3>
+                <div class="field-editor-row">
+                    <label for="field-editor-name">Field name:</label>
+                    <input type="text" id="field-editor-name" placeholder="e.g., effort">
+                    <span class="field-hint">Internal name, no spaces (a-z, 0-9, _)</span>
+                </div>
+                <div class="field-editor-row">
+                    <label for="field-editor-label">Display label:</label>
+                    <input type="text" id="field-editor-label" placeholder="e.g., Effort Level">
+                </div>
+                <div class="field-editor-row">
+                    <label for="field-editor-type">Field type:</label>
+                    <select id="field-editor-type" class="settings-select">
+                        <option value="single-select">Single-select (one choice)</option>
+                        <option value="multi-select">Multi-select (multiple choices)</option>
+                    </select>
+                </div>
+                <div class="field-editor-row">
+                    <label for="field-editor-options">Options:</label>
+                    <textarea id="field-editor-options" placeholder="One option per line or comma-separated"></textarea>
+                    <span class="field-hint">Enter one option per line, or separate with commas</span>
+                </div>
+                <div id="field-editor-buttons">
+                    <button id="field-editor-cancel">Cancel</button>
+                    <button id="field-editor-save">Save</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Move to Notebook modal -->
         <div id="move-to-modal" class="hidden">
             <div id="move-to-content">
@@ -391,6 +423,6 @@
         </div>
     </div>
 
-    <script src="scripts/app.js?v=175"></script>
+    <script src="scripts/app.js?v=176"></script>
 </body>
 </html>

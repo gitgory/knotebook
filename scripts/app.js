@@ -6861,78 +6861,183 @@ function formatFieldType(type) {
 
 /**
  * Add a new custom field to the project settings.
- * Opens a prompt-based dialog (simplified version).
+ * Opens the field editor modal in "add" mode.
  */
-async function addCustomField() {
-    // TODO: Implement full field editor dialog
-    // For now, use simple prompts
-    const name = await showPrompt('Field name (no spaces):', '');
-    if (!name) return;
+function addCustomField() {
+    openFieldEditorModal('add', null, null);
+}
+
+/**
+ * Open the field editor modal.
+ * @param {string} mode - 'add' or 'edit'
+ * @param {number|null} fieldIndex - Index of field being edited (null for add)
+ * @param {Object|null} fieldData - Existing field data (null for add)
+ */
+function openFieldEditorModal(mode, fieldIndex, fieldData) {
+    const modal = document.getElementById('field-editor-modal');
+    const title = document.getElementById('field-editor-title');
+    const nameInput = document.getElementById('field-editor-name');
+    const labelInput = document.getElementById('field-editor-label');
+    const typeSelect = document.getElementById('field-editor-type');
+    const optionsTextarea = document.getElementById('field-editor-options');
+
+    // Set title
+    title.textContent = mode === 'add' ? 'Add Custom Field' : 'Edit Custom Field';
+
+    // Populate form
+    if (mode === 'edit' && fieldData) {
+        nameInput.value = fieldData.name;
+        nameInput.disabled = true; // Can't change name in edit mode
+        labelInput.value = fieldData.label || fieldData.name;
+        typeSelect.value = fieldData.type || 'single-select';
+        optionsTextarea.value = (fieldData.options || []).join('\n');
+    } else {
+        nameInput.value = '';
+        nameInput.disabled = false;
+        labelInput.value = '';
+        typeSelect.value = 'single-select';
+        optionsTextarea.value = 'low\nmedium\nhigh';
+    }
+
+    // Store mode and index in modal dataset
+    modal.dataset.mode = mode;
+    if (fieldIndex !== null) {
+        modal.dataset.fieldIndex = fieldIndex;
+    } else {
+        delete modal.dataset.fieldIndex;
+    }
+
+    // Show modal
+    modal.classList.remove('hidden');
+    nameInput.focus();
+}
+
+/**
+ * Close the field editor modal.
+ */
+function closeFieldEditorModal() {
+    const modal = document.getElementById('field-editor-modal');
+    modal.classList.add('hidden');
+}
+
+/**
+ * Save the field from the field editor modal.
+ */
+async function saveFieldFromModal() {
+    const modal = document.getElementById('field-editor-modal');
+    const settingsModal = document.getElementById('settings-modal');
+    const mode = modal.dataset.mode;
+    const fieldIndex = modal.dataset.fieldIndex ? parseInt(modal.dataset.fieldIndex) : null;
+
+    // Get form values
+    const name = document.getElementById('field-editor-name').value.trim();
+    const label = document.getElementById('field-editor-label').value.trim();
+    const type = document.getElementById('field-editor-type').value;
+    const optionsText = document.getElementById('field-editor-options').value.trim();
 
     // Validate name
+    if (!name) {
+        await showAlert('Field name is required.', 'Error');
+        return;
+    }
+
     if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name)) {
         await showAlert('Invalid field name. Use letters, numbers, and underscores only.', 'Error');
         return;
     }
 
-    // Check for duplicates
-    const modal = document.getElementById('settings-modal');
-    const targetId = modal.dataset.projectId;
-    const settings = getProjectSettings(targetId);
-    const customFields = settings.customFields || [];
-
-    if (customFields.some(f => f.name === name)) {
-        await showAlert('A field with this name already exists.', 'Error');
-        return;
-    }
-
-    // Check reserved names
-    if (name === 'completion' || name === 'priority') {
+    // Check reserved names (only in add mode)
+    if (mode === 'add' && (name === 'completion' || name === 'priority')) {
         await showAlert('This field name is reserved.', 'Error');
         return;
     }
 
-    const label = await showPrompt('Display label:', name);
-    if (!label) return;
+    // Validate label
+    if (!label) {
+        await showAlert('Display label is required.', 'Error');
+        return;
+    }
 
-    // Ask for field type
-    const typeChoice = await showPrompt('Field type:\n1 = Single-select (one choice)\n2 = Multi-select (multiple choices)\n\nEnter 1 or 2:', '1');
-    if (!typeChoice) return;
+    // Parse options
+    const options = optionsText
+        .split(/[\n,]/)
+        .map(s => s.trim())
+        .filter(s => s.length > 0);
 
-    const type = typeChoice.trim() === '2' ? 'multi-select' : 'single-select';
+    if (options.length === 0) {
+        await showAlert('At least one option is required.', 'Error');
+        return;
+    }
 
-    // Ask for options
-    const optionsStr = await showPrompt('Options (comma-separated):', 'low, medium, high');
-    if (!optionsStr) return;
+    // Get target project and settings
+    const targetId = settingsModal.dataset.projectId;
+    const settings = getProjectSettings(targetId);
+    const customFields = settings.customFields || [];
 
-    const options = optionsStr.split(',').map(s => s.trim()).filter(s => s.length > 0);
-
-    // Create field definition
-    const newField = {
-        id: `field-${Date.now()}`,
-        name: name,
-        label: label,
-        type: type,
-        options: options
-    };
-
-    // Add to settings
-    if (targetId === state.currentProjectId) {
-        if (!state.projectSettings.customFields) {
-            state.projectSettings.customFields = [];
+    if (mode === 'add') {
+        // Check for duplicates
+        if (customFields.some(f => f.name === name)) {
+            await showAlert('A field with this name already exists.', 'Error');
+            return;
         }
-        state.projectSettings.customFields.push(newField);
-        scheduleAutoSave();
-    } else {
-        const data = loadProjectFromStorage(targetId);
-        if (data) {
-            if (!data.settings) data.settings = {};
-            if (!data.settings.customFields) data.settings.customFields = [];
-            data.settings.customFields.push(newField);
-            localStorage.setItem(STORAGE_KEY_PREFIX + targetId, JSON.stringify(data));
+
+        // Create new field
+        const newField = {
+            id: `field-${Date.now()}`,
+            name: name,
+            label: label,
+            type: type,
+            options: options
+        };
+
+        // Add to settings
+        if (targetId === state.currentProjectId) {
+            if (!state.projectSettings.customFields) {
+                state.projectSettings.customFields = [];
+            }
+            state.projectSettings.customFields.push(newField);
+            scheduleAutoSave();
+        } else {
+            const data = loadProjectFromStorage(targetId);
+            if (data) {
+                if (!data.settings) data.settings = {};
+                if (!data.settings.customFields) data.settings.customFields = [];
+                data.settings.customFields.push(newField);
+                localStorage.setItem(STORAGE_KEY_PREFIX + targetId, JSON.stringify(data));
+            }
+        }
+    } else if (mode === 'edit' && fieldIndex !== null) {
+        // Update existing field
+        const field = customFields[fieldIndex];
+        if (!field) return;
+
+        // Check if type changed
+        const typeChanged = field.type !== type;
+        if (typeChanged) {
+            const confirmed = await showConfirm(
+                'Change field type?',
+                'Changing the field type may affect existing note values. Single-select stores one value, multi-select stores an array.'
+            );
+            if (!confirmed) return;
+        }
+
+        // Update field
+        field.label = label;
+        field.type = type;
+        field.options = options;
+
+        // Save changes
+        if (targetId === state.currentProjectId) {
+            scheduleAutoSave();
+        } else {
+            const data = loadProjectFromStorage(targetId);
+            if (data) {
+                localStorage.setItem(STORAGE_KEY_PREFIX + targetId, JSON.stringify(data));
+            }
         }
     }
 
+    closeFieldEditorModal();
     renderCustomFieldsList();
 }
 
@@ -6940,7 +7045,7 @@ async function addCustomField() {
  * Edit an existing custom field.
  * @param {number} index - Index of field in customFields array
  */
-async function editCustomField(index) {
+function editCustomField(index) {
     const modal = document.getElementById('settings-modal');
     const targetId = modal.dataset.projectId;
     const settings = getProjectSettings(targetId);
@@ -6949,54 +7054,7 @@ async function editCustomField(index) {
 
     if (!field) return;
 
-    // Edit label
-    const label = await showPrompt('Display label:', field.label || field.name);
-    if (!label) return;
-
-    field.label = label;
-
-    // Edit type (for select types)
-    if (field.type === 'single-select' || field.type === 'multi-select') {
-        const currentTypeNum = field.type === 'multi-select' ? '2' : '1';
-        const typeChoice = await showPrompt(
-            `Field type:\n1 = Single-select (one choice)\n2 = Multi-select (multiple choices)\n\nCurrent: ${field.type}\nEnter 1 or 2:`,
-            currentTypeNum
-        );
-
-        if (typeChoice) {
-            const newType = typeChoice.trim() === '2' ? 'multi-select' : 'single-select';
-
-            // Warn if changing type
-            if (newType !== field.type) {
-                const confirmed = await showConfirm(
-                    'Change field type?',
-                    'Changing the field type may affect existing note values. Single-select stores one value, multi-select stores an array.'
-                );
-                if (confirmed) {
-                    field.type = newType;
-                }
-            }
-        }
-
-        // Edit options
-        const currentOptions = (field.options || []).join(', ');
-        const optionsStr = await showPrompt('Options (comma-separated):', currentOptions);
-        if (optionsStr !== null) {
-            field.options = optionsStr.split(',').map(s => s.trim()).filter(s => s.length > 0);
-        }
-    }
-
-    // Save changes
-    if (targetId === state.currentProjectId) {
-        scheduleAutoSave();
-    } else {
-        const data = loadProjectFromStorage(targetId);
-        if (data) {
-            localStorage.setItem(STORAGE_KEY_PREFIX + targetId, JSON.stringify(data));
-        }
-    }
-
-    renderCustomFieldsList();
+    openFieldEditorModal('edit', index, field);
 }
 
 /**
@@ -8568,6 +8626,15 @@ function initEventListeners() {
 
     // Custom fields
     document.getElementById('settings-add-field').addEventListener('click', addCustomField);
+
+    // Field editor modal
+    document.getElementById('field-editor-cancel').addEventListener('click', closeFieldEditorModal);
+    document.getElementById('field-editor-save').addEventListener('click', saveFieldFromModal);
+    document.getElementById('field-editor-modal').addEventListener('click', (e) => {
+        if (e.target.id === 'field-editor-modal') {
+            closeFieldEditorModal();
+        }
+    });
 
     document.getElementById('save-btn').addEventListener('click', async () => {
         const btn = document.getElementById('save-btn');
