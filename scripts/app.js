@@ -4673,24 +4673,6 @@ function openSingleEditor(node, nodeId) {
 // ============================================================================
 
 /**
- * Field type renderer registry.
- * Each field type has render, load, and save functions.
- */
-const FIELD_TYPE_RENDERERS = {
-    'single-select': {
-        render: renderSingleSelectField,
-        load: loadSingleSelectFieldValue,
-        save: saveSingleSelectFieldValue
-    },
-    'multi-select': {
-        render: renderMultiSelectField,
-        load: loadMultiSelectFieldValue,
-        save: saveMultiSelectFieldValue
-    }
-    // Future: 'text', 'number', 'date', 'checkbox', 'url'
-};
-
-/**
  * Render all custom fields in the editor based on project settings.
  * Called when opening editor (single or batch mode).
  * @param {Object} node - The node being edited (null in batch mode)
@@ -5007,6 +4989,25 @@ function saveMultiSelectFieldValue(fieldDef, nodeOrNodes, isBatchMode) {
         setNodeFieldValue(nodeOrNodes, fieldDef.name, finalValue);
     }
 }
+
+/**
+ * Field type renderer registry.
+ * Each field type has render, load, and save functions.
+ * Defined after all renderer functions to avoid hoisting issues.
+ */
+const FIELD_TYPE_RENDERERS = {
+    'single-select': {
+        render: renderSingleSelectField,
+        load: loadSingleSelectFieldValue,
+        save: saveSingleSelectFieldValue
+    },
+    'multi-select': {
+        render: renderMultiSelectField,
+        load: loadMultiSelectFieldValue,
+        save: saveMultiSelectFieldValue
+    }
+    // Future: 'text', 'number', 'date', 'checkbox', 'url'
+};
 
 // ============================================================================
 // EDITOR
