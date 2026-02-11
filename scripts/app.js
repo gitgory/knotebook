@@ -6895,7 +6895,13 @@ async function addCustomField() {
     const label = await showPrompt('Display label:', name);
     if (!label) return;
 
-    // For now, default to single-select with options
+    // Ask for field type
+    const typeChoice = await showPrompt('Field type:\n1 = Single-select (one choice)\n2 = Multi-select (multiple choices)\n\nEnter 1 or 2:', '1');
+    if (!typeChoice) return;
+
+    const type = typeChoice.trim() === '2' ? 'multi-select' : 'single-select';
+
+    // Ask for options
     const optionsStr = await showPrompt('Options (comma-separated):', 'low, medium, high');
     if (!optionsStr) return;
 
@@ -6906,7 +6912,7 @@ async function addCustomField() {
         id: `field-${Date.now()}`,
         name: name,
         label: label,
-        type: 'single-select',
+        type: type,
         options: options
     };
 
@@ -6943,14 +6949,36 @@ async function editCustomField(index) {
 
     if (!field) return;
 
-    // Simple edit - just update label and options
+    // Edit label
     const label = await showPrompt('Display label:', field.label || field.name);
     if (!label) return;
 
     field.label = label;
 
-    // If select type, allow editing options
+    // Edit type (for select types)
     if (field.type === 'single-select' || field.type === 'multi-select') {
+        const currentTypeNum = field.type === 'multi-select' ? '2' : '1';
+        const typeChoice = await showPrompt(
+            `Field type:\n1 = Single-select (one choice)\n2 = Multi-select (multiple choices)\n\nCurrent: ${field.type}\nEnter 1 or 2:`,
+            currentTypeNum
+        );
+
+        if (typeChoice) {
+            const newType = typeChoice.trim() === '2' ? 'multi-select' : 'single-select';
+
+            // Warn if changing type
+            if (newType !== field.type) {
+                const confirmed = await showConfirm(
+                    'Change field type?',
+                    'Changing the field type may affect existing note values. Single-select stores one value, multi-select stores an array.'
+                );
+                if (confirmed) {
+                    field.type = newType;
+                }
+            }
+        }
+
+        // Edit options
         const currentOptions = (field.options || []).join(', ');
         const optionsStr = await showPrompt('Options (comma-separated):', currentOptions);
         if (optionsStr !== null) {
