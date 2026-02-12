@@ -7826,22 +7826,13 @@ function initEventListeners() {
             }
 
             if (e.shiftKey) {
-                // Shift+click: start/complete edge creation (single or batch)
+                // Shift+click: start/complete edge creation from the clicked node
                 if (state.edgeStartNode) {
                     // Complete edge creation to this target
                     completeEdgeCreation(nodeId);
                 } else {
-                    // Start edge creation from selected node(s)
-                    if (state.selectedNodes.length > 1) {
-                        // Batch mode: create edges from all selected nodes
-                        startEdgeCreation();
-                    } else if (state.selectedNodes.length === 1) {
-                        // Single mode: use selected node
-                        startEdgeCreation(state.selectedNodes[0]);
-                    } else {
-                        // No selection: use clicked node
-                        startEdgeCreation(nodeId);
-                    }
+                    // Start edge creation from the clicked node
+                    startEdgeCreation(nodeId);
                 }
             } else {
                 // Regular click or Ctrl+click for multi-select/duplicate or Alt+click to remove
@@ -8033,12 +8024,14 @@ function initEventListeners() {
                     });
 
                     // Copy edges where both endpoints are in the selection
+                    const edgesToAdd = [];
                     state.edges.forEach(edge => {
                         const [srcId, dstId] = edge;
                         if (idMapping[srcId] && idMapping[dstId]) {
-                            state.edges.push([idMapping[srcId], idMapping[dstId]]);
+                            edgesToAdd.push([idMapping[srcId], idMapping[dstId]]);
                         }
                     });
+                    state.edges.push(...edgesToAdd);
 
                     // Select the new copies
                     state.selectedNodes = newNodeIds;
@@ -9191,12 +9184,14 @@ function initEventListeners() {
             });
 
             // Copy edges where both endpoints are in the selection
+            const edgesToAdd = [];
             state.edges.forEach(edge => {
                 const [srcId, dstId] = edge;
                 if (idMapping[srcId] && idMapping[dstId]) {
-                    state.edges.push([idMapping[srcId], idMapping[dstId]]);
+                    edgesToAdd.push([idMapping[srcId], idMapping[dstId]]);
                 }
             });
+            state.edges.push(...edgesToAdd);
 
             // Select the new copies
             state.selectedNodes = newNodeIds;
