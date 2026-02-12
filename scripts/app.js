@@ -7606,11 +7606,8 @@ async function importFromFile() {
                 : `Imported ${importedNames.length} notebooks: ${importedNames.join(', ')}`;
             showToast(message);
 
-            // Refresh project list if on landing page
-            const projectListView = document.getElementById('project-list-view');
-            if (projectListView && !projectListView.classList.contains('hidden')) {
-                showProjectList();
-            }
+            // Refresh project list on landing page
+            populateProjectsList();
         }
 
         if (failedFiles.length > 0) {
