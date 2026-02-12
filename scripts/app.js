@@ -7437,33 +7437,41 @@ async function exportProjectToFile(projectId) {
 }
 
 /**
- * Get file using File System Access API (modern browsers).
- * @returns {Promise<File|null>} - Selected file or null if cancelled
+ * Get files using File System Access API (modern browsers).
+ * Supports multiple file selection.
+ * @returns {Promise<File[]>} - Selected files or empty array if cancelled
  * @throws {Error} - If file selection fails
  */
-async function getFileViaPicker() {
-    const [handle] = await window.showOpenFilePicker({
+async function getFilesViaPicker() {
+    const handles = await window.showOpenFilePicker({
         types: [{
             description: 'JSON Files',
             accept: { 'application/json': ['.json'] }
-        }]
+        }],
+        multiple: true
     });
-    return await handle.getFile();
+    const files = [];
+    for (const handle of handles) {
+        files.push(await handle.getFile());
+    }
+    return files;
 }
 
 /**
- * Get file using legacy file input (fallback for mobile/unsupported browsers).
- * @returns {Promise<File|null>} - Selected file or null if cancelled
+ * Get files using legacy file input (fallback for mobile/unsupported browsers).
+ * Supports multiple file selection.
+ * @returns {Promise<File[]>} - Selected files or empty array if cancelled
  */
-function getFileViaInput() {
+function getFilesViaInput() {
     return new Promise((resolve) => {
         const input = document.createElement('input');
         input.type = 'file';
         input.accept = '.json,application/json';
+        input.multiple = true;
 
         input.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            resolve(file || null);
+            const files = Array.from(e.target.files || []);
+            resolve(files);
         });
 
         input.click();
@@ -7528,51 +7536,86 @@ function validateImportData(data) {
 }
 
 /**
- * Update import modal UI with filename and show/hide overwrite button.
- * @param {string} filename - Name of imported file
- */
-function updateImportModal(filename) {
-    const modal = document.getElementById('import-modal');
-    const filenameEl = document.getElementById('import-filename');
-    const overwriteBtn = document.getElementById('import-overwrite');
-
-    // Update filename display
-    filenameEl.textContent = `File: ${filename}`;
-
-    // Show/hide overwrite button based on existing projects
-    const projects = getProjectsList();
-    overwriteBtn.style.display = projects.length === 0 ? 'none' : '';
-
-    // Show modal
-    modal.classList.remove('hidden');
-}
-
-/**
- * Import project from JSON file (from landing page).
- * Uses File System Access API if available, otherwise falls back to file input.
- * Parses file, validates data, stores in pendingImportData, and shows import modal.
+ * Import one or more notebook files.
+ * Supports multi-file selection. Each file is imported as a new notebook.
+ * Shows toast with count and names of imported notebooks.
  */
 async function importFromFile() {
     try {
-        // Step 1: Select file (strategy pattern)
-        const file = window.showOpenFilePicker
-            ? await getFileViaPicker()
-            : await getFileViaInput();
+        // Step 1: Select files (supports multiple)
+        const files = window.showOpenFilePicker
+            ? await getFilesViaPicker()
+            : await getFilesViaInput();
 
         // Guard clause: user cancelled
-        if (!file) return;
+        if (!files || files.length === 0) return;
 
-        // Step 2: Read and parse
-        const data = await readAndParseJsonFile(file);
+        // Step 2: Import each file as new notebook
+        const importedNames = [];
+        const failedFiles = [];
 
-        // Step 3: Validate
-        validateImportData(data);
+        for (const file of files) {
+            try {
+                // Read and parse
+                const data = await readAndParseJsonFile(file);
 
-        // Step 4: Store for import flow
-        state.pendingImportData = data;
+                // Validate
+                validateImportData(data);
 
-        // Step 5: Update UI
-        updateImportModal(file.name);
+                // Import as new notebook
+                const notebookName = data.name || file.name.replace('.json', '');
+                const projectId = await createProject(notebookName);
+
+                // Save imported data
+                const importedSettings = data.settings || {};
+                // Migrate legacy defaultCompletion if present
+                if (importedSettings.defaultCompletion !== undefined && !importedSettings.fieldDefaults) {
+                    importedSettings.fieldDefaults = { completion: importedSettings.defaultCompletion, priority: null };
+                    delete importedSettings.defaultCompletion;
+                }
+                const projectData = {
+                    version: 1,
+                    nodes: data.nodes || [],
+                    edges: data.edges || [],
+                    hashtagColors: data.hashtagColors || {},
+                    settings: importedSettings,
+                    hiddenHashtags: data.hiddenHashtags || [],
+                    theme: data.theme || getCurrentTheme()
+                };
+                localStorage.setItem(STORAGE_KEY_PREFIX + projectId, JSON.stringify(projectData));
+
+                // Update note count
+                const projects = getProjectsList();
+                const project = projects.find(p => p.id === projectId);
+                if (project) {
+                    project.noteCount = countNotes(projectData.nodes);
+                    await saveProjectsIndex(projects);
+                }
+
+                importedNames.push(notebookName);
+            } catch (err) {
+                console.error(`Failed to import ${file.name}:`, err);
+                failedFiles.push({ name: file.name, error: err.message });
+            }
+        }
+
+        // Step 3: Show results
+        if (importedNames.length > 0) {
+            const message = importedNames.length === 1
+                ? `Imported: ${importedNames[0]}`
+                : `Imported ${importedNames.length} notebooks: ${importedNames.join(', ')}`;
+            showToast(message);
+
+            // Refresh project list view if visible
+            if (document.getElementById('project-list-view').classList.contains('hidden') === false) {
+                showProjectList();
+            }
+        }
+
+        if (failedFiles.length > 0) {
+            const errorMsg = failedFiles.map(f => `${f.name}: ${f.error}`).join('\n');
+            await showAlert(`Failed to import some files:\n\n${errorMsg}`, 'Import Error');
+        }
 
     } catch (err) {
         // Guard clause: ignore user cancellation
@@ -7581,11 +7624,6 @@ async function importFromFile() {
         console.error('Import failed:', err);
         await showAlert('Failed to import: ' + err.message, 'Import Error');
     }
-}
-
-function hideImportModal() {
-    document.getElementById('import-modal').classList.add('hidden');
-    state.pendingImportData = null;
 }
 
 /**
@@ -7742,185 +7780,6 @@ async function resolveFieldConflicts(conflicts, targetNotebookName, sourceNotebo
             modal.classList.add('hidden');
             reject(new Error('User cancelled import'));
         };
-    });
-}
-
-/**
- * Handle "Create New Notebook" import option.
- * Creates new project with imported data name, saves imported nodes/edges/colors/settings,
- * updates note count, and opens the new project.
- * @returns {Promise<void>}
- */
-async function handleImportAsNew() {
-    if (!state.pendingImportData) return;
-
-    const name = state.pendingImportData.name || 'Imported Notebook';
-    const projectId = await createProject(name);
-
-    // Save imported data to the new project
-    const importedSettings = state.pendingImportData.settings || {};
-    // Migrate legacy defaultCompletion if present
-    if (importedSettings.defaultCompletion !== undefined && !importedSettings.fieldDefaults) {
-        importedSettings.fieldDefaults = { completion: importedSettings.defaultCompletion, priority: null };
-        delete importedSettings.defaultCompletion;
-    }
-    const projectData = {
-        version: 1,
-        nodes: state.pendingImportData.nodes || [],
-        edges: state.pendingImportData.edges || [],
-        hashtagColors: state.pendingImportData.hashtagColors || {},
-        settings: importedSettings,
-        hiddenHashtags: state.pendingImportData.hiddenHashtags || [],
-        theme: state.pendingImportData.theme || getCurrentTheme()
-    };
-    localStorage.setItem(STORAGE_KEY_PREFIX + projectId, JSON.stringify(projectData));
-
-    // Update note count
-    const projects = getProjectsList();
-    const project = projects.find(p => p.id === projectId);
-    if (project) {
-        project.noteCount = countNotes(projectData.nodes);
-        await saveProjectsIndex(projects);
-    }
-
-    hideImportModal();
-    await openProject(projectId);
-}
-
-/**
- * Handle "Overwrite Existing" import option.
- * Shows modal to select project to overwrite, confirms with user (with 3-second delay),
- * replaces project data with imported data, updates note count and modified time, and opens the project.
- */
-async function handleImportOverwrite() {
-    if (!state.pendingImportData) return;
-
-    const projects = getProjectsList();
-    if (projects.length === 0) {
-        showToast('No existing notebooks to overwrite. Use "Create New Notebook" instead.');
-        return;
-    }
-
-    // Save import data before hiding modal (hideImportModal clears state.pendingImportData)
-    const importData = state.pendingImportData;
-
-    // Hide import modal and show overwrite selection modal
-    hideImportModal();
-
-    // Show the selection modal and wait for user to pick a project
-    const selectedProjectId = await showOverwriteSelectModal(projects);
-    if (!selectedProjectId) return; // User cancelled
-
-    const targetProject = projects.find(p => p.id === selectedProjectId);
-    if (!targetProject) return;
-
-    // Confirm with 3-second delay
-    const noteCountText = `${targetProject.noteCount || 0} note${(targetProject.noteCount || 0) === 1 ? '' : 's'}`;
-    const confirmed = await showConfirmation(
-        `Are you sure you want to overwrite "${targetProject.name}" (${noteCountText})?\n\nThis cannot be undone.`,
-        3  // 3 second delay
-    );
-    if (!confirmed) {
-        return;
-    }
-
-    // Save imported data to the existing project (overwrite - complete replacement)
-    const importedSettings = importData.settings || {};
-    // Migrate legacy defaultCompletion if present
-    if (importedSettings.defaultCompletion !== undefined && !importedSettings.fieldDefaults) {
-        importedSettings.fieldDefaults = { completion: importedSettings.defaultCompletion, priority: null };
-        delete importedSettings.defaultCompletion;
-    }
-    const projectData = {
-        version: 1,
-        nodes: importData.nodes || [],
-        edges: importData.edges || [],
-        hashtagColors: importData.hashtagColors || {},
-        settings: importedSettings,
-        hiddenHashtags: importData.hiddenHashtags || [],
-        theme: importData.theme || getCurrentTheme()
-    };
-    localStorage.setItem(STORAGE_KEY_PREFIX + targetProject.id, JSON.stringify(projectData));
-
-    // Update note count
-    targetProject.noteCount = countNotes(projectData.nodes);
-    targetProject.modified = new Date().toISOString();
-    await saveProjectsIndex(projects);
-
-    await openProject(targetProject.id);
-}
-
-/**
- * Show modal to select a notebook to overwrite.
- * Returns a Promise that resolves to the selected project ID, or null if cancelled.
- *
- * @param {Array<Object>} projects - List of projects to display
- * @returns {Promise<string|null>} - Selected project ID or null
- */
-function showOverwriteSelectModal(projects) {
-    return new Promise((resolve) => {
-        const modal = document.getElementById('overwrite-select-modal');
-        const list = document.getElementById('overwrite-select-list');
-        const cancelBtn = document.getElementById('overwrite-select-cancel');
-
-        // Populate the list
-        list.replaceChildren();
-        projects.forEach(project => {
-            const item = document.createElement('div');
-            item.className = 'overwrite-select-item';
-            item.dataset.projectId = project.id;
-
-            const name = document.createElement('span');
-            name.className = 'overwrite-select-item-name';
-            name.textContent = project.name;
-
-            const count = document.createElement('span');
-            count.className = 'overwrite-select-item-count';
-            count.textContent = `${project.noteCount || 0} note${(project.noteCount || 0) === 1 ? '' : 's'}`;
-
-            item.appendChild(name);
-            item.appendChild(count);
-            list.appendChild(item);
-        });
-
-        modal.classList.remove('hidden');
-
-        // Handle item selection
-        const handleSelect = (e) => {
-            const item = e.target.closest('.overwrite-select-item');
-            if (item) {
-                const projectId = item.dataset.projectId;
-                cleanup();
-                resolve(projectId);
-            }
-        };
-
-        // Handle cancel
-        const handleCancel = () => {
-            cleanup();
-            resolve(null);
-        };
-
-        // Handle Escape key
-        const handleKey = (e) => {
-            if (e.key === 'Escape') {
-                e.preventDefault();
-                handleCancel();
-            }
-        };
-
-        // Cleanup
-        const cleanup = () => {
-            modal.classList.add('hidden');
-            list.removeEventListener('click', handleSelect);
-            cancelBtn.removeEventListener('click', handleCancel);
-            document.removeEventListener('keydown', handleKey);
-        };
-
-        // Attach listeners
-        list.addEventListener('click', handleSelect);
-        cancelBtn.addEventListener('click', handleCancel);
-        document.addEventListener('keydown', handleKey);
     });
 }
 
@@ -9009,11 +8868,6 @@ function initEventListeners() {
             btn.classList.remove('loading');
         }
     });
-
-    // Import modal buttons
-    document.getElementById('import-new').addEventListener('click', handleImportAsNew);
-    document.getElementById('import-overwrite').addEventListener('click', handleImportOverwrite);
-    document.getElementById('import-cancel').addEventListener('click', hideImportModal);
 
     // Move to modal buttons
     document.getElementById('move-to-cancel').addEventListener('click', hideMoveToModal);
