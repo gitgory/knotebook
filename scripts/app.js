@@ -6766,7 +6766,6 @@ function styleToastElement(toast, hasLink) {
         color: var(--text-primary);
         padding: 12px 24px;
         border-radius: 8px;
-        border: 1px solid var(--highlight);
         z-index: 1000;
         font-size: 14px;
         pointer-events: ${pointerEvents};
