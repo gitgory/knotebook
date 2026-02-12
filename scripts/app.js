@@ -6220,7 +6220,8 @@ function buildMovePackage(data) {
         nodes: data.nodes,
         edges: data.edges,
         boundingBox: data.boundingBox,
-        relativeOffsets: data.relativeOffsets
+        relativeOffsets: data.relativeOffsets,
+        sourceCustomFields: state.projectSettings.customFields || []
     };
 }
 
@@ -6383,7 +6384,7 @@ function checkForPendingMove() {
  * Place ghost nodes into current project and complete move operation.
  * Integrates nodes/edges, removes from source, shows feedback, and triggers save.
  */
-function placeGhostNodes() {
+async function placeGhostNodes() {
     // Step 1: Validate (guard clauses with logging)
     if (!state.ghostDragging) {
         console.warn('placeGhostNodes: not in ghost drag mode');
@@ -6400,6 +6401,42 @@ function placeGhostNodes() {
     const sourceProjectName = state.pendingMove?.sourceProjectName;
     const originalNodeIds = state.pendingMove?.originalIds || [];
     const nodeCount = state.ghostNodes.length;
+
+    // Step 2b: Check for custom field conflicts and resolve if needed
+    const sourceFields = state.pendingMove?.sourceCustomFields || [];
+    const targetFields = state.projectSettings.customFields || [];
+
+    if (sourceFields.length > 0) {
+        const { merged, conflicts } = mergeCustomFieldDefinitions(targetFields, sourceFields);
+
+        // Resolve conflicts if any
+        if (conflicts.length > 0) {
+            try {
+                const resolutions = await resolveFieldConflicts(conflicts);
+
+                // Apply conflict resolutions to merged array
+                for (const [fieldName, chosenDef] of Object.entries(resolutions)) {
+                    const index = merged.findIndex(f => f.name === fieldName);
+                    if (index !== -1) {
+                        merged[index] = chosenDef;
+                    }
+                }
+
+                // Update target notebook's custom field definitions
+                state.projectSettings.customFields = merged;
+            } catch (err) {
+                if (err.message === 'User cancelled import') {
+                    // User cancelled - abort the move
+                    cancelGhostDrag();
+                    return;
+                }
+                throw err;
+            }
+        } else {
+            // No conflicts, just merge (add new fields from source)
+            state.projectSettings.customFields = merged;
+        }
+    }
 
     // Step 3: Integrate nodes and edges into current project
     const placedNodeIds = integrateGhostNodes();
@@ -7758,61 +7795,19 @@ async function handleImportOverwrite() {
         return;
     }
 
-    // Load existing project data
-    const existingData = loadProjectFromStorage(targetProject.id) || {};
-    const existingSettings = existingData.settings || {};
+    // Save imported data to the existing project (overwrite - complete replacement)
     const importedSettings = importData.settings || {};
-
-    // Migrate legacy defaultCompletion if present in either
+    // Migrate legacy defaultCompletion if present
     if (importedSettings.defaultCompletion !== undefined && !importedSettings.fieldDefaults) {
         importedSettings.fieldDefaults = { completion: importedSettings.defaultCompletion, priority: null };
         delete importedSettings.defaultCompletion;
     }
-    if (existingSettings.defaultCompletion !== undefined && !existingSettings.fieldDefaults) {
-        existingSettings.fieldDefaults = { completion: existingSettings.defaultCompletion, priority: null };
-        delete existingSettings.defaultCompletion;
-    }
-
-    // Merge custom field definitions
-    const existingFields = existingSettings.customFields || [];
-    const importedFields = importedSettings.customFields || [];
-    const { merged, conflicts } = mergeCustomFieldDefinitions(existingFields, importedFields);
-
-    // Resolve conflicts if any
-    if (conflicts.length > 0) {
-        try {
-            const resolutions = await resolveFieldConflicts(conflicts);
-
-            // Apply conflict resolutions to merged array
-            for (const [fieldName, chosenDef] of Object.entries(resolutions)) {
-                const index = merged.findIndex(f => f.name === fieldName);
-                if (index !== -1) {
-                    merged[index] = chosenDef;
-                }
-            }
-        } catch (err) {
-            if (err.message === 'User cancelled import') {
-                // User cancelled conflict resolution
-                return;
-            }
-            throw err;
-        }
-    }
-
-    // Create merged settings object
-    const mergedSettings = {
-        ...existingSettings,
-        ...importedSettings,
-        customFields: merged
-    };
-
-    // Save imported data to the existing project (overwrite)
     const projectData = {
         version: 1,
         nodes: importData.nodes || [],
         edges: importData.edges || [],
         hashtagColors: importData.hashtagColors || {},
-        settings: mergedSettings,
+        settings: importedSettings,
         hiddenHashtags: importData.hiddenHashtags || [],
         theme: importData.theme || getCurrentTheme()
     };
