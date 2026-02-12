@@ -3884,17 +3884,28 @@ function getNodesInSelectionBox(box) {
 
 /**
  * Update the breadcrumb navigation display.
- * Shows "Root" at top level, or "Root > Parent > Child" when nested.
+ * Shows "NotebookName > Root" at top level, or "NotebookName > Root > Parent > Child" when nested.
  * Adds 'active' class when nested (clickable to go back).
  */
 function updateBreadcrumbs() {
     const el = document.getElementById('breadcrumbs');
+
+    // Get current project name
+    let projectName = 'Notebook';
+    if (state.currentProjectId) {
+        const projects = getProjectsList();
+        const project = projects.find(p => p.id === state.currentProjectId);
+        if (project) {
+            projectName = truncateText(project.name, BREADCRUMB_TRUNCATE_LENGTH);
+        }
+    }
+
     if (state.currentPath.length === 0) {
-        el.textContent = 'Root';
+        el.textContent = projectName + ' > Root';
         el.classList.remove('active');
     } else {
         const names = state.currentPath.map(p => truncateText(p.title || 'Untitled', BREADCRUMB_TRUNCATE_LENGTH));
-        el.textContent = 'Root > ' + names.join(' > ');
+        el.textContent = projectName + ' > Root > ' + names.join(' > ');
         el.classList.add('active');
     }
 }
@@ -6406,13 +6417,23 @@ async function placeGhostNodes() {
     const sourceFields = state.pendingMove?.sourceCustomFields || [];
     const targetFields = state.projectSettings.customFields || [];
 
+    // Get target notebook name
+    let targetProjectName = 'Current Notebook';
+    if (state.currentProjectId) {
+        const projects = getProjectsList();
+        const project = projects.find(p => p.id === state.currentProjectId);
+        if (project) {
+            targetProjectName = project.name;
+        }
+    }
+
     if (sourceFields.length > 0) {
         const { merged, conflicts } = mergeCustomFieldDefinitions(targetFields, sourceFields);
 
         // Resolve conflicts if any
         if (conflicts.length > 0) {
             try {
-                const resolutions = await resolveFieldConflicts(conflicts);
+                const resolutions = await resolveFieldConflicts(conflicts, targetProjectName, sourceProjectName);
 
                 // Apply conflict resolutions to merged array
                 for (const [fieldName, chosenDef] of Object.entries(resolutions)) {
@@ -7603,9 +7624,11 @@ function createFieldOptionRadio(fieldName, value, label, fieldDef, checked) {
 /**
  * Creates DOM element for a single field conflict.
  * @param {Object} conflict - Conflict object with name, existing, imported
+ * @param {string} targetNotebookName - Name of target notebook
+ * @param {string} sourceNotebookName - Name of source notebook
  * @returns {HTMLElement} - Conflict display element
  */
-function createConflictElement(conflict) {
+function createConflictElement(conflict, targetNotebookName, sourceNotebookName) {
     const container = document.createElement('div');
     container.className = 'conflict-item';
 
@@ -7617,7 +7640,7 @@ function createConflictElement(conflict) {
     const existingOption = createFieldOptionRadio(
         conflict.name,
         'existing',
-        'Keep Current Definition',
+        `Keep "${targetNotebookName}"`,
         conflict.existing,
         true
     );
@@ -7627,7 +7650,7 @@ function createConflictElement(conflict) {
     const importedOption = createFieldOptionRadio(
         conflict.name,
         'imported',
-        'Use Imported Definition',
+        `Use "${sourceNotebookName}"`,
         conflict.imported,
         false
     );
@@ -7640,9 +7663,11 @@ function createConflictElement(conflict) {
  * Shows conflict resolution modal for custom field definitions.
  * Returns a Promise that resolves to a map of field names to chosen definitions.
  * @param {Array} conflicts - Array of conflict objects
+ * @param {string} targetNotebookName - Name of target notebook (current)
+ * @param {string} sourceNotebookName - Name of source notebook (moving from)
  * @returns {Promise<Object>} - Map of field names to chosen definitions
  */
-async function resolveFieldConflicts(conflicts) {
+async function resolveFieldConflicts(conflicts, targetNotebookName, sourceNotebookName) {
     return new Promise((resolve, reject) => {
         const modal = document.getElementById('field-conflict-modal');
         const list = document.getElementById('conflict-list');
@@ -7651,12 +7676,16 @@ async function resolveFieldConflicts(conflicts) {
         const keepAllBtn = document.getElementById('conflict-keep-all');
         const useAllBtn = document.getElementById('conflict-use-all');
 
+        // Update batch button labels with notebook names
+        keepAllBtn.textContent = `Keep All "${targetNotebookName}"`;
+        useAllBtn.textContent = `Use All "${sourceNotebookName}"`;
+
         // Clear previous conflicts
         list.replaceChildren();
 
         // Render each conflict
         for (const conflict of conflicts) {
-            const conflictEl = createConflictElement(conflict);
+            const conflictEl = createConflictElement(conflict, targetNotebookName, sourceNotebookName);
             list.appendChild(conflictEl);
         }
 
