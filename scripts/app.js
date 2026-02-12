@@ -7606,8 +7606,9 @@ async function importFromFile() {
                 : `Imported ${importedNames.length} notebooks: ${importedNames.join(', ')}`;
             showToast(message);
 
-            // Refresh project list view if visible
-            if (document.getElementById('project-list-view').classList.contains('hidden') === false) {
+            // Refresh project list if on landing page
+            const projectListView = document.getElementById('project-list-view');
+            if (projectListView && !projectListView.classList.contains('hidden')) {
                 showProjectList();
             }
         }
