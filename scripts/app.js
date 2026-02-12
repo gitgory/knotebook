@@ -7599,14 +7599,8 @@ async function importFromFile() {
             }
         }
 
-        // Step 3: Show results
+        // Step 3: Refresh project list
         if (importedNames.length > 0) {
-            const message = importedNames.length === 1
-                ? `Imported: ${importedNames[0]}`
-                : `Imported ${importedNames.length} notebooks: ${importedNames.join(', ')}`;
-            showToast(message);
-
-            // Refresh project list on landing page
             populateProjectsList();
         }
 
