@@ -732,6 +732,75 @@ function getFieldOptions(fieldDef) {
     return Array.from(options).sort();
 }
 
+/**
+ * Compares two field definitions for equality.
+ * Used during import to detect conflicts.
+ * @param {Object} field1 - First field definition
+ * @param {Object} field2 - Second field definition
+ * @returns {boolean} - True if definitions are equivalent
+ */
+function fieldDefinitionsMatch(field1, field2) {
+    // Compare essential properties
+    if (field1.type !== field2.type) return false;
+    if (field1.label !== field2.label) return false;
+
+    // For select types, compare options (order-independent)
+    if (field1.type === 'single-select' || field1.type === 'multi-select') {
+        const options1 = JSON.stringify([...(field1.options || [])].sort());
+        const options2 = JSON.stringify([...(field2.options || [])].sort());
+        if (options1 !== options2) return false;
+    }
+
+    return true;
+}
+
+/**
+ * Merges imported custom field definitions with existing ones.
+ * Detects conflicts (same name, different definition) and returns them for user resolution.
+ * @param {Array} existingFields - Current notebook's custom field definitions
+ * @param {Array} importedFields - Imported custom field definitions
+ * @returns {Object} - { merged: Array, conflicts: Array }
+ */
+function mergeCustomFieldDefinitions(existingFields, importedFields) {
+    const merged = [...existingFields]; // Start with existing
+    const conflicts = [];
+
+    for (const importedField of importedFields) {
+        const existing = merged.find(f => f.name === importedField.name);
+
+        if (!existing) {
+            // New field, add it
+            merged.push(importedField);
+        } else {
+            // Field name exists, check if definitions match
+            if (!fieldDefinitionsMatch(existing, importedField)) {
+                conflicts.push({
+                    name: importedField.name,
+                    existing: existing,
+                    imported: importedField
+                });
+            }
+            // If they match, keep existing (no action needed)
+        }
+    }
+
+    return { merged, conflicts };
+}
+
+/**
+ * Formats a field definition for display in conflict resolution modal.
+ * @param {Object} fieldDef - Field definition
+ * @returns {string} - Formatted string
+ */
+function formatFieldDefinition(fieldDef) {
+    let str = `Type: ${fieldDef.type}`;
+    if (fieldDef.label) str += `, Label: "${fieldDef.label}"`;
+    if (fieldDef.options && fieldDef.options.length > 0) {
+        str += `, Options: [${fieldDef.options.join(', ')}]`;
+    }
+    return str;
+}
+
 // Autocomplete state (kept separate as it's transient UI state)
 const autocomplete = {
     active: false,
@@ -7462,6 +7531,155 @@ function hideImportModal() {
 }
 
 /**
+ * Creates a radio button option for field definition choice in conflict resolution.
+ * @param {string} fieldName - Field name
+ * @param {string} value - Radio value ('existing' or 'imported')
+ * @param {string} label - Display label
+ * @param {Object} fieldDef - Field definition
+ * @param {boolean} checked - Whether to select by default
+ * @returns {HTMLElement} - Radio option element
+ */
+function createFieldOptionRadio(fieldName, value, label, fieldDef, checked) {
+    const wrapper = document.createElement('label');
+    wrapper.className = 'conflict-option';
+
+    const radio = document.createElement('input');
+    radio.type = 'radio';
+    radio.name = `conflict-${fieldName}`;
+    radio.value = value;
+    radio.checked = checked;
+    wrapper.appendChild(radio);
+
+    const labelSpan = document.createElement('span');
+    labelSpan.className = 'conflict-option-label';
+    labelSpan.textContent = label;
+    wrapper.appendChild(labelSpan);
+
+    const details = document.createElement('div');
+    details.className = 'conflict-option-details';
+    details.textContent = formatFieldDefinition(fieldDef);
+    wrapper.appendChild(details);
+
+    return wrapper;
+}
+
+/**
+ * Creates DOM element for a single field conflict.
+ * @param {Object} conflict - Conflict object with name, existing, imported
+ * @returns {HTMLElement} - Conflict display element
+ */
+function createConflictElement(conflict) {
+    const container = document.createElement('div');
+    container.className = 'conflict-item';
+
+    const title = document.createElement('h4');
+    title.textContent = `Field: ${conflict.name}`;
+    container.appendChild(title);
+
+    // Existing definition option (default selected)
+    const existingOption = createFieldOptionRadio(
+        conflict.name,
+        'existing',
+        'Keep Current Definition',
+        conflict.existing,
+        true
+    );
+    container.appendChild(existingOption);
+
+    // Imported definition option
+    const importedOption = createFieldOptionRadio(
+        conflict.name,
+        'imported',
+        'Use Imported Definition',
+        conflict.imported,
+        false
+    );
+    container.appendChild(importedOption);
+
+    return container;
+}
+
+/**
+ * Shows conflict resolution modal for custom field definitions.
+ * Returns a Promise that resolves to a map of field names to chosen definitions.
+ * @param {Array} conflicts - Array of conflict objects
+ * @returns {Promise<Object>} - Map of field names to chosen definitions
+ */
+async function resolveFieldConflicts(conflicts) {
+    return new Promise((resolve, reject) => {
+        const modal = document.getElementById('field-conflict-modal');
+        const list = document.getElementById('conflict-list');
+        const resolveBtn = document.getElementById('conflict-resolve-btn');
+        const cancelBtn = document.getElementById('conflict-cancel-btn');
+        const keepAllBtn = document.getElementById('conflict-keep-all');
+        const useAllBtn = document.getElementById('conflict-use-all');
+
+        // Clear previous conflicts
+        list.replaceChildren();
+
+        // Render each conflict
+        for (const conflict of conflicts) {
+            const conflictEl = createConflictElement(conflict);
+            list.appendChild(conflictEl);
+        }
+
+        // Show modal
+        modal.classList.remove('hidden');
+
+        // Batch action: Keep all current
+        keepAllBtn.onclick = () => {
+            conflicts.forEach(conflict => {
+                const radio = document.querySelector(
+                    `input[name="conflict-${conflict.name}"][value="existing"]`
+                );
+                if (radio) radio.checked = true;
+            });
+        };
+
+        // Batch action: Use all imported
+        useAllBtn.onclick = () => {
+            conflicts.forEach(conflict => {
+                const radio = document.querySelector(
+                    `input[name="conflict-${conflict.name}"][value="imported"]`
+                );
+                if (radio) radio.checked = true;
+            });
+        };
+
+        // Handle resolution
+        resolveBtn.onclick = () => {
+            const resolutions = {};
+            let allResolved = true;
+
+            for (const conflict of conflicts) {
+                const selected = document.querySelector(
+                    `input[name="conflict-${conflict.name}"]:checked`
+                );
+                if (!selected) {
+                    showAlert('Please choose a definition for all fields', 'Error');
+                    allResolved = false;
+                    break;
+                }
+                resolutions[conflict.name] = selected.value === 'existing'
+                    ? conflict.existing
+                    : conflict.imported;
+            }
+
+            if (allResolved) {
+                modal.classList.add('hidden');
+                resolve(resolutions);
+            }
+        };
+
+        // Handle cancellation
+        cancelBtn.onclick = () => {
+            modal.classList.add('hidden');
+            reject(new Error('User cancelled import'));
+        };
+    });
+}
+
+/**
  * Handle "Create New Notebook" import option.
  * Creates new project with imported data name, saves imported nodes/edges/colors/settings,
  * updates note count, and opens the new project.
@@ -7540,19 +7758,61 @@ async function handleImportOverwrite() {
         return;
     }
 
-    // Save imported data to the existing project
+    // Load existing project data
+    const existingData = loadProjectFromStorage(targetProject.id) || {};
+    const existingSettings = existingData.settings || {};
     const importedSettings = importData.settings || {};
-    // Migrate legacy defaultCompletion if present
+
+    // Migrate legacy defaultCompletion if present in either
     if (importedSettings.defaultCompletion !== undefined && !importedSettings.fieldDefaults) {
         importedSettings.fieldDefaults = { completion: importedSettings.defaultCompletion, priority: null };
         delete importedSettings.defaultCompletion;
     }
+    if (existingSettings.defaultCompletion !== undefined && !existingSettings.fieldDefaults) {
+        existingSettings.fieldDefaults = { completion: existingSettings.defaultCompletion, priority: null };
+        delete existingSettings.defaultCompletion;
+    }
+
+    // Merge custom field definitions
+    const existingFields = existingSettings.customFields || [];
+    const importedFields = importedSettings.customFields || [];
+    const { merged, conflicts } = mergeCustomFieldDefinitions(existingFields, importedFields);
+
+    // Resolve conflicts if any
+    if (conflicts.length > 0) {
+        try {
+            const resolutions = await resolveFieldConflicts(conflicts);
+
+            // Apply conflict resolutions to merged array
+            for (const [fieldName, chosenDef] of Object.entries(resolutions)) {
+                const index = merged.findIndex(f => f.name === fieldName);
+                if (index !== -1) {
+                    merged[index] = chosenDef;
+                }
+            }
+        } catch (err) {
+            if (err.message === 'User cancelled import') {
+                // User cancelled conflict resolution
+                return;
+            }
+            throw err;
+        }
+    }
+
+    // Create merged settings object
+    const mergedSettings = {
+        ...existingSettings,
+        ...importedSettings,
+        customFields: merged
+    };
+
+    // Save imported data to the existing project (overwrite)
     const projectData = {
         version: 1,
         nodes: importData.nodes || [],
         edges: importData.edges || [],
         hashtagColors: importData.hashtagColors || {},
-        settings: importedSettings,
+        settings: mergedSettings,
         hiddenHashtags: importData.hiddenHashtags || [],
         theme: importData.theme || getCurrentTheme()
     };

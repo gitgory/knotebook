@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>knotebook</title>
     <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
-    <link rel="stylesheet" href="styles/main.css?v=157">
+    <link rel="stylesheet" href="styles/main.css?v=180">
 </head>
 <body>
     <div id="app">
@@ -22,7 +22,7 @@
                     <h2>Your Notebooks</h2>
                     <div id="projects-list"></div>
                 </div>
-                <div id="version-info">CSS v157 | JS v179</div>
+                <div id="version-info">CSS v180 | JS v180</div>
 
                 <!-- Debug Tools (hidden by default) -->
                 <div id="debug-tools" class="hidden">
@@ -67,6 +67,29 @@
                     <button id="import-overwrite">Overwrite Existing...</button>
                 </div>
                 <button id="import-cancel">Cancel</button>
+            </div>
+        </div>
+
+        <!-- Field Conflict Resolution Modal -->
+        <div id="field-conflict-modal" class="hidden">
+            <div id="field-conflict-content">
+                <h3>Custom Field Conflicts</h3>
+                <p class="conflict-explanation">
+                    The imported notebook has custom fields with the same names but different definitions.
+                    Choose which definition to keep for each field:
+                </p>
+
+                <div id="conflict-list"></div>
+
+                <div id="conflict-batch-buttons">
+                    <button id="conflict-keep-all" class="secondary">Keep All Current</button>
+                    <button id="conflict-use-all" class="secondary">Use All Imported</button>
+                </div>
+
+                <div id="field-conflict-buttons">
+                    <button id="conflict-resolve-btn">Continue Import</button>
+                    <button id="conflict-cancel-btn">Cancel</button>
+                </div>
             </div>
         </div>
 
@@ -423,6 +446,6 @@
         </div>
     </div>
 
-    <script src="scripts/app.js?v=179"></script>
+    <script src="scripts/app.js?v=180"></script>
 </body>
 </html>

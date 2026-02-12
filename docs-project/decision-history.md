@@ -4,6 +4,27 @@ This file tracks significant technical and design decisions made during developm
 
 ---
 
+## 2026-02-11: Custom Fields Import - Merge Strategy
+
+DECISION: Merge custom field definitions when importing notebooks
+CHOSE: Merge imported field definitions with existing ones, prompt on conflicts
+NOT: Replace all fields (loses existing schema), skip fields (incomplete import)
+
+Reasoning:
+- Flexibility: Users can combine notebooks with different field schemas
+- Data preservation: Doesn't lose existing field definitions
+- Conflict handling: User chooses which definition to keep when names clash
+- Use case: Merging project notebooks, consolidating research notes
+- Backwards compatible: Old exports without customFields import normally
+
+Implementation:
+- mergeCustomFieldDefinitions(existingFields, importedFields)
+- Conflict modal shows both definitions, user picks one
+- Field values on nodes import regardless of schema match
+- Orphaned field values preserved (no data loss)
+
+---
+
 ## 2026-02-09: Unified Field Storage (node.fields)
 
 DECISION: Store ALL fields (First-Class and Second-Class) in node.fields.{fieldName}
