@@ -284,7 +284,7 @@ body {
 #projects-section {
     margin-top: 40px;
     width: 100%;
-    max-width: 400px;
+    max-width: 100%;
 }
 
 #version-info {
