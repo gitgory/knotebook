@@ -3700,12 +3700,32 @@ function renderEdges() {
         const centerA = getNodeCenter(nodeA);
         const centerB = getNodeCenter(nodeB);
 
+        // For directed edges, shorten the line so arrow doesn't overlap node
+        let x1 = centerA.x;
+        let y1 = centerA.y;
+        let x2 = centerB.x;
+        let y2 = centerB.y;
+
+        if (edge.directed) {
+            // Calculate direction vector
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const length = Math.sqrt(dx * dx + dy * dy);
+
+            // Shorten endpoint by half the node width plus arrow size
+            const offset = (NODE_WIDTH / 2) + 12;
+            const ratio = (length - offset) / length;
+
+            x2 = x1 + dx * ratio;
+            y2 = y1 + dy * ratio;
+        }
+
         // Create a group to hold hitbox and visible line
         const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
         g.setAttribute('class', 'edge-group');
         g.setAttribute('data-index', i);
 
-        // Invisible wider hitbox for easier clicking
+        // Invisible wider hitbox for easier clicking (always full length)
         const hitbox = document.createElementNS('http://www.w3.org/2000/svg', 'line');
         hitbox.setAttribute('class', 'edge-hitbox');
         hitbox.setAttribute('x1', centerA.x);
@@ -3714,13 +3734,13 @@ function renderEdges() {
         hitbox.setAttribute('y2', centerB.y);
         g.appendChild(hitbox);
 
-        // Visible edge line
+        // Visible edge line (shortened if directed)
         const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
         line.setAttribute('class', 'edge' + (state.selectedEdge === i ? ' selected' : ''));
-        line.setAttribute('x1', centerA.x);
-        line.setAttribute('y1', centerA.y);
-        line.setAttribute('x2', centerB.x);
-        line.setAttribute('y2', centerB.y);
+        line.setAttribute('x1', x1);
+        line.setAttribute('y1', y1);
+        line.setAttribute('x2', x2);
+        line.setAttribute('y2', y2);
 
         // Add arrow marker for directed edges
         if (edge.directed) {
