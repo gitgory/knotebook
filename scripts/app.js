@@ -3712,13 +3712,40 @@ function renderEdges() {
             const dy = y2 - y1;
             const length = Math.sqrt(dx * dx + dy * dy);
 
-            // Shorten endpoint so arrow appears just outside node edge
-            // NODE_HEIGHT is 60, so half is 30. Add small buffer for arrow.
-            const offset = 35;
-            const ratio = (length - offset) / length;
+            if (length > 0) {
+                // Normalize direction
+                const dirX = dx / length;
+                const dirY = dy / length;
 
-            x2 = x1 + dx * ratio;
-            y2 = y1 + dy * ratio;
+                // Calculate intersection with target node rectangle
+                // Node dimensions: NODE_WIDTH (280) x NODE_HEIGHT (60)
+                const halfWidth = NODE_WIDTH / 2;
+                const halfHeight = NODE_HEIGHT / 2;
+
+                // Find which edge of the rectangle the line intersects
+                // by comparing the angle to the rectangle's corners
+                const txLeft = (centerB.x - halfWidth - x1) / dirX;
+                const txRight = (centerB.x + halfWidth - x1) / dirX;
+                const tyTop = (centerB.y - halfHeight - y1) / dirY;
+                const tyBottom = (centerB.y + halfHeight - y1) / dirY;
+
+                // Get valid (positive) intersection distances
+                const intersections = [];
+                if (txLeft > 0 && txLeft < length) intersections.push(txLeft);
+                if (txRight > 0 && txRight < length) intersections.push(txRight);
+                if (tyTop > 0 && tyTop < length) intersections.push(tyTop);
+                if (tyBottom > 0 && tyBottom < length) intersections.push(tyBottom);
+
+                // Use the smallest positive intersection (closest edge)
+                if (intersections.length > 0) {
+                    const t = Math.min(...intersections);
+                    // Subtract small offset for arrow head
+                    const arrowOffset = 8;
+                    const finalT = Math.max(0, t - arrowOffset);
+                    x2 = x1 + dirX * finalT;
+                    y2 = y1 + dirY * finalT;
+                }
+            }
         }
 
         // Create a group to hold hitbox and visible line
