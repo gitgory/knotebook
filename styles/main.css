@@ -1400,15 +1400,35 @@ body {
     margin-bottom: 10px;
 }
 
-#custom-fields-container:empty {
-    display: none;
-}
-
 .custom-field-control {
     display: flex;
     align-items: center;
     gap: 6px;
     margin-bottom: 10px;
+}
+
+/* Create field control in editor */
+.create-field-control {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+}
+
+.create-field-link {
+    background: none;
+    border: none;
+    color: var(--accent);
+    cursor: pointer;
+    font-size: 0.9em;
+    padding: 5px 0;
+    text-align: left;
+    width: 100%;
+    font-style: italic;
+}
+
+.create-field-link:hover {
+    text-decoration: underline;
+    color: var(--accent-hover);
 }
 
 .custom-field-label {

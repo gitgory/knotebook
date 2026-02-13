@@ -4753,6 +4753,35 @@ function openSingleEditor(node, nodeId) {
 // ============================================================================
 
 /**
+ * Append "Create custom field..." control to the custom fields container.
+ * Shows different text based on whether fields exist.
+ * @param {HTMLElement} container - The custom fields container element
+ * @param {boolean} hasExistingFields - Whether any custom fields are defined
+ */
+function appendCreateFieldControl(container, hasExistingFields) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'create-field-control';
+
+    const link = document.createElement('button');
+    link.className = 'create-field-link';
+    link.type = 'button';
+
+    if (hasExistingFields) {
+        link.textContent = '+ Create custom field...';
+    } else {
+        link.textContent = 'No custom fields defined. Create custom field...';
+    }
+
+    link.addEventListener('click', (e) => {
+        e.preventDefault();
+        openFieldEditorFromEditor();
+    });
+
+    wrapper.appendChild(link);
+    container.appendChild(wrapper);
+}
+
+/**
  * Render all custom fields in the editor based on project settings.
  * Called when opening editor (single or batch mode).
  * @param {Object} node - The node being edited (null in batch mode)
@@ -4764,8 +4793,9 @@ function renderCustomFieldsInEditor(node, nodes, isBatchMode) {
     container.replaceChildren(); // Clear existing fields
 
     const customFields = state.projectSettings.customFields || [];
-    if (customFields.length === 0) return; // No custom fields defined
+    const hasExistingFields = customFields.length > 0;
 
+    // Render existing custom fields
     customFields.forEach(fieldDef => {
         const renderer = FIELD_TYPE_RENDERERS[fieldDef.type];
         if (!renderer) {
@@ -4784,6 +4814,9 @@ function renderCustomFieldsInEditor(node, nodes, isBatchMode) {
             renderer.load(fieldDef, node, false);
         }
     });
+
+    // Always append "Create custom field..." control
+    appendCreateFieldControl(container, hasExistingFields);
 }
 
 /**
@@ -7081,6 +7114,24 @@ function addCustomField() {
  * @param {number|null} fieldIndex - Index of field being edited (null for add)
  * @param {Object|null} fieldData - Existing field data (null for add)
  */
+/**
+ * Opens the field editor modal from the note editor context.
+ * Preserves editor state and re-renders after field creation.
+ */
+function openFieldEditorFromEditor() {
+    // Get current editor state before opening modal
+    const editorMode = getEditorMode();
+
+    // Store editor context for restoration
+    state.editorContext = {
+        mode: editorMode,
+        preserveAfterFieldCreation: true
+    };
+
+    // Open field editor in "add" mode
+    openFieldEditorModal('add', null, null);
+}
+
 function openFieldEditorModal(mode, fieldIndex, fieldData) {
     const modal = document.getElementById('field-editor-modal');
     const title = document.getElementById('field-editor-title');
@@ -7242,6 +7293,20 @@ async function saveFieldFromModal() {
                 localStorage.setItem(STORAGE_KEY_PREFIX + targetId, JSON.stringify(data));
             }
         }
+    }
+
+    // If called from note editor, re-render custom fields
+    if (state.editorContext?.preserveAfterFieldCreation) {
+        const { mode } = state.editorContext;
+
+        if (mode.isBatchMode) {
+            renderCustomFieldsInEditor(null, mode.nodes, true);
+        } else {
+            renderCustomFieldsInEditor(mode.node, null, false);
+        }
+
+        // Clear context
+        state.editorContext = null;
     }
 
     closeFieldEditorModal();
