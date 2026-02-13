@@ -3710,41 +3710,37 @@ function renderEdges() {
             // Calculate direction vector
             const dx = x2 - x1;
             const dy = y2 - y1;
-            const length = Math.sqrt(dx * dx + dy * dy);
 
-            if (length > 0) {
-                // Normalize direction
-                const dirX = dx / length;
-                const dirY = dy / length;
-
-                // Calculate intersection with target node rectangle
+            if (dx !== 0 || dy !== 0) {
                 // Node dimensions: NODE_WIDTH (280) x NODE_HEIGHT (60)
                 const halfWidth = NODE_WIDTH / 2;
                 const halfHeight = NODE_HEIGHT / 2;
 
-                // Find which edge of the rectangle the line intersects
-                // by comparing the angle to the rectangle's corners
-                const txLeft = (centerB.x - halfWidth - x1) / dirX;
-                const txRight = (centerB.x + halfWidth - x1) / dirX;
-                const tyTop = (centerB.y - halfHeight - y1) / dirY;
-                const tyBottom = (centerB.y + halfHeight - y1) / dirY;
+                // Determine which edge to intersect based on angle
+                // Use simple ratio: if line is more horizontal or vertical
+                const absRatioX = Math.abs(dx / dy);
+                const absRatioY = Math.abs(dy / dx);
 
-                // Get valid (positive) intersection distances
-                const intersections = [];
-                if (txLeft > 0 && txLeft < length) intersections.push(txLeft);
-                if (txRight > 0 && txRight < length) intersections.push(txRight);
-                if (tyTop > 0 && tyTop < length) intersections.push(tyTop);
-                if (tyBottom > 0 && tyBottom < length) intersections.push(tyBottom);
+                let offsetX = 0;
+                let offsetY = 0;
 
-                // Use the smallest positive intersection (closest edge)
-                if (intersections.length > 0) {
-                    const t = Math.min(...intersections);
-                    // Subtract small offset for arrow head
-                    const arrowOffset = 8;
-                    const finalT = Math.max(0, t - arrowOffset);
-                    x2 = x1 + dirX * finalT;
-                    y2 = y1 + dirY * finalT;
+                // More horizontal - hits left or right edge
+                if (absRatioX > halfWidth / halfHeight) {
+                    offsetX = dx > 0 ? -halfWidth : halfWidth;
+                    offsetY = offsetX * (dy / dx);
+                } else {
+                    // More vertical - hits top or bottom edge
+                    offsetY = dy > 0 ? -halfHeight : halfHeight;
+                    offsetX = offsetY * (dx / dy);
                 }
+
+                // Add small buffer for arrow head
+                const arrowBuffer = 8;
+                const bufferRatioX = arrowBuffer * Math.sign(dx);
+                const bufferRatioY = arrowBuffer * Math.sign(dy);
+
+                x2 = centerB.x + offsetX - bufferRatioX;
+                y2 = centerB.y + offsetY - bufferRatioY;
             }
         }
 
