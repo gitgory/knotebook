@@ -108,7 +108,6 @@ const state = {
     selectedNodes: [],   // Currently selected node IDs (supports multi-select)
     selectedEdge: null,  // Currently selected edge index
     edgeStartNode: null, // Node ID when creating an edge
-    edgeDirected: false, // Whether creating a directed edge (Shift+Click)
     dragging: null,      // Node being dragged
     dragOffsets: {},     // Drag offsets for all selected nodes (for multi-drag)
     duplicating: false,  // True when Ctrl+drag duplicating nodes
@@ -4460,15 +4459,14 @@ function hideNodeContextMenu() {
  * Start edge creation mode from a node or batch of selected nodes.
  * If nodeId provided, starts single-edge mode from that node. Otherwise, uses current
  * selection for batch connect mode (multiple sources to one target).
+ * All edges are created as undirected by default (use R key to add direction after).
  *
  * @param {string} nodeId - Optional ID of starting node; if omitted, uses selection
- * @param {boolean} directed - Whether to create a directed edge (default: false)
  */
-function startEdgeCreation(nodeId, directed = false) {
+function startEdgeCreation(nodeId) {
     // If nodeId provided, use it; otherwise use current selection (for batch connect)
     if (nodeId) {
         state.edgeStartNode = nodeId;
-        state.edgeDirected = directed;
     } else if (state.selectedNodes.length > 0) {
         // Batch connect mode: store all selected nodes
         state.edgeStartNode = state.selectedNodes[0]; // Use first as primary for preview
@@ -4479,18 +4477,20 @@ function startEdgeCreation(nodeId, directed = false) {
 /**
  * Complete edge creation by connecting to target node.
  * In batch mode, creates edges from all source nodes to target. Toggles edges (removes
- * if exists, creates if not). Prevents self-connections. Clears edge creation state
- * and triggers render.
+ * if exists, creates if not). Prevents self-connections. Clears edge creation state,
+ * selects newly created edge, and triggers render.
  *
  * @param {string} targetNodeId - ID of node to connect to
  */
-function completeEdgeCreation(targetNodeId, directed = false) {
+function completeEdgeCreation(targetNodeId) {
     if (!state.edgeStartNode || state.edgeStartNode === targetNodeId) {
         state.edgeStartNode = null;
         state.edgeStartNodes = null;
         clearEdgePreview();
         return;
     }
+
+    let newEdgeIndex = null;
 
     // Batch connect mode: create edges from all source nodes to target
     if (state.edgeStartNodes && state.edgeStartNodes.length > 0) {
@@ -4509,8 +4509,9 @@ function completeEdgeCreation(targetNodeId, directed = false) {
                 state.edges.push({
                     from: sourceId,
                     to: targetNodeId,
-                    directed: directed
+                    directed: false
                 });
+                newEdgeIndex = state.edges.length - 1; // Track last created edge
             }
         });
     } else {
@@ -4522,19 +4523,27 @@ function completeEdgeCreation(targetNodeId, directed = false) {
 
         if (existingIndex !== -1) {
             state.edges.splice(existingIndex, 1);
+            newEdgeIndex = null; // Edge was deleted, don't select
         } else {
             state.edges.push({
                 from: state.edgeStartNode,
                 to: targetNodeId,
-                directed: directed
+                directed: false
             });
+            newEdgeIndex = state.edges.length - 1; // Select newly created edge
         }
     }
 
     state.edgeStartNode = null;
     state.edgeStartNodes = null;
-    state.edgeDirected = false;
     clearEdgePreview();
+
+    // Select newly created edge (if one was created)
+    if (newEdgeIndex !== null) {
+        state.selectedEdge = newEdgeIndex;
+        state.selectedNodes = [];
+    }
+
     render();
 }
 
@@ -7970,15 +7979,13 @@ function initEventListeners() {
             }
 
             if (e.shiftKey) {
-                // Shift+drag: start/complete edge creation (directed if Alt also held)
+                // Shift+drag: start/complete edge creation (always undirected)
                 if (state.edgeStartNode) {
-                    // Complete edge creation to this target (use stored directed flag)
-                    completeEdgeCreation(nodeId, state.edgeDirected);
+                    // Complete edge creation to this target
+                    completeEdgeCreation(nodeId);
                 } else {
                     // Start edge creation from the clicked node
-                    // Alt+Shift creates directed edge, Shift alone creates undirected
-                    const directed = e.altKey;
-                    startEdgeCreation(nodeId, directed);
+                    startEdgeCreation(nodeId);
                 }
             } else {
                 // Regular click or Ctrl+click for multi-select/duplicate or Alt+click to remove
@@ -8047,7 +8054,10 @@ function initEventListeners() {
                 state.panStart = { x: e.clientX, y: e.clientY };
                 canvas.style.cursor = 'grabbing';
             } else if (e.button === 0) {
-                // Left click on empty canvas - start selection box
+                // Left click on empty canvas - clear selections and start selection box
+                state.selectedNodes = [];
+                state.selectedEdge = null;
+                updateSelectionVisuals();
                 // Mode (enclosed vs intersecting) determined by initial drag direction
                 const canvasPos = screenToCanvas(e.clientX, e.clientY);
                 state.selectionBox = {
@@ -8251,7 +8261,7 @@ function initEventListeners() {
             const nodeEl = target.closest('.node');
             if (nodeEl) {
                 const targetNodeId = nodeEl.dataset.id;
-                completeEdgeCreation(targetNodeId, state.edgeDirected);
+                completeEdgeCreation(targetNodeId);
             }
         }
 
@@ -8666,8 +8676,8 @@ function initEventListeners() {
                 lastTapNode = null;
                 tapToAddMode = false;  // Exit tap-to-add mode
             } else if (state.edgeStartNode && state.edgeStartNode !== touchStartNode) {
-                // Complete edge creation (using stored directed flag)
-                completeEdgeCreation(touchStartNode, state.edgeDirected);
+                // Complete edge creation
+                completeEdgeCreation(touchStartNode);
                 lastTapTime = 0;
                 lastTapNode = null;
             } else {
