@@ -8823,6 +8823,7 @@ function initEventListeners() {
         // D - Remove direction from selected edge
         if (e.key.toLowerCase() === 'd' && state.selectedEdge !== null) {
             e.preventDefault();
+            console.log('D pressed, edge:', state.edges[state.selectedEdge]);
             const edge = state.edges[state.selectedEdge];
             if (edge && edge.directed) {
                 edge.directed = false;
@@ -8833,6 +8834,7 @@ function initEventListeners() {
         // R - Reverse/toggle direction of selected edge
         if (e.key.toLowerCase() === 'r' && state.selectedEdge !== null) {
             e.preventDefault();
+            console.log('R pressed, toggling edge', state.selectedEdge);
             toggleEdgeDirection(state.selectedEdge);
         }
 
