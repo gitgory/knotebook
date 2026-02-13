@@ -3707,56 +3707,43 @@ function renderEdges() {
         let y2 = centerB.y;
 
         if (edge.directed) {
-            // Calculate direction vector
+            // Calculate direction vector from center A to center B
             const dx = x2 - x1;
             const dy = y2 - y1;
+            const length = Math.sqrt(dx * dx + dy * dy);
 
-            if (dx !== 0 || dy !== 0) {
+            if (length > 0) {
                 // Node dimensions: NODE_WIDTH (280) x NODE_HEIGHT (60)
-                // Border radius: 8px (defined in CSS as rx: 8)
                 const halfWidth = NODE_WIDTH / 2;
                 const halfHeight = NODE_HEIGHT / 2;
-                const borderRadius = 8;
 
-                // Determine which edge to intersect based on angle
-                // Use simple ratio: if line is more horizontal or vertical
-                const absRatioX = Math.abs(dx / dy);
-                const absRatioY = Math.abs(dy / dx);
+                // Normalize direction
+                const normX = dx / length;
+                const normY = dy / length;
 
-                let offsetX = 0;
-                let offsetY = 0;
+                // Calculate which edge of target node the line hits
+                // Compare absolute slopes to determine if more horizontal or vertical
+                const absSlope = Math.abs(dy / dx);
+                const nodeAspect = NODE_HEIGHT / NODE_WIDTH;
 
-                // More horizontal - hits left or right edge
-                if (absRatioX > halfWidth / halfHeight) {
-                    offsetX = dx > 0 ? -halfWidth : halfWidth;
-                    offsetY = offsetX * (dy / dx);
-
-                    // Account for rounded corners - clamp Y to avoid corner radius
-                    const maxY = halfHeight - borderRadius;
-                    if (Math.abs(offsetY) > maxY) {
-                        offsetY = Math.sign(offsetY) * maxY;
-                        offsetX = offsetY * (dx / dy);
-                    }
+                let edgeOffset;
+                if (absSlope < nodeAspect) {
+                    // More horizontal - hits left or right edge
+                    // Distance from center to edge is halfWidth
+                    edgeOffset = halfWidth / Math.abs(normX);
                 } else {
                     // More vertical - hits top or bottom edge
-                    offsetY = dy > 0 ? -halfHeight : halfHeight;
-                    offsetX = offsetY * (dx / dy);
-
-                    // Account for rounded corners - clamp X to avoid corner radius
-                    const maxX = halfWidth - borderRadius;
-                    if (Math.abs(offsetX) > maxX) {
-                        offsetX = Math.sign(offsetX) * maxX;
-                        offsetY = offsetX * (dy / dx);
-                    }
+                    // Distance from center to edge is halfHeight
+                    edgeOffset = halfHeight / Math.abs(normY);
                 }
 
-                // Add small buffer for arrow head
-                const arrowBuffer = 8;
-                const bufferRatioX = arrowBuffer * Math.sign(dx);
-                const bufferRatioY = arrowBuffer * Math.sign(dy);
+                // Subtract arrow buffer so arrow sits just outside node
+                const arrowBuffer = 10;
+                const finalOffset = edgeOffset - arrowBuffer;
 
-                x2 = centerB.x + offsetX - bufferRatioX;
-                y2 = centerB.y + offsetY - bufferRatioY;
+                // Calculate endpoint
+                x2 = x1 + normX * finalOffset;
+                y2 = y1 + normY * finalOffset;
             }
         }
 
