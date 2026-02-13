@@ -3700,29 +3700,7 @@ function renderEdges() {
         const centerA = getNodeCenter(nodeA);
         const centerB = getNodeCenter(nodeB);
 
-        // Line goes from center A to center B
-        let x1 = centerA.x;
-        let y1 = centerA.y;
-        let x2 = centerB.x;
-        let y2 = centerB.y;
-
-        // For directed edges, shorten endpoint slightly so arrow sits outside node
-        if (edge.directed) {
-            const dx = x2 - x1;
-            const dy = y2 - y1;
-            const length = Math.sqrt(dx * dx + dy * dy);
-
-            if (length > 0) {
-                // Shorten by a small fixed amount to keep arrow visible
-                const shortenBy = 35; // Just enough to clear the node edge
-                const ratio = (length - shortenBy) / length;
-
-                x2 = x1 + dx * ratio;
-                y2 = y1 + dy * ratio;
-            }
-        }
-
-        // Create a group to hold hitbox and visible line
+        // Create a group to hold hitbox and visible line(s)
         const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
         g.setAttribute('class', 'edge-group');
         g.setAttribute('data-index', i);
@@ -3736,21 +3714,63 @@ function renderEdges() {
         hitbox.setAttribute('y2', centerB.y);
         g.appendChild(hitbox);
 
-        // Visible edge line (shortened if directed)
-        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        line.setAttribute('class', 'edge' + (state.selectedEdge === i ? ' selected' : ''));
-        line.setAttribute('x1', x1);
-        line.setAttribute('y1', y1);
-        line.setAttribute('x2', x2);
-        line.setAttribute('y2', y2);
-
-        // Add arrow marker for directed edges
         if (edge.directed) {
-            const markerName = state.selectedEdge === i ? 'arrowhead-selected' : 'arrowhead';
-            line.setAttribute('marker-end', `url(#${markerName})`);
-        }
+            // For directed edges: draw TWO lines
+            // 1. Base line (center to center, no arrow) - visual connection
+            const baseLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            baseLine.setAttribute('class', 'edge' + (state.selectedEdge === i ? ' selected' : ''));
+            baseLine.setAttribute('x1', centerA.x);
+            baseLine.setAttribute('y1', centerA.y);
+            baseLine.setAttribute('x2', centerB.x);
+            baseLine.setAttribute('y2', centerB.y);
+            g.appendChild(baseLine);
 
-        g.appendChild(line);
+            // 2. Arrow line (center to edge, with arrow) - direction indicator
+            const dx = centerB.x - centerA.x;
+            const dy = centerB.y - centerA.y;
+            const length = Math.sqrt(dx * dx + dy * dy);
+
+            if (length > 0) {
+                const halfWidth = NODE_WIDTH / 2;
+                const halfHeight = NODE_HEIGHT / 2;
+                const normX = dx / length;
+                const normY = dy / length;
+
+                // Calculate which edge is hit (same logic as v209)
+                const absSlope = Math.abs(dy / dx);
+                const nodeAspect = NODE_HEIGHT / NODE_WIDTH;
+
+                let distanceFromCenterToEdge;
+                if (absSlope < nodeAspect) {
+                    distanceFromCenterToEdge = halfWidth / Math.abs(normX);
+                } else {
+                    distanceFromCenterToEdge = halfHeight / Math.abs(normY);
+                }
+
+                const arrowBuffer = 10;
+                const distanceFromAToArrow = length - distanceFromCenterToEdge - arrowBuffer;
+
+                const arrowLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                arrowLine.setAttribute('class', 'edge' + (state.selectedEdge === i ? ' selected' : ''));
+                arrowLine.setAttribute('x1', centerA.x);
+                arrowLine.setAttribute('y1', centerA.y);
+                arrowLine.setAttribute('x2', centerA.x + normX * distanceFromAToArrow);
+                arrowLine.setAttribute('y2', centerA.y + normY * distanceFromAToArrow);
+
+                const markerName = state.selectedEdge === i ? 'arrowhead-selected' : 'arrowhead';
+                arrowLine.setAttribute('marker-end', `url(#${markerName})`);
+                g.appendChild(arrowLine);
+            }
+        } else {
+            // Undirected edge: single line center to center
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('class', 'edge' + (state.selectedEdge === i ? ' selected' : ''));
+            line.setAttribute('x1', centerA.x);
+            line.setAttribute('y1', centerA.y);
+            line.setAttribute('x2', centerB.x);
+            line.setAttribute('y2', centerB.y);
+            g.appendChild(line);
+        }
 
         layer.appendChild(g);
     }
