@@ -22,7 +22,7 @@
                     <h2>Your Notebooks</h2>
                     <div id="projects-list"></div>
                 </div>
-                <div id="version-info">CSS v192 | JS v213</div>
+                <div id="version-info">CSS v192 | JS v214</div>
 
                 <!-- Debug Tools (hidden by default) -->
                 <div id="debug-tools" class="hidden">
@@ -124,12 +124,12 @@
                     <!-- Arrow markers for directed edges -->
                     <defs>
                         <marker id="arrowhead" markerWidth="10" markerHeight="7"
-                                refX="9" refY="3.5" orient="auto" markerUnits="strokeWidth">
-                            <polygon points="0 0, 10 3.5, 0 7" fill="var(--text-secondary)" />
+                                refX="9" refY="3.5" orient="auto" markerUnits="userSpaceOnUse">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="var(--accent)" />
                         </marker>
                         <marker id="arrowhead-selected" markerWidth="10" markerHeight="7"
-                                refX="9" refY="3.5" orient="auto" markerUnits="strokeWidth">
-                            <polygon points="0 0, 10 3.5, 0 7" fill="var(--accent)" />
+                                refX="9" refY="3.5" orient="auto" markerUnits="userSpaceOnUse">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="var(--highlight)" />
                         </marker>
                     </defs>
                     <!-- Edges will be rendered here (below nodes) -->
@@ -445,6 +445,6 @@
         </div>
     </div>
 
-    <script src="scripts/app.js?v=213"></script>
+    <script src="scripts/app.js?v=214"></script>
 </body>
 </html>
