@@ -3747,7 +3747,7 @@ function renderEdges() {
                     distanceFromCenterToEdge = halfHeight / Math.abs(normY);
                 }
 
-                const arrowBuffer = 10;
+                const arrowBuffer = 2;
                 const distanceFromAToArrow = length - distanceFromCenterToEdge - arrowBuffer;
 
                 const arrowLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
