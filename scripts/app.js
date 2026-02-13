@@ -7938,13 +7938,15 @@ function initEventListeners() {
             }
 
             if (e.shiftKey) {
-                // Shift+click: start/complete directed edge creation from the clicked node
+                // Shift+drag: start/complete edge creation (directed if Alt also held)
                 if (state.edgeStartNode) {
                     // Complete edge creation to this target (use stored directed flag)
                     completeEdgeCreation(nodeId, state.edgeDirected);
                 } else {
-                    // Start directed edge creation from the clicked node
-                    startEdgeCreation(nodeId, true); // directed = true
+                    // Start edge creation from the clicked node
+                    // Alt+Shift creates directed edge, Shift alone creates undirected
+                    const directed = e.altKey;
+                    startEdgeCreation(nodeId, directed);
                 }
             } else {
                 // Regular click or Ctrl+click for multi-select/duplicate or Alt+click to remove
