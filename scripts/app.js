@@ -3713,8 +3713,10 @@ function renderEdges() {
 
             if (dx !== 0 || dy !== 0) {
                 // Node dimensions: NODE_WIDTH (280) x NODE_HEIGHT (60)
+                // Border radius: 8px (defined in CSS as rx: 8)
                 const halfWidth = NODE_WIDTH / 2;
                 const halfHeight = NODE_HEIGHT / 2;
+                const borderRadius = 8;
 
                 // Determine which edge to intersect based on angle
                 // Use simple ratio: if line is more horizontal or vertical
@@ -3728,10 +3730,24 @@ function renderEdges() {
                 if (absRatioX > halfWidth / halfHeight) {
                     offsetX = dx > 0 ? -halfWidth : halfWidth;
                     offsetY = offsetX * (dy / dx);
+
+                    // Account for rounded corners - clamp Y to avoid corner radius
+                    const maxY = halfHeight - borderRadius;
+                    if (Math.abs(offsetY) > maxY) {
+                        offsetY = Math.sign(offsetY) * maxY;
+                        offsetX = offsetY * (dx / dy);
+                    }
                 } else {
                     // More vertical - hits top or bottom edge
                     offsetY = dy > 0 ? -halfHeight : halfHeight;
                     offsetX = offsetY * (dx / dy);
+
+                    // Account for rounded corners - clamp X to avoid corner radius
+                    const maxX = halfWidth - borderRadius;
+                    if (Math.abs(offsetX) > maxX) {
+                        offsetX = Math.sign(offsetX) * maxX;
+                        offsetY = offsetX * (dy / dx);
+                    }
                 }
 
                 // Add small buffer for arrow head
