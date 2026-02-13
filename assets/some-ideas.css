@@ -1,0 +1,105 @@
+/* knotebook - Color Themes */
+
+/* ============================================================================
+   THEME DEFINITIONS
+   ============================================================================ */
+
+/* Default theme: Midnight */
+:root {
+    --bg-primary: #24262d;
+    --bg-secondary: #16213e;
+    --surface: #313544;
+    --surface-hover: #575b6a;
+    --accent: #676a73;
+    --accent-hover: #9a9da6;
+    --highlight: #25e1db;
+    --highlight-hover: #58ffff;
+    --text-primary: #eee;
+    --text-secondary: #888;
+    --danger: #ff4444;
+    --danger-hover: #cc3333;
+}
+
+/* Slate - Gray/cyan theme */
+[data-theme="slate"] {
+    --bg-primary: #18181b;
+    --bg-secondary: #27272a;
+    --surface: #3f3f46;
+    --surface-hover: #52525b;
+    --accent: #22d3ee;
+    --accent-hover: #67e8f9;
+    --highlight: #a3e635;
+    --highlight-hover: #84cc16;
+    --text-primary: #fafafa;
+    --text-secondary: #a1a1aa;
+    --danger: #ef4444;
+    --danger-hover: #dc2626;
+}
+
+/* Aurora */
+[data-theme="aurora"] {
+    --bg-primary: #004e89;
+    --bg-secondary: #121A20;
+    --surface: #1a659e;
+    --surface-hover: #408bc4;
+    --accent: #004e89;
+    --accent-hover: #3381bc;
+    --highlight: #4ec6ef;
+    --highlight-hover: #81f9ff;
+    --accent-3: #dd1c1a;
+    --text-primary: #f0f5f9;
+    --text-secondary: #9988bb;
+    --danger: #ff4444;
+    --danger-hover: #cc3333;
+}
+
+/* Sunny */
+[data-theme="sunny"] {
+    --bg-primary: #dde8f4;
+    --bg-secondary: #121A20;
+    --surface: #fcfcff;
+    --surface-hover: #ffffff;
+    --accent: #19b3f5;
+    --accent-hover: #4ce6ff;
+    --highlight: #b388ff;
+    --highlight-hover: #e6bbff;
+    --accent-3: #2af5c7;
+    --text-primary: #121A20;
+    --text-secondary: #101010;
+    --danger: #ff4444;
+    --danger-hover: #cc3333;
+}
+
+/* Neon */
+[data-theme="neon"] {
+    --bg-primary: #24262e;
+    --bg-secondary: #0f0f1e;
+    --surface: #383b47;
+    --surface-hover: #5e616d;
+    --accent: #52c4f4;
+    --accent-hover: #85f7ff;
+    --highlight: #9ee010;
+    --highlight-hover: #d1ff43;
+    --accent-3: #e15a97;
+    --text-primary: #f0f0ff;
+    --text-secondary: #9988dd;
+    --danger: #ff4444;
+    --danger-hover: #cc3333;
+}
+
+/* Battery */
+[data-theme="battery"] {
+    --bg-primary: #0d1117;
+    --bg-secondary: #161b22;
+    --surface: #21262d;
+    --surface-hover: #30363d;
+    --accent: #00aaff;
+    --accent-hover: #33bbff;
+    --highlight: #ff4444;
+    --highlight-hover: #ff6666;
+    --accent-3: #ffaa00;
+    --text-primary: #f0f6fc;
+    --text-secondary: #7799cc;
+    --danger: #ff4444;
+    --danger-hover: #cc3333;
+}

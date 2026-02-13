@@ -22,7 +22,7 @@
                     <h2>Your Notebooks</h2>
                     <div id="projects-list"></div>
                 </div>
-                <div id="version-info">CSS v192 | JS v193</div>
+                <div id="version-info">CSS v192 | JS v195</div>
 
                 <!-- Debug Tools (hidden by default) -->
                 <div id="debug-tools" class="hidden">
@@ -121,6 +121,17 @@
             <!-- Main canvas area -->
             <div id="canvas-container">
                 <svg id="canvas">
+                    <!-- Arrow markers for directed edges -->
+                    <defs>
+                        <marker id="arrowhead" markerWidth="10" markerHeight="7"
+                                refX="9" refY="3.5" orient="auto" markerUnits="strokeWidth">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="var(--text-secondary)" />
+                        </marker>
+                        <marker id="arrowhead-selected" markerWidth="10" markerHeight="7"
+                                refX="9" refY="3.5" orient="auto" markerUnits="strokeWidth">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="var(--accent)" />
+                        </marker>
+                    </defs>
                     <!-- Edges will be rendered here (below nodes) -->
                     <g id="edges-layer"></g>
                     <!-- Nodes will be rendered here -->
@@ -434,6 +445,6 @@
         </div>
     </div>
 
-    <script src="scripts/app.js?v=194"></script>
+    <script src="scripts/app.js?v=195"></script>
 </body>
 </html>

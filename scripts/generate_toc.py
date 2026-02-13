@@ -23,7 +23,7 @@ def extract_toc(js_file_path):
 
     # Add header
     toc_lines.append("/**")
-    toc_lines.append(" * Graph Notes - Main Application")
+    toc_lines.append(" * knotebook")
     toc_lines.append(" * A visual note-taking app with graph structure")
     toc_lines.append(" */")
 
@@ -108,7 +108,7 @@ def main():
     # Determine paths
     script_dir = Path(__file__).parent
     js_file = script_dir / 'app.js'
-    output_file = script_dir / 'app_js_table_of_contents.txt'
+    output_file = script_dir.parent / 'docs-project' / 'app_js_table_of_contents.txt'
 
     # Check if app.js exists
     if not js_file.exists():

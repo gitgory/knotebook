@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>knotebook - Theme Editor</title>
+    <link rel="stylesheet" href="themes.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            padding: 20px;
+            background: #000;
+            color: #fff;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .header-actions {
+            margin-top: 20px;
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        #save-themes-btn, #reset-themes-btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        #save-themes-btn {
+            background: #22c55e;
+            color: white;
+        }
+
+        #save-themes-btn:hover {
+            background: #16a34a;
+            transform: translateY(-2px);
+        }
+
+        #reset-themes-btn {
+            background: #ef4444;
+            color: white;
+        }
+
+        #reset-themes-btn:hover {
+            background: #dc2626;
+            transform: translateY(-2px);
+        }
+
+        .instruction {
+            color: #888;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        .themes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 30px;
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+
+        .theme-card {
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .theme-header {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            padding: 20px;
+            border-bottom: 2px solid var(--surface);
+        }
+
+        .theme-name {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .theme-body {
+            background: var(--bg-primary);
+            padding: 20px;
+        }
+
+        .sample-section {
+            margin-bottom: 20px;
+        }
+
+        .sample-section h3 {
+            color: var(--text-primary);
+            font-size: 0.9em;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .color-swatches {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+
+        .swatch {
+            width: 70px;
+            height: 70px;
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.65em;
+            text-align: center;
+            line-height: 1.2;
+            color: var(--text-primary);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            cursor: pointer;
+            transition: transform 0.2s, border-color 0.2s;
+            position: relative;
+        }
+
+        .swatch:hover {
+            transform: scale(1.05);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        .swatch-label {
+            font-weight: 600;
+            margin-top: 4px;
+        }
+
+        .swatch input[type="color"] {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+
+        .btn-accent {
+            background: var(--accent);
+            color: var(--bg-primary);
+        }
+
+        .btn-accent:hover {
+            background: var(--accent-hover);
+        }
+
+        .btn-highlight {
+            background: var(--highlight);
+            color: var(--bg-primary);
+        }
+
+        .btn-highlight:hover {
+            background: var(--highlight-hover);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: var(--danger-hover);
+        }
+
+        .btn-surface {
+            background: var(--surface);
+            color: var(--text-primary);
+        }
+
+        .btn-surface:hover {
+            background: var(--surface-hover);
+        }
+
+        .text-samples {
+            background: var(--surface);
+            padding: 15px;
+            border-radius: 4px;
+        }
+
+        .text-primary {
+            color: var(--text-primary);
+            margin-bottom: 8px;
+            font-size: 1em;
+        }
+
+        .text-secondary {
+            color: var(--text-secondary);
+            font-size: 0.9em;
+        }
+
+        /* Knote replica styles */
+        .knote-samples {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .knote {
+            background: var(--surface);
+            border: 2px solid var(--accent);
+            border-radius: 8px;
+            padding: 12px 16px;
+            min-width: 210px;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .knote-dog-ear {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 0;
+            height: 0;
+            border-style: solid;
+            border-width: 0 20px 20px 0;
+            border-color: transparent var(--accent) transparent transparent;
+            opacity: 0.4;
+        }
+
+        .knote:hover {
+            background: var(--surface-hover);
+        }
+
+        .knote.selected {
+            border: 2px solid var(--highlight);
+            border-width: 2px;
+        }
+
+        .knote-title {
+            color: var(--text-primary);
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .knote-hashtags {
+            display: flex;
+            gap: 4px;
+            margin-top: 6px;
+        }
+
+        .knote-hashtag {
+            background: var(--accent);
+            color: #fff;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>knotebook Theme Editor</h1>
+        <p class="instruction">Click any color swatch to edit. Changes are live!</p>
+        <div class="header-actions">
+            <button id="save-themes-btn">💾 Download themes.css</button>
+            <button id="reset-themes-btn">↺ Reset to Default</button>
+        </div>
+    </header>
+
+    <div class="themes-grid" id="themes-container">
+        <!-- Themes will be generated here by JavaScript -->
+    </div>
+
+    <script>
+        // Theme definitions with all color variables
+        const themes = {
+            midnight: {
+                name: 'Midnight',
+                subtitle: 'Default theme',
+                selector: ':root',
+                comment: '/* Default theme: Midnight */',
+                colors: {
+                    'bg-primary': '#1a1a2e',
+                    'bg-secondary': '#16213e',
+                    'surface': '#0f3460',
+                    'surface-hover': '#1a4a7a',
+                    'accent': '#4a9fff',
+                    'accent-hover': '#6ab0ff',
+                    'highlight': '#00ff88',
+                    'highlight-hover': '#00cc6a',
+                    'accent-3': '#ff6b35',
+                    'text-primary': '#eee',
+                    'text-secondary': '#888',
+                    'danger': '#ff4444',
+                    'danger-hover': '#cc3333'
+                }
+            },
+            obsidian: {
+                name: 'Obsidian',
+                subtitle: 'Purple theme',
+                selector: '[data-theme="obsidian"]',
+                comment: '/* Obsidian - Purple theme */',
+                colors: {
+                    'bg-primary': '#1a1a24',
+                    'bg-secondary': '#252532',
+                    'surface': '#2d2d3d',
+                    'surface-hover': '#3d3d52',
+                    'accent': '#a78bfa',
+                    'accent-hover': '#c4b5fd',
+                    'highlight': '#f472b6',
+                    'highlight-hover': '#ec4899',
+                    'accent-3': '#ff6b35',
+                    'text-primary': '#f1f1f4',
+                    'text-secondary': '#9898a8',
+                    'danger': '#ef4444',
+                    'danger-hover': '#dc2626'
+                }
+            },
+            slate: {
+                name: 'Slate',
+                subtitle: 'Gray/cyan theme',
+                selector: '[data-theme="slate"]',
+                comment: '/* Slate - Gray/cyan theme */',
+                colors: {
+                    'bg-primary': '#18181b',
+                    'bg-secondary': '#27272a',
+                    'surface': '#3f3f46',
+                    'surface-hover': '#52525b',
+                    'accent': '#22d3ee',
+                    'accent-hover': '#67e8f9',
+                    'highlight': '#a3e635',
+                    'highlight-hover': '#84cc16',
+                    'accent-3': '#ff6b35',
+                    'text-primary': '#fafafa',
+                    'text-secondary': '#a1a1aa',
+                    'danger': '#ef4444',
+                    'danger-hover': '#dc2626'
+                }
+            },
+            mint: {
+                name: 'Mint',
+                subtitle: 'Includes accent-3',
+                selector: '[data-theme="mint"]',
+                comment: '/* Mint */',
+                colors: {
+                    'bg-primary': '#0B0F14',
+                    'bg-secondary': '#121A20',
+                    'surface': '#1a2832',
+                    'surface-hover': '#243844',
+                    'accent': '#2AF5C7',
+                    'accent-hover': '#5ef7d6',
+                    'highlight': '#FFC857',
+                    'highlight-hover': '#ffd57a',
+                    'accent-3': '#B388FF',
+                    'text-primary': '#f0f5f9',
+                    'text-secondary': '#88a0b0',
+                    'danger': '#ff4444',
+                    'danger-hover': '#cc3333'
+                }
+            },
+            aurora: {
+                name: 'Aurora',
+                subtitle: 'Includes accent-3',
+                selector: '[data-theme="aurora"]',
+                comment: '/* Aurora */',
+                colors: {
+                    'bg-primary': '#0B0F14',
+                    'bg-secondary': '#121A20',
+                    'surface': '#1a2832',
+                    'surface-hover': '#243844',
+                    'accent': '#B388FF',
+                    'accent-hover': '#c5a3ff',
+                    'highlight': '#2AF5C7',
+                    'highlight-hover': '#5ef7d6',
+                    'accent-3': '#FFC857',
+                    'text-primary': '#f0f5f9',
+                    'text-secondary': '#9988bb',
+                    'danger': '#ff4444',
+                    'danger-hover': '#cc3333'
+                }
+            },
+            neon: {
+                name: 'Neon',
+                subtitle: 'Includes accent-3',
+                selector: '[data-theme="neon"]',
+                comment: '/* Neon */',
+                colors: {
+                    'bg-primary': '#0a0a0f',
+                    'bg-secondary': '#0f0f1e',
+                    'surface': '#1a1a2e',
+                    'surface-hover': '#25254a',
+                    'accent': '#00ffff',
+                    'accent-hover': '#33ffff',
+                    'highlight': '#8338ec',
+                    'highlight-hover': '#9d5aff',
+                    'accent-3': '#ff006e',
+                    'text-primary': '#f0f0ff',
+                    'text-secondary': '#9988dd',
+                    'danger': '#ff4444',
+                    'danger-hover': '#cc3333'
+                }
+            },
+            battery: {
+                name: 'Sky',
+                subtitle: 'Includes accent-3',
+                selector: '[data-theme="battery"]',
+                comment: '/* Battery */',
+                colors: {
+                    'bg-primary': '#0d1117',
+                    'bg-secondary': '#161b22',
+                    'surface': '#21262d',
+                    'surface-hover': '#30363d',
+                    'accent': '#00aaff',
+                    'accent-hover': '#33bbff',
+                    'highlight': '#ff4444',
+                    'highlight-hover': '#ff6666',
+                    'accent-3': '#ffaa00',
+                    'text-primary': '#f0f6fc',
+                    'text-secondary': '#7799cc',
+                    'danger': '#ff4444',
+                    'danger-hover': '#cc3333'
+                }
+            },
+            graphite: {
+                name: 'Graphite',
+                subtitle: 'Includes accent-3',
+                selector: '[data-theme="graphite"]',
+                comment: '/* Graphite */',
+                colors: {
+                    'bg-primary': '#1a1a1c',
+                    'bg-secondary': '#2a2a2e',
+                    'surface': '#3a3a3f',
+                    'surface-hover': '#4a4a52',
+                    'accent': '#9e9e9e',
+                    'accent-hover': '#b8b8b8',
+                    'highlight': '#00bcd4',
+                    'highlight-hover': '#33cce0',
+                    'accent-3': '#ff6b35',
+                    'text-primary': '#f5f5f5',
+                    'text-secondary': '#aaaaaa',
+                    'danger': '#ff4444',
+                    'danger-hover': '#cc3333'
+                }
+            },
+            ocean: {
+                name: 'Ocean',
+                subtitle: 'Includes accent-3',
+                selector: '[data-theme="ocean"]',
+                comment: '/* Ocean */',
+                colors: {
+                    'bg-primary': '#0a1a28',
+                    'bg-secondary': '#14293f',
+                    'surface': '#1f3a56',
+                    'surface-hover': '#2a4d6d',
+                    'accent': '#7bc8db',
+                    'accent-hover': '#99d6e5',
+                    'highlight': '#ffd166',
+                    'highlight-hover': '#ffdb85',
+                    'accent-3': '#4a9fb8',
+                    'text-primary': '#f0f8ff',
+                    'text-secondary': '#77aacc',
+                    'danger': '#ff4444',
+                    'danger-hover': '#cc3333'
+                }
+            },
+            custom1: {
+                name: 'Custom 1',
+                subtitle: 'Blank template - build your own',
+                selector: '[data-theme="custom1"]',
+                comment: '/* Custom 1 */',
+                colors: {
+                    'bg-primary': '#1a1a1a',
+                    'bg-secondary': '#222222',
+                    'surface': '#2a2a2a',
+                    'surface-hover': '#333333',
+                    'accent': '#4a9fff',
+                    'accent-hover': '#6ab0ff',
+                    'highlight': '#00ff88',
+                    'highlight-hover': '#00cc6a',
+                    'accent-3': '#ff6b9d',
+                    'text-primary': '#eeeeee',
+                    'text-secondary': '#888888',
+                    'danger': '#ff4444',
+                    'danger-hover': '#cc3333'
+                }
+            },
+            custom2: {
+                name: 'Custom 2',
+                subtitle: 'Blank template - build your own',
+                selector: '[data-theme="custom2"]',
+                comment: '/* Custom 2 */',
+                colors: {
+                    'bg-primary': '#1a1a1a',
+                    'bg-secondary': '#222222',
+                    'surface': '#2a2a2a',
+                    'surface-hover': '#333333',
+                    'accent': '#4a9fff',
+                    'accent-hover': '#6ab0ff',
+                    'highlight': '#00ff88',
+                    'highlight-hover': '#00cc6a',
+                    'accent-3': '#ff6b9d',
+                    'text-primary': '#eeeeee',
+                    'text-secondary': '#888888',
+                    'danger': '#ff4444',
+                    'danger-hover': '#cc3333'
+                }
+            },
+            custom3: {
+                name: 'Custom 3',
+                subtitle: 'Blank template - build your own',
+                selector: '[data-theme="custom3"]',
+                comment: '/* Custom 3 */',
+                colors: {
+                    'bg-primary': '#1a1a1a',
+                    'bg-secondary': '#222222',
+                    'surface': '#2a2a2a',
+                    'surface-hover': '#333333',
+                    'accent': '#4a9fff',
+                    'accent-hover': '#6ab0ff',
+                    'highlight': '#00ff88',
+                    'highlight-hover': '#00cc6a',
+                    'accent-3': '#ff6b9d',
+                    'text-primary': '#eeeeee',
+                    'text-secondary': '#888888',
+                    'danger': '#ff4444',
+                    'danger-hover': '#cc3333'
+                }
+            }
+        };
+
+        // Store original themes for reset
+        const originalThemes = JSON.parse(JSON.stringify(themes));
+
+        // Generate theme cards
+        function renderThemes() {
+            const container = document.getElementById('themes-container');
+            container.innerHTML = '';
+
+            Object.entries(themes).forEach(([id, theme]) => {
+                const card = document.createElement('div');
+                card.className = `theme-card theme-${id}`;
+                card.style.setProperty('--bg-primary', theme.colors['bg-primary']);
+                card.style.setProperty('--bg-secondary', theme.colors['bg-secondary']);
+                card.style.setProperty('--surface', theme.colors['surface']);
+                card.style.setProperty('--surface-hover', theme.colors['surface-hover']);
+                card.style.setProperty('--accent', theme.colors['accent']);
+                card.style.setProperty('--accent-hover', theme.colors['accent-hover']);
+                card.style.setProperty('--highlight', theme.colors['highlight']);
+                card.style.setProperty('--highlight-hover', theme.colors['highlight-hover']);
+                card.style.setProperty('--text-primary', theme.colors['text-primary']);
+                card.style.setProperty('--text-secondary', theme.colors['text-secondary']);
+                card.style.setProperty('--danger', theme.colors['danger']);
+                card.style.setProperty('--danger-hover', theme.colors['danger-hover']);
+                if (theme.colors['accent-3']) {
+                    card.style.setProperty('--accent-3', theme.colors['accent-3']);
+                }
+
+                // Create color swatches
+                const mainColors = ['bg-primary', 'surface', 'accent', 'highlight'];
+                if (theme.colors['accent-3']) mainColors.push('accent-3');
+
+                const swatchesHTML = mainColors.map(colorKey => {
+                    const displayName = colorKey.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                    return `
+                        <div class="swatch" style="background: ${theme.colors[colorKey]}">
+                            <input type="color" value="${theme.colors[colorKey]}"
+                                   data-theme="${id}" data-color="${colorKey}">
+                            <span class="swatch-label">${displayName}</span>
+                        </div>
+                    `;
+                }).join('');
+
+                card.innerHTML = `
+                    <div class="theme-header">
+                        <div class="theme-name">${theme.name}</div>
+                        <div class="text-secondary">${theme.subtitle}</div>
+                    </div>
+                    <div class="theme-body">
+                        <div class="sample-section">
+                            <h3>Color Palette</h3>
+                            <div class="color-swatches">
+                                ${swatchesHTML}
+                            </div>
+                        </div>
+
+                        <div class="sample-section">
+                            <h3>Buttons</h3>
+                            <div class="buttons">
+                                <button class="btn btn-accent">Accent Button</button>
+                                <button class="btn btn-highlight">Highlight</button>
+                                <button class="btn btn-surface">Surface</button>
+                                <button class="btn btn-danger">Danger</button>
+                            </div>
+                        </div>
+
+                        <div class="sample-section">
+                            <h3>Notes (Knotes)</h3>
+                            <div class="knote-samples">
+                                <div class="knote">
+                                    <div class="knote-dog-ear"></div>
+                                    <div class="knote-title">Normal Note</div>
+                                    <div class="knote-hashtags">
+                                        <span class="knote-hashtag" style="background: #6366f1">#tag1</span>
+                                        <span class="knote-hashtag" style="background: #ec4899">#tag2</span>
+                                    </div>
+                                </div>
+                                <div class="knote selected">
+                                    <div class="knote-dog-ear"></div>
+                                    <div class="knote-title">Selected Note</div>
+                                    <div class="knote-hashtags">
+                                        <span class="knote-hashtag" style="background: #22c55e">#important</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                container.appendChild(card);
+            });
+
+            // Add event listeners to color inputs
+            document.querySelectorAll('input[type="color"]').forEach(input => {
+                // Store original color when picker opens
+                input.addEventListener('focus', (e) => {
+                    e.target.dataset.originalColor = e.target.value;
+                });
+
+                // Preview color changes as user picks (but don't commit)
+                input.addEventListener('input', handleColorPreview);
+
+                // Commit when user clicks a color in the palette
+                input.addEventListener('change', handleColorCommit);
+
+                // Commit when user closes the picker (clicks outside)
+                input.addEventListener('blur', (e) => {
+                    // If we were previewing, commit the current color
+                    if (e.target.dataset.previewing === 'true') {
+                        const themeId = e.target.dataset.theme;
+                        const colorKey = e.target.dataset.color;
+                        const newColor = e.target.value;
+
+                        // Mark as committed
+                        e.target.dataset.previewing = 'false';
+
+                        // Update theme data permanently
+                        themes[themeId].colors[colorKey] = newColor;
+
+                        // Update all related colors
+                        updateRelatedColors(themeId, colorKey, newColor);
+
+                        // Re-render after a tiny delay to ensure color picker is closed
+                        setTimeout(() => renderThemes(), 10);
+                    }
+                });
+            });
+        }
+
+        // Preview color changes (input event - fires while dragging slider)
+        function handleColorPreview(e) {
+            const themeId = e.target.dataset.theme;
+            const colorKey = e.target.dataset.color;
+            const newColor = e.target.value;
+
+            // Mark as previewing
+            e.target.dataset.previewing = 'true';
+
+            // Update the theme data temporarily
+            themes[themeId].colors[colorKey] = newColor;
+            updateRelatedColors(themeId, colorKey, newColor);
+
+            // Update CSS variables in real-time without re-rendering
+            const card = document.querySelector(`.theme-${themeId}`);
+            if (card) {
+                Object.entries(themes[themeId].colors).forEach(([key, value]) => {
+                    card.style.setProperty(`--${key}`, value);
+                });
+            }
+        }
+
+        // Commit color changes (change event - fires when color is selected from palette)
+        function handleColorCommit(e) {
+            const themeId = e.target.dataset.theme;
+            const colorKey = e.target.dataset.color;
+            const newColor = e.target.value;
+
+            // Mark as committed
+            e.target.dataset.previewing = 'false';
+
+            // Update theme data permanently
+            themes[themeId].colors[colorKey] = newColor;
+
+            // Update all related colors
+            updateRelatedColors(themeId, colorKey, newColor);
+
+            // Re-render after a tiny delay to ensure color picker is closed
+            setTimeout(() => renderThemes(), 10);
+        }
+
+        // Update theme visuals without re-rendering (to preserve event listeners)
+        function updateThemeVisuals(themeId, colorKey, newColor) {
+            const theme = themes[themeId];
+            const card = document.querySelector(`.theme-${themeId}`);
+
+            if (!card) return;
+
+            // Update CSS custom properties on the card
+            Object.entries(theme.colors).forEach(([key, value]) => {
+                card.style.setProperty(`--${key}`, value);
+            });
+
+            // Update the swatch background colors
+            card.querySelectorAll('.swatch').forEach(swatch => {
+                const input = swatch.querySelector('input[type="color"]');
+                if (input) {
+                    const swatchColorKey = input.dataset.color;
+                    const swatchColor = theme.colors[swatchColorKey];
+                    // Force update the swatch background
+                    swatch.setAttribute('style', `background: ${swatchColor}`);
+                    input.value = swatchColor;
+                }
+            });
+        }
+
+        // Update ALL visuals for a theme (including related/hover colors)
+        function updateAllThemeVisuals(themeId) {
+            const theme = themes[themeId];
+            const card = document.querySelector(`.theme-${themeId}`);
+
+            if (!card) return;
+
+            // Update CSS custom properties on the card
+            Object.entries(theme.colors).forEach(([key, value]) => {
+                card.style.setProperty(`--${key}`, value);
+            });
+
+            // Update the swatch background colors and input values
+            card.querySelectorAll('.swatch').forEach(swatch => {
+                const input = swatch.querySelector('input[type="color"]');
+                if (input) {
+                    const swatchColorKey = input.dataset.color;
+                    const swatchColor = theme.colors[swatchColorKey];
+                    // Force update the swatch background by setting the attribute directly
+                    swatch.setAttribute('style', `background: ${swatchColor}`);
+                    input.value = swatchColor;
+                }
+            });
+        }
+
+        // Update hover variants automatically
+        function updateRelatedColors(themeId, colorKey, newColor) {
+            const theme = themes[themeId];
+
+            // Auto-update hover variants by lightening the base color
+            if (colorKey === 'accent') {
+                theme.colors['accent-hover'] = lightenColor(newColor, 20);
+            } else if (colorKey === 'highlight') {
+                theme.colors['highlight-hover'] = lightenColor(newColor, 20);
+            } else if (colorKey === 'surface') {
+                theme.colors['surface-hover'] = lightenColor(newColor, 15);
+            } else if (colorKey === 'danger') {
+                theme.colors['danger-hover'] = darkenColor(newColor, 15);
+            }
+        }
+
+        // Utility: Lighten a hex color
+        function lightenColor(hex, percent) {
+            const num = parseInt(hex.replace('#', ''), 16);
+            const amt = Math.round(2.55 * percent);
+            const R = Math.min(255, (num >> 16) + amt);
+            const G = Math.min(255, ((num >> 8) & 0x00FF) + amt);
+            const B = Math.min(255, (num & 0x0000FF) + amt);
+            return '#' + ((R << 16) | (G << 8) | B).toString(16).padStart(6, '0');
+        }
+
+        // Utility: Darken a hex color
+        function darkenColor(hex, percent) {
+            const num = parseInt(hex.replace('#', ''), 16);
+            const amt = Math.round(2.55 * percent);
+            const R = Math.max(0, (num >> 16) - amt);
+            const G = Math.max(0, ((num >> 8) & 0x00FF) - amt);
+            const B = Math.max(0, (num & 0x0000FF) - amt);
+            return '#' + ((R << 16) | (G << 8) | B).toString(16).padStart(6, '0');
+        }
+
+        // Generate CSS file content
+        function generateCSS() {
+            let css = `/* knotebook - Color Themes */\n\n`;
+            css += `/* ============================================================================\n`;
+            css += `   THEME DEFINITIONS\n`;
+            css += `   ============================================================================ */\n\n`;
+
+            Object.entries(themes).forEach(([id, theme]) => {
+                css += `${theme.comment}\n`;
+                css += `${theme.selector} {\n`;
+
+                Object.entries(theme.colors).forEach(([key, value]) => {
+                    css += `    --${key}: ${value};\n`;
+                });
+
+                css += `}\n\n`;
+            });
+
+            // Add note about accent-3
+            const noteIndex = Object.keys(themes).indexOf('mint');
+            if (noteIndex > 0) {
+                const lines = css.split('\n');
+                const insertPoint = lines.findIndex(line => line.includes('/* Mint */'));
+                if (insertPoint > 0) {
+                    lines.splice(insertPoint, 0,
+                        '/* NOTE: New themes (below) include --accent-3 for future use.',
+                        '   Current themes (above) do not have --accent-3 defined.',
+                        '   --accent-3 is not currently used anywhere in the app. */',
+                        ''
+                    );
+                    css = lines.join('\n');
+                }
+            }
+
+            return css;
+        }
+
+        // Download themes.css file
+        function downloadThemes() {
+            const css = generateCSS();
+            const blob = new Blob([css], { type: 'text/css' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'themes.css';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Reset to original themes
+        function resetThemes() {
+            if (confirm('Reset all themes to their original colors?')) {
+                Object.keys(themes).forEach(id => {
+                    themes[id].colors = JSON.parse(JSON.stringify(originalThemes[id].colors));
+                });
+                renderThemes();
+            }
+        }
+
+        // Event listeners
+        document.getElementById('save-themes-btn').addEventListener('click', downloadThemes);
+        document.getElementById('reset-themes-btn').addEventListener('click', resetThemes);
+
+        // Initial render
+        renderThemes();
+    </script>
+</body>
+</html>

@@ -4,6 +4,54 @@ This file tracks significant technical and design decisions made during developm
 
 ---
 
+## 2026-02-11: Multi-File Import, Remove Overwrite
+
+DECISION: Remove overwrite functionality, support multi-file import only
+CHOSE: Import always creates new notebooks, multiple files supported
+NOT: Keep overwrite option (confusing, dangerous), single file only (slower workflow)
+
+Reasoning:
+- Simplicity: One-click import, no modal choices
+- Safety: No accidental data loss, can't overwrite wrong notebook
+- Flexibility: Duplicate names allowed, batch import multiple files
+- Easy undo: Just delete unwanted imports
+- Cleaner code: Removed 158 lines (6 functions, 1 modal)
+
+---
+
+## 2026-02-11: Conflict Resolution in Move-to-Notebook (Not Import)
+
+DECISION: Apply field merge logic during Move-to-Notebook, not import overwrite
+CHOSE: Merge fields when moving notes between notebooks with different schemas
+NOT: Merge during import/overwrite (wrong use case)
+
+Reasoning:
+- Correct use case: Moving notes between existing notebooks needs schema reconciliation
+- Import creates new: Imported notebooks are isolated, no merging needed
+- Overwrite replaces: Complete replacement doesn't need merge logic
+- User context: Moving notes = combining workflows, conflict resolution makes sense
+
+---
+
+## 2026-02-11: Notebook Names in UI Elements
+
+DECISION: Show actual notebook names instead of generic labels
+CHOSE: Display notebook name in breadcrumbs and conflict modal
+NOT: Generic labels like "Current" or "Root"
+
+Reasoning:
+- Context clarity: "Keep 'Project A'" vs "Keep Current Definition"
+- Breadcrumbs: "NotebookName > Root" shows where you are
+- Conflict resolution: Users see exactly which notebook's definitions they're choosing
+- Reduces cognitive load: No need to remember which is "current" vs "imported"
+
+Implementation:
+- Breadcrumbs: "NotebookName > Root > Parent > Child"
+- Conflict modal: "Keep 'TargetNotebook'" vs "Use 'SourceNotebook'"
+- Batch buttons: "Keep All 'TargetNotebook'" and "Use All 'SourceNotebook'"
+
+---
+
 ## 2026-02-11: Custom Fields Import - Merge Strategy
 
 DECISION: Merge custom field definitions when importing notebooks

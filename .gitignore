@@ -1,15 +1,9 @@
 # Local Claude Code settings
 .claude/settings.local.json
 
-# Test plans (temporary documentation)
+# Test plans stay local
 TEST_*.md
 tests/*
-
-# Generated files
-scripts/*.txt
-scripts/*.bat
-scripts/*.py
-
 
 # OS files
 .DS_Store
@@ -31,4 +25,7 @@ npm-debug.log*
 # Other
 GRIGRI.txt
 file_structure.txt
-docs - project/*
+docs-project/*
+reviews/*.*
+*.bat
+scripts/*.py

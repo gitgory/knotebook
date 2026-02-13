@@ -108,6 +108,7 @@ const state = {
     selectedNodes: [],   // Currently selected node IDs (supports multi-select)
     selectedEdge: null,  // Currently selected edge index
     edgeStartNode: null, // Node ID when creating an edge
+    edgeDirected: false, // Whether creating a directed edge (Shift+Click)
     dragging: null,      // Node being dragged
     dragOffsets: {},     // Drag offsets for all selected nodes (for multi-drag)
     duplicating: false,  // True when Ctrl+drag duplicating nodes
@@ -3681,13 +3682,20 @@ function renderEdges() {
 
     for (let i = 0; i < state.edges.length; i++) {
         const edge = state.edges[i];
-        const nodeA = state.nodes.find(n => n.id === edge[0]);
-        const nodeB = state.nodes.find(n => n.id === edge[1]);
+
+        // Backwards compatibility: convert array format to object format
+        if (Array.isArray(edge)) {
+            state.edges[i] = { from: edge[0], to: edge[1], directed: false };
+            continue; // Re-render on next frame with updated format
+        }
+
+        const nodeA = state.nodes.find(n => n.id === edge.from);
+        const nodeB = state.nodes.find(n => n.id === edge.to);
 
         if (!nodeA || !nodeB) continue;
 
         // Skip edges where either node is hidden by filter
-        if (!visibleIds.includes(edge[0]) || !visibleIds.includes(edge[1])) continue;
+        if (!visibleIds.includes(edge.from) || !visibleIds.includes(edge.to)) continue;
 
         const centerA = getNodeCenter(nodeA);
         const centerB = getNodeCenter(nodeB);
@@ -3713,6 +3721,13 @@ function renderEdges() {
         line.setAttribute('y1', centerA.y);
         line.setAttribute('x2', centerB.x);
         line.setAttribute('y2', centerB.y);
+
+        // Add arrow marker for directed edges
+        if (edge.directed) {
+            const markerName = state.selectedEdge === i ? 'arrowhead-selected' : 'arrowhead';
+            line.setAttribute('marker-end', `url(#${markerName})`);
+        }
+
         g.appendChild(line);
 
         layer.appendChild(g);
@@ -4415,11 +4430,13 @@ function hideNodeContextMenu() {
  * selection for batch connect mode (multiple sources to one target).
  *
  * @param {string} nodeId - Optional ID of starting node; if omitted, uses selection
+ * @param {boolean} directed - Whether to create a directed edge (default: false)
  */
-function startEdgeCreation(nodeId) {
+function startEdgeCreation(nodeId, directed = false) {
     // If nodeId provided, use it; otherwise use current selection (for batch connect)
     if (nodeId) {
         state.edgeStartNode = nodeId;
+        state.edgeDirected = directed;
     } else if (state.selectedNodes.length > 0) {
         // Batch connect mode: store all selected nodes
         state.edgeStartNode = state.selectedNodes[0]; // Use first as primary for preview
@@ -4435,7 +4452,7 @@ function startEdgeCreation(nodeId) {
  *
  * @param {string} targetNodeId - ID of node to connect to
  */
-function completeEdgeCreation(targetNodeId) {
+function completeEdgeCreation(targetNodeId, directed = false) {
     if (!state.edgeStartNode || state.edgeStartNode === targetNodeId) {
         state.edgeStartNode = null;
         state.edgeStartNodes = null;
@@ -4450,32 +4467,41 @@ function completeEdgeCreation(targetNodeId) {
 
             // Toggle edge: remove if exists, create if not
             const existingIndex = state.edges.findIndex(e =>
-                (e[0] === sourceId && e[1] === targetNodeId) ||
-                (e[0] === targetNodeId && e[1] === sourceId)
+                (e.from === sourceId && e.to === targetNodeId) ||
+                (e.from === targetNodeId && e.to === sourceId)
             );
 
             if (existingIndex !== -1) {
                 state.edges.splice(existingIndex, 1);
             } else {
-                state.edges.push([sourceId, targetNodeId]);
+                state.edges.push({
+                    from: sourceId,
+                    to: targetNodeId,
+                    directed: directed
+                });
             }
         });
     } else {
         // Single edge creation
         const existingIndex = state.edges.findIndex(e =>
-            (e[0] === state.edgeStartNode && e[1] === targetNodeId) ||
-            (e[0] === targetNodeId && e[1] === state.edgeStartNode)
+            (e.from === state.edgeStartNode && e.to === targetNodeId) ||
+            (e.from === targetNodeId && e.to === state.edgeStartNode)
         );
 
         if (existingIndex !== -1) {
             state.edges.splice(existingIndex, 1);
         } else {
-            state.edges.push([state.edgeStartNode, targetNodeId]);
+            state.edges.push({
+                from: state.edgeStartNode,
+                to: targetNodeId,
+                directed: directed
+            });
         }
     }
 
     state.edgeStartNode = null;
     state.edgeStartNodes = null;
+    state.edgeDirected = false;
     clearEdgePreview();
     render();
 }
@@ -4492,6 +4518,26 @@ function deleteSelectedEdge() {
         state.selectedEdge = null;
         render();
     }
+}
+
+/**
+ * Toggle direction of an edge.
+ * Cycles through: undirected → A→B → B→A → undirected
+ * @param {number} edgeIndex - Index of edge in state.edges
+ */
+function toggleEdgeDirection(edgeIndex) {
+    const edge = state.edges[edgeIndex];
+    if (!edge) return;
+
+    if (!edge.directed) {
+        // Undirected → Directed (from→to)
+        edge.directed = true;
+    } else {
+        // Directed: swap direction (reverse arrow)
+        [edge.from, edge.to] = [edge.to, edge.from];
+    }
+
+    render();
 }
 
 // ============================================================================
@@ -7892,13 +7938,13 @@ function initEventListeners() {
             }
 
             if (e.shiftKey) {
-                // Shift+click: start/complete edge creation from the clicked node
+                // Shift+click: start/complete directed edge creation from the clicked node
                 if (state.edgeStartNode) {
-                    // Complete edge creation to this target
-                    completeEdgeCreation(nodeId);
+                    // Complete edge creation to this target (use stored directed flag)
+                    completeEdgeCreation(nodeId, state.edgeDirected);
                 } else {
-                    // Start edge creation from the clicked node
-                    startEdgeCreation(nodeId);
+                    // Start directed edge creation from the clicked node
+                    startEdgeCreation(nodeId, true); // directed = true
                 }
             } else {
                 // Regular click or Ctrl+click for multi-select/duplicate or Alt+click to remove
@@ -8171,7 +8217,7 @@ function initEventListeners() {
             const nodeEl = target.closest('.node');
             if (nodeEl) {
                 const targetNodeId = nodeEl.dataset.id;
-                completeEdgeCreation(targetNodeId);
+                completeEdgeCreation(targetNodeId, state.edgeDirected);
             }
         }
 
@@ -8586,8 +8632,8 @@ function initEventListeners() {
                 lastTapNode = null;
                 tapToAddMode = false;  // Exit tap-to-add mode
             } else if (state.edgeStartNode && state.edgeStartNode !== touchStartNode) {
-                // Complete edge creation
-                completeEdgeCreation(touchStartNode);
+                // Complete edge creation (using stored directed flag)
+                completeEdgeCreation(touchStartNode, state.edgeDirected);
                 lastTapTime = 0;
                 lastTapNode = null;
             } else {
@@ -8772,6 +8818,22 @@ function initEventListeners() {
             } else if (state.selectedEdge !== null) {
                 deleteSelectedEdge();
             }
+        }
+
+        // D - Remove direction from selected edge
+        if (e.key.toLowerCase() === 'd' && state.selectedEdge !== null) {
+            e.preventDefault();
+            const edge = state.edges[state.selectedEdge];
+            if (edge && edge.directed) {
+                edge.directed = false;
+                render();
+            }
+        }
+
+        // R - Reverse/toggle direction of selected edge
+        if (e.key.toLowerCase() === 'r' && state.selectedEdge !== null) {
+            e.preventDefault();
+            toggleEdgeDirection(state.selectedEdge);
         }
 
         // Escape - Save editor or clear selection (also closes modals)

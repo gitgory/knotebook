@@ -21,139 +21,66 @@ COMPLETED
 [x] Search/filter by hashtag
 [x] Hashtag sidebar
 [x] localStorage + File Export/Import
-[x] Bug fixes (2026-01-23)
-[x] UI improvements (2026-01-23)
-[x] Mobile selection action bar (2026-01-24)
-
-See SESSION_NOTES.md for more recent changes.
-
-================================================================================
-RECENTLY COMPLETED (2026-01-31)
-================================================================================
-
-[x] Batch edit notes (2026-01-31)
-    - Multi-select notes (Ctrl+Click) and edit tags/completion in one operation
-    - Clickable tag pills: click to remove (outlined), click again to re-add (solid)
-    - Works in both single and batch modes
-    - Badge counts show (N/Total) for tags in batch mode
-    - Removed tags marked with outlined pills during session
-    - All changes applied to selected notes on save
-    - Comprehensive 29-test plan, all tests passed
-    - Fixed 5 bugs during testing (v61-v67)
-
-[x] Cancelled completion state (2026-01-31)
-    - 4th completion option: Cancelled (red ✕ icon)
-    - Cycles: To do → Partial → Done → Cancelled → To do
-    - Behaves like Done (grayed out with grayscale filter)
-    - Works on both front-of-card clicks and editor buttons
-
-[x] Improved completed/cancelled note visibility (2026-01-31)
-    - Selected completed notes show lime border (--highlight color)
-    - Non-selected completed notes have gray border
-    - Lightened completed notes (grayscale only, no brightness reduction)
-    - Changed fill from --bg-primary to --surface for better visibility
-
-[x] UI polish (2026-01-31)
-    - Disabled button styling (grayed, not-allowed cursor, 40% opacity)
-    - Theme dropdown: unified backgrounds, white ">" indicator for active theme
-    - Version info display: smaller (0.6rem), uses highlight color
-    - Reordered completion buttons in editor
-
-================================================================================
-RECENTLY COMPLETED (2026-01-30)
-================================================================================
-
-[x] Sidebar tag editing with context menu (2026-01-30)
-    - Right-click (desktop) or long-press (mobile) opens context menu
-    - Menu options: Rename tag, Delete tag, Change color
-    - Rename updates all nodes and note content, preserves filter/hidden state
-    - Delete removes tag from all nodes and content permanently
-    - Context menu auto-positions to avoid screen edges
-    - 500ms long-press with vibration feedback on mobile
-
-[x] Text search indicator (2026-01-30)
-    - Active text filter shows lime outline (--highlight color)
-    - Matches hashtag search indicator styling exactly
-    - Clear button (×) visible when text entered
-
-[x] Improved sidebar hitboxes (2026-01-30)
-    - X (hide) button moved from left to right side of row
-    - Filter action only triggers on pill + count (not entire row)
-    - New layout: [#pill (count)] [color] [X]
-    - Reduces accidental mis-clicks between hide and filter actions
-
-[x] Improved tag suggestions / Autocomplete TAB auto-insert (2026-01-30)
-    - TAB automatically inserts when only one suggestion remains
-    - No need to arrow-down + TAB for unique prefixes
-    - Works in note editor and filter input
-
-================================================================================
-RECENTLY COMPLETED (2026-01-27)
-================================================================================
-
-[x] Per-notebook settings with default completion mode (2026-01-27)
-    - Settings modal accessible from toolbar gear icon and notebook context menu
-    - "New notes are tasks by default" toggle (Off = None, On = To do)
-    - Settings persisted in localStorage and JSON export/import
-    - Old imports without settings key default to non-task mode
-
-[x] Auto-save editor with Cancel button (2026-01-27)
-    - Editor now saves on every close action (ESC, Enter, click outside, hashtag click, step-into)
-    - Cancel button (red) reverts all changes to pre-open state
-    - Shift+Enter inserts newline in body; plain Enter saves and closes
-    - Text selection drag out of editor no longer accidentally closes it
-    - Empty nodes still auto-deleted on both save and cancel
-
-[x] Completed notes visual styling (2026-01-27, updated 2026-01-31)
-    - Notes marked "Done" or "Cancelled" render with grayscale filter
-    - Filter applied to individual elements (not whole node) for better border visibility
-    - Node stays fully interactive (clickable, draggable, selectable)
-    - Selected completed notes show colored border (lime highlight)
-
-[x] Terminology update (2026-01-27)
-    - "Project" → "Notebook" in all user-facing text
-    - "Hashtag" → "Tag" in all user-facing text
-    - Code identifiers unchanged (variable names, CSS classes, HTML IDs)
-
-[x] Text search filter (#1)
-    - Toolbar "Search..." input filters nodes by title and content
-    - Case-insensitive, AND logic with hashtag filter
-    - S keyboard shortcut to focus, Escape to clear
-    - Clears on navigation, project switch, and going home
-
-[x] Hashtag alphabetical sort (#2)
-    - parseHashtags() now sorts output alphabetically (case-insensitive)
-    - Consistent across node pills, editor display, and filter parsing
-    - Sidebar was already sorted independently
-
-[x] Body text indicator (#3) — needs mobile testing
-    - Dog-ear fold in top-left corner of node when content has text beyond hashtags
-    - SVG path (18×18px) that follows the node's rounded corner
-    - Accent color at 40% opacity
-
-[x] Completion checkbox (#5) — needs mobile testing
-    - Tri-state: To do (○) → Done (✓ green) → Partial (◐ orange) → To do
-    - Opt-in via editor status buttons (None / To do / Done / Partial)
-    - SVG icons (16px) in top-right area, hit target r=12
-    - Clickable on node to cycle states (mouse and touch)
-    - completion field added to node data model (null when not set)
-
-[x] Children indicator redesign (part of #3/#5 work)
-    - Replaced [n] text indicator with stacked rectangles behind the node
-    - 1 offset rect for 1-2 children, 2 offset rects for 3+ children
-    - Click stacked area to enter node (same behavior as old [n])
+[x] Bug fixes
+[x] UI improvements
+[x] Sidebar tag editing with context menu
+[x] Text search indicator
+[x] Per-notebook settings with default completion mode
+[x] Auto-save editor with Cancel button
+[x] Completed notes visual styling
+[x] Terminology update
+[x] Text search filter
+[x] Hashtag alphabetical sort
+[x] Body text indicator
+[x] Completion checkbox
+[x] Children indicator redesign
+[x] Improved sidebar hitboxes
+[x] Improved tag suggestions / Autocomplete TAB auto-insert
+[x] Mobile selection action bar
+[x] Batch edit notes
+[x] Cancelled completion state
+[x] Improved completed/cancelled note visibility
+[x] UI polish
+[x] Custom fields implementation (v166-v180)
+  [x] Phase 0: Migrate First-Class fields to node.fields.{}
+  [x] Phase 1: Generalize field infrastructure for both field types
+  [x] Phase 2: Settings UI for custom field definitions
+  [x] Phase 3: Editor integration for custom fields
+  [x] Phase 4: Export/Import with custom fields
 
 ================================================================================
 IN PROGRESS
 ================================================================================
 
-(none)
+None currently!
+
 
 ================================================================================
-UP NEXT
+UP NEXT / FUTURE TASKS
 ================================================================================
 
-See plan-outline.txt for the full consolidated feature list (Tiers 1-4).
+Desktop:
+- Ctrl+Z (and then get rid of the confirm delete warning)
+- Zoom to fit should consider if the sidebar is open (desktop only)
+
+Both:
+- center priority under completion-status indicator
+- change priority indicator to little prize/ribbon?
+- allow for tag search without typing #
+- Breadcrumb format: Add background color like tag pills?
+- How do we deal with notes that are super far away?
+- priority toggle goes away on None. Can't continue toggling like we can with completion-status
+
+Mobile updates:
+- multi-selecting, then panning, action bar goes away
+- sidebar tag search falls behind the 4-layer toolbar
+- keyboard covers rename tag... move to top like note editor
+- Shrink search bar so its not 100% width on mobile
 
 
+priority=low
+completion-status=done
+effort=low
+#tag1
+#tag2
 ================================================================================
