@@ -3712,8 +3712,9 @@ function renderEdges() {
             const dy = y2 - y1;
             const length = Math.sqrt(dx * dx + dy * dy);
 
-            // Shorten endpoint by half the node width plus arrow size
-            const offset = (NODE_WIDTH / 2) + 12;
+            // Shorten endpoint so arrow appears just outside node edge
+            // NODE_HEIGHT is 60, so half is 30. Add small buffer for arrow.
+            const offset = 35;
             const ratio = (length - offset) / length;
 
             x2 = x1 + dx * ratio;
