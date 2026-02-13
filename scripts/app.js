@@ -3726,24 +3726,22 @@ function renderEdges() {
                 const absSlope = Math.abs(dy / dx);
                 const nodeAspect = NODE_HEIGHT / NODE_WIDTH;
 
-                let edgeOffset;
+                let distanceFromCenterToEdge;
                 if (absSlope < nodeAspect) {
                     // More horizontal - hits left or right edge
-                    // Distance from center to edge is halfWidth
-                    edgeOffset = halfWidth / Math.abs(normX);
+                    distanceFromCenterToEdge = halfWidth / Math.abs(normX);
                 } else {
                     // More vertical - hits top or bottom edge
-                    // Distance from center to edge is halfHeight
-                    edgeOffset = halfHeight / Math.abs(normY);
+                    distanceFromCenterToEdge = halfHeight / Math.abs(normY);
                 }
 
-                // Subtract arrow buffer so arrow sits just outside node
+                // Calculate endpoint: go from A toward B, but stop before B's edge
+                // Total distance is from A to B's center, minus the distance from B's center to its edge
                 const arrowBuffer = 10;
-                const finalOffset = edgeOffset - arrowBuffer;
+                const distanceFromAToArrow = length - distanceFromCenterToEdge - arrowBuffer;
 
-                // Calculate endpoint
-                x2 = x1 + normX * finalOffset;
-                y2 = y1 + normY * finalOffset;
+                x2 = x1 + normX * distanceFromAToArrow;
+                y2 = y1 + normY * distanceFromAToArrow;
             }
         }
 
