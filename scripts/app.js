@@ -3700,50 +3700,11 @@ function renderEdges() {
         const centerA = getNodeCenter(nodeA);
         const centerB = getNodeCenter(nodeB);
 
-        // For directed edges, shorten the line so arrow doesn't overlap node
-        let x1 = centerA.x;
-        let y1 = centerA.y;
-        let x2 = centerB.x;
-        let y2 = centerB.y;
-
-        if (edge.directed) {
-            // Calculate direction vector from center A to center B
-            const dx = x2 - x1;
-            const dy = y2 - y1;
-            const length = Math.sqrt(dx * dx + dy * dy);
-
-            if (length > 0) {
-                // Node dimensions: NODE_WIDTH (280) x NODE_HEIGHT (60)
-                const halfWidth = NODE_WIDTH / 2;
-                const halfHeight = NODE_HEIGHT / 2;
-
-                // Normalize direction
-                const normX = dx / length;
-                const normY = dy / length;
-
-                // Calculate which edge of target node the line hits
-                // Compare absolute slopes to determine if more horizontal or vertical
-                const absSlope = Math.abs(dy / dx);
-                const nodeAspect = NODE_HEIGHT / NODE_WIDTH;
-
-                let distanceFromCenterToEdge;
-                if (absSlope < nodeAspect) {
-                    // More horizontal - hits left or right edge
-                    distanceFromCenterToEdge = halfWidth / Math.abs(normX);
-                } else {
-                    // More vertical - hits top or bottom edge
-                    distanceFromCenterToEdge = halfHeight / Math.abs(normY);
-                }
-
-                // Calculate endpoint: go from A toward B, but stop before B's edge
-                // Total distance is from A to B's center, minus the distance from B's center to its edge
-                const arrowBuffer = 10;
-                const distanceFromAToArrow = length - distanceFromCenterToEdge - arrowBuffer;
-
-                x2 = x1 + normX * distanceFromAToArrow;
-                y2 = y1 + normY * distanceFromAToArrow;
-            }
-        }
+        // Always draw line from center to center
+        const x1 = centerA.x;
+        const y1 = centerA.y;
+        const x2 = centerB.x;
+        const y2 = centerB.y;
 
         // Create a group to hold hitbox and visible line
         const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
