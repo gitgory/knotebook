@@ -3700,11 +3700,27 @@ function renderEdges() {
         const centerA = getNodeCenter(nodeA);
         const centerB = getNodeCenter(nodeB);
 
-        // Always draw line from center to center
-        const x1 = centerA.x;
-        const y1 = centerA.y;
-        const x2 = centerB.x;
-        const y2 = centerB.y;
+        // Line goes from center A to center B
+        let x1 = centerA.x;
+        let y1 = centerA.y;
+        let x2 = centerB.x;
+        let y2 = centerB.y;
+
+        // For directed edges, shorten endpoint slightly so arrow sits outside node
+        if (edge.directed) {
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const length = Math.sqrt(dx * dx + dy * dy);
+
+            if (length > 0) {
+                // Shorten by a small fixed amount to keep arrow visible
+                const shortenBy = 35; // Just enough to clear the node edge
+                const ratio = (length - shortenBy) / length;
+
+                x2 = x1 + dx * ratio;
+                y2 = y1 + dy * ratio;
+            }
+        }
 
         // Create a group to hold hitbox and visible line
         const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
