@@ -3717,6 +3717,8 @@ function renderEdges() {
         if (edge.directed) {
             // For directed edges: draw TWO lines
             // 1. Base line (center to center, no arrow) - visual connection
+            // TEMPORARILY COMMENTED OUT TO SHOW COMPARISON
+            /*
             const baseLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
             baseLine.setAttribute('class', 'edge' + (state.selectedEdge === i ? ' selected' : ''));
             baseLine.setAttribute('x1', centerA.x);
@@ -3724,6 +3726,7 @@ function renderEdges() {
             baseLine.setAttribute('x2', centerB.x);
             baseLine.setAttribute('y2', centerB.y);
             g.appendChild(baseLine);
+            */
 
             // 2. Arrow line (center to edge, with arrow) - direction indicator
             const dx = centerB.x - centerA.x;
