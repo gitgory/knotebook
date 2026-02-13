@@ -4,6 +4,69 @@ This file tracks significant technical and design decisions made during developm
 
 ---
 
+## 2026-02-13: Edge Directionality - Simplified Creation Workflow
+
+DECISION: All edges start undirected, use R key to add direction after creation
+CHOSE: Single creation method (Shift+Drag), keyboard toggle for direction
+NOT: Modifier keys during creation (Alt+Shift for directed), separate commands for directed vs undirected
+
+Reasoning:
+- Simpler workflow: One way to create edges, less to remember
+- Consistent pattern: Create first, customize after (matches node workflow)
+- Keyboard efficiency: R to toggle direction, D to remove (immediate after creation)
+- Auto-selection: Newly created edges selected automatically for instant R/D use
+- Removed complexity: No Alt+Shift modifier, no state.edgeDirected flag
+
+---
+
+## 2026-02-13: Edge Directionality - Arrow Rendering Without Base Line
+
+DECISION: Directed edges use single line (center to edge with arrow), no base line
+CHOSE: One visual element per edge
+NOT: Two-line approach (base line center-to-center + arrow line)
+
+Reasoning:
+- Simplicity: One element to style, select, and modify
+- Performance: Fewer DOM elements, faster rendering
+- Maintainability: No need to remember to update two elements
+- Clean visual: No overlapping lines
+- Sufficient clarity: Arrow direction is clear without full line to center
+
+---
+
+## 2026-02-13: Edge Directionality - Arrow Positioning Math
+
+DECISION: Calculate arrow endpoint based on angle to hit correct rectangle edge
+CHOSE: Aspect ratio comparison to determine horizontal vs vertical hit
+NOT: Fixed offset from center (doesn't account for rectangle shape)
+
+Reasoning:
+- Accuracy: Arrows point to true center regardless of approach angle
+- Rectangle awareness: Nodes are 280x60, not circles - distance varies by angle
+- Visual alignment: Stacked nodes have perfectly aligned vertical arrows
+- Correct math: Uses normalized direction vector and edge intersection calculation
+
+Implementation:
+- Compare line slope to node aspect ratio (HEIGHT/WIDTH)
+- If more horizontal: calculate distance to left/right edge
+- If more vertical: calculate distance to top/bottom edge
+- Arrow buffer: 2px gap between arrow and node edge
+
+---
+
+## 2026-02-13: Edge Directionality - Arrow Color Matching
+
+DECISION: Arrow markers use same colors as edge lines
+CHOSE: Normal arrows use --accent, selected arrows use --highlight
+NOT: --text-secondary for arrows (caused color mismatch)
+
+Reasoning:
+- Visual consistency: Arrow is part of the edge, should match its color
+- Theme compatibility: Works correctly across all themes
+- Selection feedback: Selected edges (line + arrow) both highlight together
+
+---
+
 ## 2026-02-11: Multi-File Import, Remove Overwrite
 
 DECISION: Remove overwrite functionality, support multi-file import only
