@@ -7229,7 +7229,8 @@ async function saveFieldFromModal() {
     }
 
     // Get target project and settings
-    const targetId = settingsModal.dataset.projectId;
+    // When called from editor, settingsModal.dataset.projectId is undefined, use current project
+    const targetId = settingsModal.dataset.projectId || state.currentProjectId;
     const settings = getProjectSettings(targetId);
     const customFields = settings.customFields || [];
 
