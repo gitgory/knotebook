@@ -4506,6 +4506,10 @@ function completeEdgeCreation(targetNodeId) {
             if (existingIndex !== -1) {
                 state.edges.splice(existingIndex, 1);
             } else {
+                // ⚠️ TECHNICAL DEBT: Edges stored as objects {from, to, directed}
+                // but child edges and JSON schema use array format [id, id].
+                // This inconsistency causes bugs in edge operations (copy, delete).
+                // Consider standardizing to single format (see ROADMAP).
                 state.edges.push({
                     from: sourceId,
                     to: targetNodeId,
@@ -4525,6 +4529,10 @@ function completeEdgeCreation(targetNodeId) {
             state.edges.splice(existingIndex, 1);
             newEdgeIndex = null; // Edge was deleted, don't select
         } else {
+            // ⚠️ TECHNICAL DEBT: Edges stored as objects {from, to, directed}
+            // but child edges and JSON schema use array format [id, id].
+            // This inconsistency causes bugs in edge operations (copy, delete).
+            // Consider standardizing to single format (see ROADMAP).
             state.edges.push({
                 from: state.edgeStartNode,
                 to: targetNodeId,

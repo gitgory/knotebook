@@ -62,7 +62,6 @@ UP NEXT / FUTURE TASKS
 Desktop:
 - Ctrl+Z (and then get rid of the confirm delete warning)
 - Zoom to fit should consider if the sidebar is open (desktop only)
-- fix Ctrl+Drag to copy
 
 Both:
 - center priority under completion-status indicator
@@ -98,6 +97,31 @@ Targeted file reads
   - Used Grep to find exact locations before reading
   - Didn't re-read files unnecessarily
 Incremental commits
+
+
+================================================================================
+TECHNICAL DEBT & RISKS
+================================================================================
+
+EDGE DATA MODEL INCONSISTENCY (HIGH PRIORITY)
+  Problem: Edges have mixed storage formats causing recurring bugs
+  - Root-level edges: stored as objects {from, to, directed}
+  - Child edges (in nodes): stored as arrays [nodeId, nodeId]
+  - JSON schema specifies: edges should be arrays [nodeId, nodeId]
+
+  Impact:
+  - "edge is not iterable" errors when code assumes array format
+  - Bugs crop up when edge operations are added or refactored
+  - Occurs in: Ctrl+Drag copy (v217), batch operations, edge deletion
+
+  Solution (when prioritized):
+  - Standardize ALL edges to one format (recommend arrays per schema)
+  - Update edge creation (line ~4509-4532) to use array format
+  - Update edge operations to handle consistent format
+  - Consider: This affects data persistence, export/import, migration
+
+  Files to watch: scripts/app.js (edge creation, copying, deletion)
+  See also: docs-app/json-schema.md (defines expected format)
 
 
 ================================================================================
