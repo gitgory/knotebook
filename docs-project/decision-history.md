@@ -4,6 +4,36 @@ This file tracks significant technical and design decisions made during developm
 
 ---
 
+## 2026-02-13: Undo System - Full State Snapshots, Single-Level
+
+DECISION: Implement single-level undo with full state snapshots
+CHOSE: Capture deep copies of nodes/edges/selection before mutations, restore on Ctrl+Z
+NOT: Multi-level undo (complex, high memory overhead), granular operation tracking (fragile, hard to maintain)
+
+Reasoning:
+- Forgiving UX: Users can undo their last action without losing work history
+- Simple architecture: One snapshot replaced per operation, zero complexity in restoration
+- Memory efficient: Single snapshot is negligible overhead (tens of KB even for large graphs)
+- Safe deletion: Removed confirmation dialogs since users can undo, improved workflow friction
+- Snapshot timing: Cleared on navigation (level changes) to prevent cross-level confusion
+
+Capture points (8 locations):
+1. Node creation (createNode)
+2. Node deletion (deleteNode with guard for multi-select)
+3. Node editing (saveEditor)
+4. Node movement (mousemove when drag starts, Ctrl+Drag threshold)
+5. Edge creation (completeEdgeCreation)
+6. Edge deletion (deleteSelectedEdge)
+7. Edge direction toggle (toggleEdgeDirection)
+8. Multi-select delete (before deletion loop, captured once)
+
+Keyboard shortcut:
+- Ctrl+Z (or Cmd+Z Mac): Restore from snapshot when editor closed
+- When editor open: Allow browser's native text undo instead
+- No double-undo feedback: Silent ignore if no snapshot exists
+
+---
+
 ## 2026-02-13: Edge Directionality - Simplified Creation Workflow
 
 DECISION: All edges start undirected, use R key to add direction after creation

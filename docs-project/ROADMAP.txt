@@ -60,7 +60,6 @@ UP NEXT / FUTURE TASKS
 ================================================================================
 
 Desktop:
-- Ctrl+Z (and then get rid of the confirm delete warning)
 - Zoom to fit should consider if the sidebar is open (desktop only)
 
 Both:
