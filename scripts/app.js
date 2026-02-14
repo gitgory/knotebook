@@ -4147,8 +4147,11 @@ function performUndo() {
  * @param {string} nodeId - ID of node to delete
  */
 function deleteNode(nodeId) {
-    // Capture undo snapshot before modification
-    state.undoSnapshot = createUndoSnapshot();
+    // Capture undo snapshot before modification (only if not already captured)
+    // This allows multi-select delete to capture once before the loop
+    if (!state.undoSnapshot) {
+        state.undoSnapshot = createUndoSnapshot();
+    }
 
     // Find the node being deleted
     const node = state.nodes.find(n => n.id === nodeId);
@@ -8999,6 +9002,8 @@ function initEventListeners() {
                     : `Delete ${count} notes? Any children will be moved to the current level.`;
                 showConfirmation(msg).then(confirmed => {
                     if (confirmed) {
+                        // Capture undo snapshot once before deleting all nodes
+                        state.undoSnapshot = createUndoSnapshot();
                         // Delete all selected nodes (copy array since deleteNode modifies it)
                         [...state.selectedNodes].forEach(nodeId => deleteNode(nodeId));
                     }
