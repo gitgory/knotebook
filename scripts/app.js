@@ -3936,33 +3936,37 @@ function getNodesInSelectionBox(box) {
  * Clicking a breadcrumb pill jumps directly to that nesting level.
  *
  * @param {number} pathIndex - The index in state.currentPath to navigate to.
- *                             -1 = go to root (project level)
  *                              0 = go to root notes
  *                             1+ = go to nested level
  */
 function navigateToBreadcrumbLevel(pathIndex) {
-    if (pathIndex === -1) {
-        // Go to root - close all nested levels
-        state.currentPath = [];
-    } else if (pathIndex === 0) {
-        // Root level - same as above
-        state.currentPath = [];
-    } else if (pathIndex > 0 && pathIndex <= state.currentPath.length) {
-        // Go to specific nested level by truncating the path
-        state.currentPath = state.currentPath.slice(0, pathIndex);
+    // Clear undo snapshot when navigating (level change)
+    state.undoSnapshot = null;
+
+    // Truncate the current path to the target level
+    state.currentPath = state.currentPath.slice(0, pathIndex);
+
+    // Restore the appropriate node and edge state for the target level
+    if (state.currentPath.length === 0) {
+        // Back to root - restore root state
+        state.nodes = getRootNodes();
+        state.edges = getRootEdges();
+    } else {
+        const parent = state.currentPath[state.currentPath.length - 1];
+        state.nodes = parent.children;
+        state.edges = parent.childEdges;
     }
 
     // Clear selections and UI state
     state.selectedNodes = [];
     state.selectedEdge = null;
-    if (state.selectionBox) {
-        state.selectionBox.active = false;
-    }
+    clearFilter();
 
-    // Update UI and render
+    // Reset viewport and render
+    resetViewport();
     updateBreadcrumbs();
     render();
-    updateSidebar();
+    scheduleAutoSave();
 }
 
 /**
