@@ -148,6 +148,9 @@ const state = {
     editorSnapshot: null,          // Snapshot for cancel/revert
     removedTagsInSession: new Set(), // Tags marked for removal in batch edit
 
+    // Undo state
+    undoSnapshot: null,            // { nodes: [], edges: [], selectedNodes: [] } for single-level undo
+
     // Ghost nodes (move to notebook)
     ghostNodes: [],                // Ghost nodes being positioned in target notebook
     ghostDragging: false,          // True when dragging ghost nodes
@@ -3969,6 +3972,9 @@ function updateBreadcrumbs() {
  * @returns {Object} - The newly created node object
  */
 function createNode(x, y) {
+    // Capture undo snapshot before modification
+    state.undoSnapshot = createUndoSnapshot();
+
     const node = {
         id: generateId(),
         title: '',
@@ -4045,6 +4051,94 @@ function deepCopyNode(node, offsetX = 0, offsetY = 0) {
 }
 
 /**
+ * Deep copy a node preserving original IDs for undo restoration.
+ * Recursively copies children and child edges without ID remapping.
+ * Used exclusively for undo snapshots to restore exact state.
+ *
+ * @param {Object} node - Node to copy
+ * @returns {Object} - Deep copy with original IDs preserved
+ */
+function deepCopyNodeForUndo(node) {
+    const newNode = {
+        id: node.id,
+        title: node.title,
+        content: node.content,
+        hashtags: [...(node.hashtags || [])],
+        fields: { ...(node.fields || {}) },
+        position: { ...node.position },
+        zIndex: node.zIndex || 0,
+        children: [],
+        childEdges: [...(node.childEdges || [])],
+        created: node.created,
+        modified: node.modified
+    };
+
+    // Deep copy children recursively, preserving IDs
+    if (node.children && node.children.length > 0) {
+        node.children.forEach(child => {
+            newNode.children.push(deepCopyNodeForUndo(child));
+        });
+    }
+
+    return newNode;
+}
+
+/**
+ * Create a snapshot of current state for undo functionality.
+ * Captures deep copies of nodes, edges, and selection state.
+ * Stored in state.undoSnapshot for later restoration.
+ *
+ * @returns {Object} - Snapshot object containing nodes, edges, selectedNodes
+ */
+function createUndoSnapshot() {
+    return {
+        nodes: state.nodes.map(node => deepCopyNodeForUndo(node)),
+        edges: state.edges.map(edge => ({
+            from: edge.from,
+            to: edge.to,
+            directed: edge.directed
+        })),
+        selectedNodes: [...state.selectedNodes]
+    };
+}
+
+/**
+ * Restore application state from undo snapshot.
+ * Replaces nodes and edges with snapshot versions, clears snapshot after restore.
+ * Silently returns if no snapshot exists. Triggers render and auto-save.
+ *
+ * @returns {void}
+ */
+function performUndo() {
+    if (!state.undoSnapshot) {
+        // Silently ignore if no snapshot exists
+        return;
+    }
+
+    try {
+        // Restore state from snapshot
+        state.nodes = state.undoSnapshot.nodes.map(node => deepCopyNodeForUndo(node));
+        state.edges = state.undoSnapshot.edges.map(edge => ({
+            from: edge.from,
+            to: edge.to,
+            directed: edge.directed
+        }));
+        state.selectedNodes = [...state.undoSnapshot.selectedNodes];
+        state.selectedEdge = null;
+
+        // Clear snapshot after restore (single-level undo)
+        state.undoSnapshot = null;
+
+        // Update visuals and trigger save
+        render();
+        requestAutoSave();
+    } catch (error) {
+        console.error('Error during undo operation:', error);
+        // Preserve snapshot on error so user can try again
+    }
+}
+
+/**
  * Delete a node and promote its children to the current level.
  * Children are positioned below the deleted parent with slight vertical stagger.
  * Child edges are promoted to current level. Removes all edges connected to the node.
@@ -4053,6 +4147,9 @@ function deepCopyNode(node, offsetX = 0, offsetY = 0) {
  * @param {string} nodeId - ID of node to delete
  */
 function deleteNode(nodeId) {
+    // Capture undo snapshot before modification
+    state.undoSnapshot = createUndoSnapshot();
+
     // Find the node being deleted
     const node = state.nodes.find(n => n.id === nodeId);
 
@@ -4490,6 +4587,9 @@ function completeEdgeCreation(targetNodeId) {
         return;
     }
 
+    // Capture undo snapshot before modification
+    state.undoSnapshot = createUndoSnapshot();
+
     let newEdgeIndex = null;
 
     // Batch connect mode: create edges from all source nodes to target
@@ -4563,6 +4663,9 @@ function selectEdge(index) {
 
 function deleteSelectedEdge() {
     if (state.selectedEdge !== null) {
+        // Capture undo snapshot before modification
+        state.undoSnapshot = createUndoSnapshot();
+
         state.edges.splice(state.selectedEdge, 1);
         state.selectedEdge = null;
         render();
@@ -4577,6 +4680,9 @@ function deleteSelectedEdge() {
 function toggleEdgeDirection(edgeIndex) {
     const edge = state.edges[edgeIndex];
     if (!edge) return;
+
+    // Capture undo snapshot before modification
+    state.undoSnapshot = createUndoSnapshot();
 
     if (!edge.directed) {
         // Undirected → Directed (from→to)
@@ -4603,6 +4709,9 @@ function toggleEdgeDirection(edgeIndex) {
 function enterNode(nodeId) {
     const node = state.nodes.find(n => n.id === nodeId);
     if (!node) return;
+
+    // Clear undo snapshot when navigating (level change)
+    state.undoSnapshot = null;
 
     // Save current state to the node we're leaving
     if (state.currentPath.length > 0) {
@@ -4637,6 +4746,9 @@ function enterNode(nodeId) {
  */
 function goBack() {
     if (state.currentPath.length === 0) return;
+
+    // Clear undo snapshot when navigating (level change)
+    state.undoSnapshot = null;
 
     // Save current state
     const current = state.currentPath.pop();
@@ -5541,6 +5653,9 @@ function cleanupEditorState() {
  * @returns {Promise<void>}
  */
 async function saveEditor() {
+    // Capture undo snapshot before modification
+    state.undoSnapshot = createUndoSnapshot();
+
     const { isBatchMode, nodes, node, nodeId } = getEditorMode();
     const formData = getEditorFormData();
 
@@ -8166,6 +8281,7 @@ function initEventListeners() {
 
                 if (distance >= DRAG_THRESHOLD) {
                     // Threshold met - trigger duplication
+                    state.undoSnapshot = createUndoSnapshot();
                     state.dragThresholdMet = true;
                     state.duplicating = true;
 
@@ -8207,6 +8323,11 @@ function initEventListeners() {
                     state.dragOffsets = newDragOffsets;
                     updateSelectionVisuals();
                 }
+            }
+
+            // For regular dragging (non-Ctrl), capture snapshot on first movement
+            if (!state.ctrlHeld && !state.undoSnapshot && state.dragging) {
+                state.undoSnapshot = createUndoSnapshot();
             }
 
             // Move all selected nodes together (whether originals or duplicates)
@@ -8769,6 +8890,16 @@ function initEventListeners() {
             } else {
                 exportToFile();
             }
+        }
+
+        // Ctrl+Z - Undo (only when editor is closed)
+        if (e.key === 'z' && (e.ctrlKey || e.metaKey)) {
+            const editorModal = document.getElementById('editor-modal');
+            if (editorModal.classList.contains('hidden')) {
+                e.preventDefault();
+                performUndo();
+            }
+            // If editor is open, allow browser's native undo for text editing
         }
 
         // N - New note
