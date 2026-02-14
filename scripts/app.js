@@ -3953,9 +3953,11 @@ function navigateToBreadcrumbLevel(pathIndex) {
     }
 
     // Clear selections and UI state
-    state.selection.nodes = [];
-    state.selection.edges = [];
-    state.selectionBox.active = false;
+    state.selectedNodes = [];
+    state.selectedEdge = null;
+    if (state.selectionBox) {
+        state.selectionBox.active = false;
+    }
 
     // Update UI and render
     updateBreadcrumbs();
@@ -3973,7 +3975,7 @@ function updateBreadcrumbs() {
     el.replaceChildren();
 
     // Get current project name
-    let projectName = 'Notebook';
+    let projectName = 'knotebook';
     if (state.currentProjectId) {
         const projects = getProjectsList();
         const project = projects.find(p => p.id === state.currentProjectId);
@@ -3982,39 +3984,35 @@ function updateBreadcrumbs() {
         }
     }
 
-    // Create project pill
-    const projectPill = document.createElement('span');
-    projectPill.className = 'breadcrumb-pill';
-    projectPill.textContent = projectName;
-    projectPill.dataset.pathIndex = '-1';
-    el.appendChild(projectPill);
+    // Create single pill for "projectName: Root" when at root level
+    if (state.currentPath.length === 0) {
+        const rootPill = document.createElement('span');
+        rootPill.className = 'breadcrumb-pill';
+        rootPill.textContent = `${projectName}: Root`;
+        rootPill.dataset.pathIndex = '0';
+        el.appendChild(rootPill);
+    } else {
+        // Create single pill for "projectName: Root" that goes back to root
+        const rootPill = document.createElement('span');
+        rootPill.className = 'breadcrumb-pill';
+        rootPill.textContent = `${projectName}: Root`;
+        rootPill.dataset.pathIndex = '0';
+        el.appendChild(rootPill);
 
-    // Create separator
-    const sep1 = document.createElement('span');
-    sep1.className = 'breadcrumb-separator';
-    sep1.textContent = '/';
-    el.appendChild(sep1);
+        // Create pills for each level in the current path (nested notes only)
+        state.currentPath.forEach((node, index) => {
+            const sep = document.createElement('span');
+            sep.className = 'breadcrumb-separator';
+            sep.textContent = '/';
+            el.appendChild(sep);
 
-    // Create Root pill
-    const rootPill = document.createElement('span');
-    rootPill.className = 'breadcrumb-pill';
-    rootPill.textContent = 'Root';
-    rootPill.dataset.pathIndex = '0';
-    el.appendChild(rootPill);
-
-    // Create pills for each level in the current path
-    state.currentPath.forEach((node, index) => {
-        const sep = document.createElement('span');
-        sep.className = 'breadcrumb-separator';
-        sep.textContent = '/';
-        el.appendChild(sep);
-
-        const pill = document.createElement('span');
-        pill.className = 'breadcrumb-pill';
-        pill.textContent = truncateText(node.title || 'Untitled', BREADCRUMB_TRUNCATE_LENGTH);
-        pill.dataset.pathIndex = String(index + 1);
-        el.appendChild(pill);
-    });
+            const pill = document.createElement('span');
+            pill.className = 'breadcrumb-pill';
+            pill.textContent = truncateText(node.title || 'Untitled', BREADCRUMB_TRUNCATE_LENGTH);
+            pill.dataset.pathIndex = String(index + 1);
+            el.appendChild(pill);
+        });
+    }
 }
 
 // ============================================================================

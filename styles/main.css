@@ -864,9 +864,9 @@ body {
 }
 
 .breadcrumb-pill {
-    background-color: var(--accent);
-    color: var(--canvas-bg);
-    padding: 6px 12px;
+    background-color: var(--surface);
+    color: var(--text-primary);
+    padding: 3px 6px;
     border-radius: 20px;
     font-size: 13px;
     cursor: pointer;
