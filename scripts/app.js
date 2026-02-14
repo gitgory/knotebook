@@ -8182,9 +8182,14 @@ function initEventListeners() {
                     // Copy edges where both endpoints are in the selection
                     const edgesToAdd = [];
                     state.edges.forEach(edge => {
-                        const [srcId, dstId] = edge;
+                        const srcId = edge.from || edge[0];
+                        const dstId = edge.to || edge[1];
                         if (idMapping[srcId] && idMapping[dstId]) {
-                            edgesToAdd.push([idMapping[srcId], idMapping[dstId]]);
+                            edgesToAdd.push({
+                                from: idMapping[srcId],
+                                to: idMapping[dstId],
+                                directed: edge.directed || false
+                            });
                         }
                     });
                     state.edges.push(...edgesToAdd);
@@ -9360,9 +9365,14 @@ function initEventListeners() {
             // Copy edges where both endpoints are in the selection
             const edgesToAdd = [];
             state.edges.forEach(edge => {
-                const [srcId, dstId] = edge;
+                const srcId = edge.from || edge[0];
+                const dstId = edge.to || edge[1];
                 if (idMapping[srcId] && idMapping[dstId]) {
-                    edgesToAdd.push([idMapping[srcId], idMapping[dstId]]);
+                    edgesToAdd.push({
+                        from: idMapping[srcId],
+                        to: idMapping[dstId],
+                        directed: edge.directed || false
+                    });
                 }
             });
             state.edges.push(...edgesToAdd);

@@ -62,6 +62,7 @@ UP NEXT / FUTURE TASKS
 Desktop:
 - Ctrl+Z (and then get rid of the confirm delete warning)
 - Zoom to fit should consider if the sidebar is open (desktop only)
+- fix Ctrl+Drag to copy
 
 Both:
 - center priority under completion-status indicator
@@ -70,6 +71,8 @@ Both:
 - Breadcrumb format: Add background color like tag pills?
 - How do we deal with notes that are super far away?
 - priority toggle goes away on None. Can't continue toggling like we can with completion-status
+- Add method to make notes a child of another note...
+  - add "Another note" to the Move to... modal, then click on the parent note.
 
 Mobile updates:
 - multi-selecting, then panning, action bar goes away
@@ -78,9 +81,23 @@ Mobile updates:
 - Shrink search bar so its not 100% width on mobile
 
 
+================================================================================
+MESSY BRAINSTORMING
+================================================================================
+
 priority=low
 completion-status=done
 effort=low
 #tag1
 #tag2
+
+CONSERVING TOKENS
+Focused execution over exploration
+Targeted file reads
+  - Read specific line ranges instead of whole files
+  - Used Grep to find exact locations before reading
+  - Didn't re-read files unnecessarily
+Incremental commits
+
+
 ================================================================================
