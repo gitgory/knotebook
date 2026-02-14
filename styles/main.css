@@ -856,13 +856,33 @@ body {
 
 #breadcrumbs {
     margin-left: auto;
-    color: var(--text-secondary);
-    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
 }
 
-#breadcrumbs.active {
-    color: var(--accent);
-    font-weight: 500;
+.breadcrumb-pill {
+    background-color: var(--accent);
+    color: var(--canvas-bg);
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 13px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: opacity 0.2s;
+}
+
+.breadcrumb-pill:hover {
+    opacity: 0.8;
+}
+
+.breadcrumb-separator {
+    color: var(--text-secondary);
+    margin: 0 2px;
+    user-select: none;
+    font-size: 12px;
 }
 
 /* Canvas */
@@ -2697,7 +2717,7 @@ body {
     #breadcrumbs {
         order: 20;
         width: 100%;
-        text-align: center;
+        justify-content: center;
         margin-left: 0;
     }
 

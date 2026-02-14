@@ -3932,12 +3932,45 @@ function getNodesInSelectionBox(box) {
 }
 
 /**
+ * Navigate to a specific level in the breadcrumb path.
+ * Clicking a breadcrumb pill jumps directly to that nesting level.
+ *
+ * @param {number} pathIndex - The index in state.currentPath to navigate to.
+ *                             -1 = go to root (project level)
+ *                              0 = go to root notes
+ *                             1+ = go to nested level
+ */
+function navigateToBreadcrumbLevel(pathIndex) {
+    if (pathIndex === -1) {
+        // Go to root - close all nested levels
+        state.currentPath = [];
+    } else if (pathIndex === 0) {
+        // Root level - same as above
+        state.currentPath = [];
+    } else if (pathIndex > 0 && pathIndex <= state.currentPath.length) {
+        // Go to specific nested level by truncating the path
+        state.currentPath = state.currentPath.slice(0, pathIndex);
+    }
+
+    // Clear selections and UI state
+    state.selection.nodes = [];
+    state.selection.edges = [];
+    state.selectionBox.active = false;
+
+    // Update UI and render
+    updateBreadcrumbs();
+    render();
+    updateSidebar();
+}
+
+/**
  * Update the breadcrumb navigation display.
- * Shows "NotebookName > Root" at top level, or "NotebookName > Root > Parent > Child" when nested.
- * Adds 'active' class when nested (clickable to go back).
+ * Creates pill-shaped breadcrumb elements that link to each level of the navigation path.
+ * Users can click any pill to jump directly to that level.
  */
 function updateBreadcrumbs() {
     const el = document.getElementById('breadcrumbs');
+    el.replaceChildren();
 
     // Get current project name
     let projectName = 'Notebook';
@@ -3949,14 +3982,39 @@ function updateBreadcrumbs() {
         }
     }
 
-    if (state.currentPath.length === 0) {
-        el.textContent = projectName + ' > Root';
-        el.classList.remove('active');
-    } else {
-        const names = state.currentPath.map(p => truncateText(p.title || 'Untitled', BREADCRUMB_TRUNCATE_LENGTH));
-        el.textContent = projectName + ' > Root > ' + names.join(' > ');
-        el.classList.add('active');
-    }
+    // Create project pill
+    const projectPill = document.createElement('span');
+    projectPill.className = 'breadcrumb-pill';
+    projectPill.textContent = projectName;
+    projectPill.dataset.pathIndex = '-1';
+    el.appendChild(projectPill);
+
+    // Create separator
+    const sep1 = document.createElement('span');
+    sep1.className = 'breadcrumb-separator';
+    sep1.textContent = '/';
+    el.appendChild(sep1);
+
+    // Create Root pill
+    const rootPill = document.createElement('span');
+    rootPill.className = 'breadcrumb-pill';
+    rootPill.textContent = 'Root';
+    rootPill.dataset.pathIndex = '0';
+    el.appendChild(rootPill);
+
+    // Create pills for each level in the current path
+    state.currentPath.forEach((node, index) => {
+        const sep = document.createElement('span');
+        sep.className = 'breadcrumb-separator';
+        sep.textContent = '/';
+        el.appendChild(sep);
+
+        const pill = document.createElement('span');
+        pill.className = 'breadcrumb-pill';
+        pill.textContent = truncateText(node.title || 'Untitled', BREADCRUMB_TRUNCATE_LENGTH);
+        pill.dataset.pathIndex = String(index + 1);
+        el.appendChild(pill);
+    });
 }
 
 // ============================================================================
@@ -9368,13 +9426,14 @@ function initEventListeners() {
     // Initialize all First Class Field button handlers
     initializeFieldButtons();
 
-    // Breadcrumbs click to go back
-    document.getElementById('breadcrumbs').addEventListener('click', () => {
-        if (state.currentPath.length > 0) {
-            goBack();
+    // Breadcrumbs click to navigate to specific level
+    document.getElementById('breadcrumbs').addEventListener('click', (e) => {
+        const pill = e.target.closest('.breadcrumb-pill');
+        if (pill) {
+            const pathIndex = parseInt(pill.dataset.pathIndex, 10);
+            navigateToBreadcrumbLevel(pathIndex);
         }
     });
-    document.getElementById('breadcrumbs').style.cursor = 'pointer';
 
     // Hashtag sidebar toggle
     document.getElementById('hashtag-sidebar-btn').addEventListener('click', toggleSidebar);
