@@ -66,7 +66,7 @@ Both:
 - center priority under completion-status indicator
 - change priority indicator to little prize/ribbon?
 - allow for tag search without typing #
-- Breadcrumb format: Add background color like tag pills?
+- [x] Breadcrumb format: Add background color like tag pills? (v222 - pill-shaped with direct navigation)
 - How do we deal with notes that are super far away?
 - priority toggle goes away on None. Can't continue toggling like we can with completion-status
 - Add method to make notes a child of another note...

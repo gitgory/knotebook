@@ -4,6 +4,21 @@ This file tracks significant technical and design decisions made during developm
 
 ---
 
+## 2026-02-14: Breadcrumb Navigation - Pill-Shaped Direct Links
+
+DECISION: Convert breadcrumbs to pill-shaped buttons with direct navigation to any level
+CHOSE: Single "knotebook: Root" pill + nested note pills with / separators, theme-aware styling
+NOT: Keep as text with one-level-at-a-time back navigation, all pills same color
+
+Reasoning:
+- Better UX: Click any level directly instead of clicking back repeatedly through deep nesting
+- Visual consistency: Pills match tag styling, recognizable as interactive elements
+- Reduced clicks: Jump from level 5 to level 2 in one click instead of three
+- Theme integration: Uses --surface color (darker than accent, lighter than toolbar)
+- Minimal padding: 3px 6px keeps UI compact while maintaining touchability
+
+---
+
 ## 2026-02-13: Undo System - Full State Snapshots, Single-Level
 
 DECISION: Implement single-level undo with full state snapshots
