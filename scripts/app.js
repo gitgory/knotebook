@@ -8996,18 +8996,10 @@ function initEventListeners() {
         if (e.key === 'Delete' || (e.key === 'Backspace' && !e.altKey)) {
             if (state.selectedNodes.length > 0) {
                 e.preventDefault();
-                const count = state.selectedNodes.length;
-                const msg = count === 1
-                    ? 'Delete this note? Any children will be moved to the current level.'
-                    : `Delete ${count} notes? Any children will be moved to the current level.`;
-                showConfirmation(msg).then(confirmed => {
-                    if (confirmed) {
-                        // Capture undo snapshot once before deleting all nodes
-                        state.undoSnapshot = createUndoSnapshot();
-                        // Delete all selected nodes (copy array since deleteNode modifies it)
-                        [...state.selectedNodes].forEach(nodeId => deleteNode(nodeId));
-                    }
-                });
+                // Capture undo snapshot once before deleting all nodes
+                state.undoSnapshot = createUndoSnapshot();
+                // Delete all selected nodes (copy array since deleteNode modifies it)
+                [...state.selectedNodes].forEach(nodeId => deleteNode(nodeId));
             } else if (state.selectedEdge !== null) {
                 deleteSelectedEdge();
             }
@@ -9530,25 +9522,11 @@ function initEventListeners() {
 
     document.getElementById('action-delete').addEventListener('click', () => {
         if (state.selectedNodes.length > 0) {
-            const count = state.selectedNodes.length;
-            let msg;
-            if (count === 1) {
-                const node = state.nodes.find(n => n.id === state.selectedNodes[0]);
-                const childCount = node?.children?.length || 0;
-                msg = 'Delete this note?';
-                if (childCount > 0) {
-                    msg = `Delete this note? Its ${childCount} child note${childCount > 1 ? 's' : ''} will be moved to this level.`;
-                }
-            } else {
-                msg = `Delete ${count} notes? Any children will be moved to the current level.`;
-            }
-            showConfirmation(msg).then(confirmed => {
-                if (confirmed) {
-                    // Delete all selected nodes (copy array since deleteNode modifies it)
-                    [...state.selectedNodes].forEach(nodeId => deleteNode(nodeId));
-                    hideActionBar();
-                }
-            });
+            // Capture undo snapshot once before deleting all nodes
+            state.undoSnapshot = createUndoSnapshot();
+            // Delete all selected nodes (copy array since deleteNode modifies it)
+            [...state.selectedNodes].forEach(nodeId => deleteNode(nodeId));
+            hideActionBar();
         } else if (state.selectedEdge !== null) {
             deleteSelectedEdge();
             hideActionBar();
