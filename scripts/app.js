@@ -255,9 +255,9 @@ const FIRST_CLASS_FIELDS = {
         states: {
             '': {
                 label: 'None',
-                icon: '◻',
-                iconType: 'text',
-                color: '#6b7280',
+                icon: null,
+                iconType: 'square',
+                color: 'var(--text-secondary)',
                 cssClass: 'priority-none'
             },
             'low': {
@@ -283,7 +283,7 @@ const FIRST_CLASS_FIELDS = {
             },
             'top': {
                 label: 'Top',
-                icon: '☆',
+                icon: '★',
                 iconType: 'text',
                 color: '#fbbf24',
                 cssClass: 'priority-top'
@@ -505,13 +505,14 @@ function getNodeFieldValue(node, fieldName) {
  * Sets a field value on a node using unified storage.
  * @param {Object} node - Node object
  * @param {string} fieldName - Field name
- * @param {*} value - Value to set (null/undefined removes the field)
+ * @param {*} value - Value to set (null/undefined removes the field, empty string is valid for priority)
  */
 function setNodeFieldValue(node, fieldName, value) {
     if (!node.fields) node.fields = {};
-    if (value === null || value === undefined || value === '') {
+    if (value === null || value === undefined) {
         delete node.fields[fieldName];
     } else {
+        // Store the value even if it's empty string (needed for priority None state)
         node.fields[fieldName] = value;
     }
 }
@@ -3632,19 +3633,29 @@ function appendPriorityBackground(group, position) {
 }
 
 /**
- * Appends priority icon (text symbol).
+ * Appends priority icon (square or text symbol).
  * @param {SVGGElement} group - Priority group element
  * @param {Object} config - State config
  * @param {Object} position - Position config {offsetX, offsetY}
  */
 function appendPriorityIcon(group, config, position) {
-    const icon = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    icon.setAttribute('x', NODE_WIDTH - position.offsetX);
-    icon.setAttribute('y', NODE_HEIGHT - position.offsetY + 5);
-    icon.setAttribute('text-anchor', 'middle');
-    icon.setAttribute('class', `node-priority-icon ${config.cssClass}`);
-    icon.textContent = config.icon;
-    group.appendChild(icon);
+    if (config.iconType === 'square') {
+        const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        rect.setAttribute('x', NODE_WIDTH - position.offsetX - 7);
+        rect.setAttribute('y', NODE_HEIGHT - position.offsetY - 7);
+        rect.setAttribute('width', 14);
+        rect.setAttribute('height', 14);
+        rect.setAttribute('class', `node-priority-square ${config.cssClass}`);
+        group.appendChild(rect);
+    } else {
+        const icon = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        icon.setAttribute('x', NODE_WIDTH - position.offsetX);
+        icon.setAttribute('y', NODE_HEIGHT - position.offsetY + 5);
+        icon.setAttribute('text-anchor', 'middle');
+        icon.setAttribute('class', `node-priority-icon ${config.cssClass}`);
+        icon.textContent = config.icon;
+        group.appendChild(icon);
+    }
 }
 
 /**
