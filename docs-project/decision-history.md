@@ -4,6 +4,29 @@ This file tracks significant technical and design decisions made during developm
 
 ---
 
+## 2026-02-15: Tag Search Without # and Toolbar Reordering
+
+DECISION: Allow tag filtering without typing # symbol and reorganize toolbar layout
+CHOSE: Normalize tag input (prepend # automatically), move # button earlier, text search and save status to end
+NOT: Require # symbol, keep toolbar order as-is
+
+Reasoning:
+- Tag search: Users found typing # repetitive; "idea project" → "#idea #project" is more natural
+- Input normalization: Split by spaces, prepend # to each word without it before filtering
+- Autocomplete: Strip # from query for matching, but display results with # (visual consistency)
+- Toolbar order: Group related functions - navigation (Home/+/Export/Fit), then toggle (#), then settings (Theme/?/⚙), then search/status
+- Save status position: End of toolbar (after text search) is less distracting, easier to scan left-to-right
+
+Implementation:
+- updateFilter(): Split input by spaces, normalize each word to have #
+- getAutocompleteSuggestions(): Strip # from query before matching against tags
+- Placeholder text: "Filter by tag..." (no # required)
+- Toolbar order: [Home][+][Export][Fit][#][Theme][?][Settings][Text Search][Save Status](Breadcrumbs)
+
+Version: v225
+
+---
+
 ## 2026-02-14: Mobile UI - Search Bar, Modals, Action Bar, Z-Index Stack
 
 DECISION: Fix four mobile usability issues and implement dynamic version display

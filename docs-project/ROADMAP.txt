@@ -63,20 +63,27 @@ Desktop:
 - Zoom to fit should consider if the sidebar is open (desktop only)
 
 Both:
+- [x] allow for tag search without typing # (v225)
+- [x] Reorder top toolbar: [Home][+][Export][Fit][#][Theme][?][Settings][Text Search][Save Status](Breadcrumbs) (v225)
 - center priority under completion-status indicator
 - change priority indicator to little prize/ribbon?
-- allow for tag search without typing #
-- [x] Breadcrumb format: Add background color like tag pills? (v222 - pill-shaped with direct navigation)
-- How do we deal with notes that are super far away?
 - priority toggle goes away on None. Can't continue toggling like we can with completion-status
 - Add method to make notes a child of another note...
   - add "Another note" to the Move to... modal, then click on the parent note.
 
+- How do we deal with notes that are super far away?
 Mobile updates:
-- multi-selecting, then panning, action bar goes away
-- sidebar tag search falls behind the 4-layer toolbar
-- keyboard covers rename tag... move to top like note editor
-- Shrink search bar so its not 100% width on mobile
+- 
+
+
+
+1. You made the tag filter work even when the user ommits the # symbol, just like i asked for. However, it looks like you did that by turning ALL WORDS into tags?!?! That's not the way to do it. Please put together a plan for how to implement this.
+2. It appears the priority icons are not directly overlaying the completion status icons in the Y direction. They ought to be where they were previously with completion status on the "top row" and priority on the "bottom row".
+3. To be checked again after implementing 2
+4. For some reason you changed the medium-priority icon from the yellow box to a yellow star. The medium priority icon should remain the yellow box. But I like the star. Please add it to the priority field as "Top" priority.  So going forward, the toggle will be from  None -> Low -> Medium -> High -> Top -> None.
+5. To be checked again after implementing 2
+6. Looks good
+
 
 
 ================================================================================
@@ -124,3 +131,6 @@ EDGE DATA MODEL INCONSISTENCY (HIGH PRIORITY)
 
 
 ================================================================================
+
+
+
