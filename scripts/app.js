@@ -879,7 +879,7 @@ const AUTOCOMPLETE_DROPDOWN_FLIP_OFFSET = 210; // Height to flip dropdown above 
 const AUTOCOMPLETE_VIEWPORT_MARGIN = 10; // Margin from viewport edge
 
 // Z-Index Layers
-const CONTEXT_MENU_Z_INDEX = 100; // Z-index for context menus (below modals)
+const CONTEXT_MENU_Z_INDEX = 150; // Z-index for context menus (above sidebar on mobile)
 const TOAST_Z_INDEX = 10001; // Z-index for toast notifications (above modals)
 const MODAL_Z_INDEX = 10000; // Z-index for modals
 
