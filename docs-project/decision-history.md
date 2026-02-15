@@ -4,6 +4,45 @@ This file tracks significant technical and design decisions made during developm
 
 ---
 
+## 2026-02-15: Query Parser with AND/OR Logic and Field Filters
+
+DECISION: Implement unified query parser for advanced search
+CHOSE: Recursive descent parser with boolean operators, parentheses, field filters
+NOT: Simple string matching, dedicated filter UI, autocomplete-only approach
+
+Reasoning:
+- User requested field filtering (priority=low, completion=done) with AND/OR logic
+- Chose option B: Implement AND/OR first, then add field filters (cleaner architecture)
+- Recursive descent parser handles complex queries with proper precedence
+- Parentheses support from v1 for explicit grouping (A AND (B OR C))
+- Reusable architecture for future features (tag search, transclusion, saved filters)
+
+Syntax:
+- Field filters: field=value (case-insensitive)
+- Boolean operators: AND/OR (correct precedence: parens > AND > OR)
+- Parentheses: (priority=low OR priority=high) AND #idea
+- Hashtags: #tag (explicit # required for hashtag search)
+- Text search: bare words search title/content
+- Quotes: "value with spaces" for multi-word field values
+
+Completion field values changed:
+- 'yes' → 'done' (user-friendly)
+- 'no' → 'todo' (user-friendly)
+- Backward compatible: old values migrate on load
+- Aliases in parser: yes/no/to-do/part/cancel all work
+
+Implementation:
+- Three-layer architecture: tokenizer → parser → evaluator
+- AST-based evaluation for flexibility
+- Quote support for spaces in values
+- Trailing operators treated as text search (TC19)
+- Special completion field handling with aliases
+- Migration in migrateNodeFields() for old 'yes'/'no' values
+
+Versions: v230 (core), v231 (text search fix), v232 (completion values + quotes), v233 (trailing operators)
+
+---
+
 ## 2026-02-15: Priority Enhancements - Top State, Y-Axis Alignment, Cycle Simplification
 
 DECISION: Add "Top" priority, align with completion indicator, simplify cycle (no None icon)

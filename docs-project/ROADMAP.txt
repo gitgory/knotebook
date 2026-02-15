@@ -63,12 +63,11 @@ Desktop:
 
 
 Both:
+- [x] Filter by fields with AND/OR logic (v230-233)
 - Breadcrumbs are currently shortened with "..." Desired: Make allowed width 2.5x wider
 - Add a "tagless" option to tag search
 - Add the same tag suggestion dropdown to the tag search box
 - Tag pill suggestions (outlines if not selected) to fill the first 2 lines?
-- Filter by fields - how?
-- Search logic w/ AND/OR
 - Calculate "blocked" status for notes with directed edges and completion status
 - Calculate % complete for parents with child nodes with completion status
 - store last view
