@@ -4,6 +4,25 @@ This file tracks significant technical and design decisions made during developm
 
 ---
 
+## 2026-02-14: Mobile UI - Search Bar, Modals, Action Bar, Z-Index Stack
+
+DECISION: Fix four mobile usability issues and implement dynamic version display
+CHOSE: Shrink search bar to 75%, top-align modals, preserve action bar on pan, raise sidebar z-index
+NOT: 100% width search bar, center-aligned modals, hide action bar during pan, 1:1 z-index mapping
+
+Reasoning:
+- Search bar: 100% width caused overflow; 75% leaves room for toolbar items
+- Modal positioning: On-screen keyboard covered rename prompt; top-aligned editor already worked well (align-items: flex-start)
+- Action bar persistence: Hide during pan lost multi-select feedback; now only hides if no nodes selected
+- Z-index stack: Sidebar (110) > toolbar (100) > context menu (100); raised context menu to 150 for visibility
+- Dynamic versioning: Hardcoded version numbers fell out of sync; extract from asset tags instead
+
+Version bumps:
+- v223: Initial mobile UI fixes (search bar, modals, action bar, sidebar z-index)
+- v224: Fixed dynamic version display and context menu z-index
+
+---
+
 ## 2026-02-14: Breadcrumb Navigation - Pill-Shaped Direct Links
 
 DECISION: Convert breadcrumbs to pill-shaped buttons with direct navigation to any level
