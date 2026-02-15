@@ -249,10 +249,17 @@ const FIRST_CLASS_FIELDS = {
     },
     priority: {
         position: {
-            offsetX: 18,  // From right edge
+            offsetX: 20,  // From right edge (aligned with completion)
             offsetY: 18   // From bottom edge (measured from NODE_HEIGHT)
         },
         states: {
+            '': {
+                label: 'None',
+                icon: '◻',
+                iconType: 'text',
+                color: '#6b7280',
+                cssClass: 'priority-none'
+            },
             'low': {
                 label: 'Low',
                 icon: '▼',
@@ -273,9 +280,16 @@ const FIRST_CLASS_FIELDS = {
                 iconType: 'text',
                 color: '#ef4444',
                 cssClass: 'priority-high'
+            },
+            'top': {
+                label: 'Top',
+                icon: '☆',
+                iconType: 'text',
+                color: '#fbbf24',
+                cssClass: 'priority-top'
             }
         },
-        cycleOrder: ['low', 'medium', 'high'],
+        cycleOrder: ['', 'low', 'medium', 'high', 'top'],
         noneState: { label: 'None', value: null }
     }
 };
@@ -315,14 +329,14 @@ function isCompletedState(state) {
 /**
  * Gets the next priority state in the cycle.
  * @param {string|null} current - Current priority state
- * @returns {string|null} - Next priority state, or null after 'high'
+ * @returns {string} - Next priority state (cycles through all states including '')
  */
 function getNextPriorityState(current) {
     const cycle = FIRST_CLASS_FIELDS.priority.cycleOrder;
     if (current === null || current === undefined) return cycle[0];
     const idx = cycle.indexOf(current);
-    // After last item, return null (none state)
-    return idx === cycle.length - 1 ? null : cycle[idx + 1];
+    // Cycle back to first item after last (loops continuously)
+    return cycle[(idx + 1) % cycle.length];
 }
 
 /**
@@ -331,8 +345,9 @@ function getNextPriorityState(current) {
  * @returns {Object|null} - State config or null
  */
 function getPriorityStateConfig(state) {
-    if (!state) return null;
-    return FIRST_CLASS_FIELDS.priority.states[state] || null;
+    // Handle null/undefined as empty string (None state)
+    const key = (state === null || state === undefined) ? '' : state;
+    return FIRST_CLASS_FIELDS.priority.states[key] || null;
 }
 
 /**
@@ -3640,8 +3655,8 @@ function appendPriorityIcon(group, config, position) {
  */
 function renderPriorityIndicator(g, node) {
     const priority = getNodeFieldValue(node, 'priority');
-    if (!priority) return;
-    const config = getPriorityStateConfig(priority);
+    // Get config (handles empty string for None state)
+    const config = FIRST_CLASS_FIELDS.priority.states[priority === null || priority === undefined ? '' : priority];
     if (!config) return;
 
     const position = FIRST_CLASS_FIELDS.priority.position;
