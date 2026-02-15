@@ -2351,7 +2351,16 @@ function parseOR(parser) {
     let left = parseAND(parser);
 
     while (!parser.isAtEnd() && parser.current()?.toUpperCase() === 'OR') {
-        parser.consume(); // consume 'OR'
+        const orToken = parser.consume(); // consume 'OR'
+
+        // Check if there's a term after OR
+        if (parser.isAtEnd()) {
+            // Trailing OR - treat as text search
+            const orText = { type: 'TEXT', text: orToken };
+            left = { type: 'AND', left, right: orText };
+            break;
+        }
+
         const right = parseAND(parser);
         left = { type: 'OR', left, right };
     }
@@ -2370,7 +2379,16 @@ function parseAND(parser) {
     let left = parseTerm(parser);
 
     while (!parser.isAtEnd() && parser.current()?.toUpperCase() === 'AND') {
-        parser.consume(); // consume 'AND'
+        const andToken = parser.consume(); // consume 'AND'
+
+        // Check if there's a term after AND
+        if (parser.isAtEnd()) {
+            // Trailing AND - treat as text search
+            const andText = { type: 'TEXT', text: andToken };
+            left = { type: 'AND', left, right: andText };
+            break;
+        }
+
         const right = parseTerm(parser);
         left = { type: 'AND', left, right };
     }
