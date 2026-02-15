@@ -1,0 +1,381 @@
+================================================================================
+QUERY PARSER WITH AND/OR OPERATORS + FIELD FILTERS - DESIGN SPECIFICATION
+================================================================================
+Feature: Unified query parser for search with boolean logic and field filtering
+Status: Approved - Ready for implementation
+Created: 2026-02-15
+
+================================================================================
+OVERVIEW
+================================================================================
+
+Implement a unified query parser that supports:
+- Text search (in title/content)
+- Hashtag filtering (#tag)
+- Field filtering (field=value)
+- Boolean operators (AND/OR)
+- Parentheses for grouping
+
+This creates a flexible, reusable search foundation for:
+- Current: Text search bar
+- Future: Tag search bar, persistent search zones, transclusion filters
+
+================================================================================
+USER-FACING SYNTAX
+================================================================================
+
+Examples of supported queries:
+
+priority=low                           → Simple field filter
+priority=low AND #idea                 → Field AND hashtag
+#idea OR #project                      → Hashtag OR
+priority=low OR priority=high          → Same field, multiple values
+refactor AND priority=low              → Text AND field
+(#idea OR #project) AND priority=high  → Grouped OR with AND
+priority=low AND (#idea OR completion=done)  → Complex nesting
+
+Syntax Rules:
+- Case-insensitive operators: AND/and/And, OR/or/Or
+- Case-insensitive field names: priority=low works for "priority" or "Priority"
+- Hashtags: #tag or bare word (auto-prepend #)
+- Field filters: fieldname=value
+- Parentheses: (...) for explicit grouping
+- Implicit AND: Terms without operator treated as AND
+
+Operator Precedence (high to low):
+1. Parentheses (...)
+2. AND
+3. OR
+
+Examples:
+- A AND B OR C        → (A AND B) OR C
+- A OR B AND C        → A OR (B AND C)
+- A AND (B OR C)      → Explicit grouping (B OR C evaluated first)
+
+================================================================================
+TECHNICAL ARCHITECTURE
+================================================================================
+
+Three-Layer Design:
+
+1. TOKENIZER
+   Input:  "priority=low AND (#idea OR #project)"
+   Output: ['priority', '=', 'low', 'AND', '(', '#idea', 'OR', '#project', ')']
+
+2. PARSER (Recursive Descent)
+   Input:  Token array
+   Output: Abstract Syntax Tree (AST)
+
+   Example AST:
+   {
+     type: 'AND',
+     left: { type: 'FIELD', field: 'priority', value: 'low' },
+     right: {
+       type: 'OR',
+       left: { type: 'HASHTAG', tag: '#idea' },
+       right: { type: 'HASHTAG', tag: '#project' }
+     }
+   }
+
+3. EVALUATOR
+   Input:  Node object + AST
+   Output: Boolean (node matches query or not)
+
+================================================================================
+PARSER ALGORITHM (RECURSIVE DESCENT)
+================================================================================
+
+Grammar (EBNF notation):
+
+expression ::= orExpr
+orExpr     ::= andExpr ('OR' andExpr)*
+andExpr    ::= term ('AND' term)*
+term       ::= '(' expression ')' | field | hashtag | text
+field      ::= FIELDNAME '=' VALUE
+hashtag    ::= '#' WORD | WORD (auto-prepend #)
+text       ::= WORD (search in title/content)
+
+Parsing Functions:
+
+parseExpression(tokens, index):
+  return parseOR(tokens, index)
+
+parseOR(tokens, index):
+  left = parseAND(tokens, index)
+  while current token is 'OR':
+    consume 'OR'
+    right = parseAND(tokens, index)
+    left = { type: 'OR', left, right }
+  return left
+
+parseAND(tokens, index):
+  left = parseTerm(tokens, index)
+  while current token is 'AND':
+    consume 'AND'
+    right = parseTerm(tokens, index)
+    left = { type: 'AND', left, right }
+  return left
+
+parseTerm(tokens, index):
+  if token is '(':
+    consume '('
+    expr = parseExpression(tokens, index)
+    expect ')'
+    return expr
+  else if token matches field=value:
+    return { type: 'FIELD', field, value }
+  else if token starts with '#':
+    return { type: 'HASHTAG', tag }
+  else:
+    return { type: 'TEXT', text }
+
+================================================================================
+AST NODE TYPES
+================================================================================
+
+AND Node:
+  { type: 'AND', left: <expr>, right: <expr> }
+
+OR Node:
+  { type: 'OR', left: <expr>, right: <expr> }
+
+FIELD Node:
+  { type: 'FIELD', field: 'priority', value: 'low' }
+
+HASHTAG Node:
+  { type: 'HASHTAG', tag: '#idea' }
+
+TEXT Node:
+  { type: 'TEXT', text: 'refactor' }
+
+================================================================================
+EVALUATION LOGIC
+================================================================================
+
+evaluateAST(node, ast):
+  switch ast.type:
+    case 'AND':
+      return evaluateAST(node, ast.left) && evaluateAST(node, ast.right)
+    case 'OR':
+      return evaluateAST(node, ast.left) || evaluateAST(node, ast.right)
+    case 'FIELD':
+      return matchesFieldFilter(node, ast.field, ast.value)
+    case 'HASHTAG':
+      return matchesHashtag(node, ast.tag)
+    case 'TEXT':
+      return matchesText(node, ast.text)
+
+Helper Functions:
+
+matchesFieldFilter(node, field, value):
+  - Get field value from node.fields[field]
+  - Case-insensitive field name matching
+  - Multi-select fields: Check if value exists in array (partial match)
+  - Single-value fields: Exact match (case-insensitive)
+  - Handle null/undefined (e.g., priority=none matches unset priority)
+
+matchesHashtag(node, tag):
+  - Check if node.hashtags contains tag (case-insensitive)
+  - Tag already normalized to lowercase in storage
+
+matchesText(node, text):
+  - Search in node.title (case-insensitive)
+  - Search in node.content (case-insensitive)
+  - Return true if found in either
+
+================================================================================
+STATE MANAGEMENT
+================================================================================
+
+Add to state object:
+
+state.filterQuery = "priority=low AND (#idea OR #project)";  // Raw input
+state.parsedFilterAST = { /* AST tree */ };  // Parsed structure
+
+Clear on:
+- User clears search input
+- User navigates to different level
+- User switches projects
+
+================================================================================
+REUSABILITY DESIGN
+================================================================================
+
+Parser is designed as standalone module for future reuse:
+
+Future reuse locations:
+1. Tag search bar (hashtag sidebar filter)
+2. Persistent search zones (saved filters)
+3. Transclusion queries (future feature)
+4. Custom views/reports (future feature)
+
+Design principle: Generic parser, knotebook-specific evaluator
+
+Example structure:
+- tokenizeQuery(queryString) - Generic
+- parseExpression(tokens) - Generic
+- evaluateAST(node, ast) - Knotebook-specific (knows about node structure)
+
+================================================================================
+IMPLEMENTATION PHASES
+================================================================================
+
+Phase 1: Tokenizer (Foundation)
+  1. tokenizeQuery() - Split input into tokens
+  2. Handle field=value patterns
+  3. Handle #hashtags and bare words
+  4. Handle parentheses
+  5. Handle AND/OR keywords
+  6. Handle whitespace and special characters
+
+Phase 2: Parser (Core Logic)
+  7. parseExpression() - Entry point
+  8. parseOR() - Handle OR with correct precedence
+  9. parseAND() - Handle AND with correct precedence
+  10. parseTerm() - Handle leaf nodes and parentheses
+  11. Error handling for malformed queries (unmatched parens, etc.)
+
+Phase 3: Evaluator (Matching)
+  12. evaluateAST() - Recursive evaluation
+  13. matchesFieldFilter() - Field comparison logic
+  14. matchesHashtag() - Hashtag comparison
+  15. matchesText() - Text search in title/content
+  16. Handle null/undefined field values
+
+Phase 4: Integration
+  17. Update updateTextFilter() to use parser
+  18. Update nodeMatchesFilter() to use evaluator
+  19. Update clearTextFilter() and clearFilter()
+  20. Clear filters on navigation
+  21. Add state.filterQuery and state.parsedFilterAST
+
+Phase 5: Testing & Edge Cases
+  22. Test all operator combinations
+  23. Test nested parentheses
+  24. Test malformed queries (graceful degradation)
+  25. Test field name variations (case-insensitive)
+  26. Test multi-select field matching
+  27. Test empty queries
+  28. Test special characters in values
+
+================================================================================
+FILES AFFECTED
+================================================================================
+
+scripts/app.js:
+  NEW FUNCTIONS:
+    - tokenizeQuery(queryString) - Tokenize input
+    - parseExpression(tokens, index) - Parse into AST
+    - parseOR(tokens, index) - OR precedence
+    - parseAND(tokens, index) - AND precedence
+    - parseTerm(tokens, index) - Terminal nodes
+    - evaluateAST(node, ast) - Recursive evaluation
+    - matchesFieldFilter(node, field, value) - Field matching
+    - matchesHashtag(node, tag) - Hashtag matching
+    - matchesText(node, text) - Text matching
+
+  MODIFIED FUNCTIONS:
+    - updateTextFilter(text) - Parse query, store AST
+    - nodeMatchesFilter(node) - Use AST evaluation
+    - clearTextFilter() - Clear AST state
+    - clearFilter() - Clear AST state
+    - Navigation functions - Clear filters on level change
+
+  STATE CHANGES:
+    - Add state.filterQuery (string)
+    - Add state.parsedFilterAST (object)
+
+index.html: No changes
+
+styles/main.css: No changes
+
+================================================================================
+EDGE CASES & ERROR HANDLING
+================================================================================
+
+Malformed Queries (Graceful Degradation):
+  - Unmatched parentheses: Ignore or auto-close
+  - Invalid field names: Silently no match (user sees empty results)
+  - Empty operators: Ignore (e.g., "AND" alone)
+  - Trailing operators: Ignore (e.g., "priority=low AND")
+
+Special Values:
+  - priority=none or priority=null → Match nodes with unset priority
+  - Empty string after =: Match empty values
+
+Multi-Select Fields:
+  - Files=app.js → Matches if "app.js" appears anywhere in Files array
+  - Partial string matching (case-insensitive)
+
+Case Handling:
+  - Field names: Case-insensitive (priority = Priority = PRIORITY)
+  - Field values: Case-insensitive for text fields
+  - Operators: Case-insensitive (AND/and/And)
+  - Hashtags: Already normalized to lowercase in storage
+
+================================================================================
+FUTURE ENHANCEMENTS (NOT IN v1)
+================================================================================
+
+From ROADMAP Future/Maybe:
+  - Field search autocomplete: Type "pri" → suggests "priority="
+  - Simplified multi-value syntax: priority=(low OR high)
+  - NOT operator: priority!=low or NOT priority=low
+  - Regex support: title~=^refactor
+  - Saved queries/filters
+  - Visual query builder UI
+
+================================================================================
+TESTING CHECKLIST
+================================================================================
+
+Basic Operations:
+  [ ] Simple field filter: priority=low
+  [ ] Simple hashtag: #idea
+  [ ] Simple text: refactor
+  [ ] Field AND hashtag: priority=low AND #idea
+  [ ] Field OR field: priority=low OR priority=high
+  [ ] Hashtag OR hashtag: #idea OR #project
+
+Precedence:
+  [ ] A AND B OR C → (A AND B) OR C
+  [ ] A OR B AND C → A OR (B AND C)
+  [ ] (A OR B) AND C → Explicit grouping works
+
+Nesting:
+  [ ] ((A OR B) AND C) OR D
+  [ ] A AND (B OR (C AND D))
+  [ ] Deep nesting (5+ levels)
+
+Edge Cases:
+  [ ] Empty query
+  [ ] Only operators: "AND OR"
+  [ ] Unmatched parens: "priority=low AND (#idea"
+  [ ] Trailing operator: "priority=low AND"
+  [ ] Multiple spaces: "priority=low    AND    #idea"
+  [ ] Case variations: PRIORITY=LOW and #IDEA
+
+Field Types:
+  [ ] First-Class fields: completion, priority
+  [ ] Second-Class custom fields: Files, custom fields
+  [ ] Multi-select field partial match: Files=app.js
+  [ ] Null/undefined field values: priority=none
+
+Special Characters:
+  [ ] Values with spaces: (if needed in future)
+  [ ] Values with dashes: Files=test-plan
+  [ ] Values with dots: Files=app.js
+
+Integration:
+  [ ] Works with existing hashtag sidebar
+  [ ] Clears on navigation
+  [ ] Clears on project switch
+  [ ] Works with fit-to-view (visible nodes only)
+  [ ] Mobile compatibility
+
+Performance:
+  [ ] Large notebooks (100+ nodes)
+  [ ] Complex queries (deeply nested)
+  [ ] Rapid filter changes (debouncing works)
+
+================================================================================

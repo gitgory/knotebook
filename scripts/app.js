@@ -130,6 +130,8 @@ const state = {
     // Hashtag filter state
     filterHashtags: [],  // Active hashtag filters (OR logic)
     filterText: '',      // Text search filter (matches title and content)
+    filterQuery: '',     // Raw filter query string (with AND/OR operators)
+    parsedFilterAST: null, // Parsed Abstract Syntax Tree for filter query
     hiddenHashtags: [],  // Hashtags hidden from node display (but still in data)
     // Selection box state
     selectionBox: null,  // { start: {x, y}, end: {x, y}, mode: 'enclosed'|'intersecting', locked: boolean } or null
@@ -2229,6 +2231,313 @@ async function handleDeleteProject(projectId) {
 }
 
 // ============================================================================
+// QUERY PARSER (AND/OR + Field Filters)
+// ============================================================================
+
+/**
+ * Tokenize a query string into an array of tokens.
+ * Recognizes: field=value, #hashtag, AND/OR operators, parentheses, text terms
+ *
+ * @param {string} queryString - The raw query input
+ * @returns {string[]} - Array of tokens
+ */
+function tokenizeQuery(queryString) {
+    if (!queryString || !queryString.trim()) return [];
+
+    const tokens = [];
+    let current = '';
+    let i = 0;
+
+    while (i < queryString.length) {
+        const char = queryString[i];
+
+        // Parentheses - emit as separate tokens
+        if (char === '(' || char === ')') {
+            if (current.trim()) {
+                tokens.push(current.trim());
+                current = '';
+            }
+            tokens.push(char);
+            i++;
+            continue;
+        }
+
+        // Whitespace - separator
+        if (char === ' ' || char === '\t' || char === '\n') {
+            if (current.trim()) {
+                tokens.push(current.trim());
+                current = '';
+            }
+            i++;
+            continue;
+        }
+
+        // Build current token
+        current += char;
+        i++;
+    }
+
+    // Push remaining token
+    if (current.trim()) {
+        tokens.push(current.trim());
+    }
+
+    return tokens;
+}
+
+/**
+ * Parse tokens into an Abstract Syntax Tree (AST).
+ * Entry point for recursive descent parser.
+ *
+ * @param {string[]} tokens - Token array from tokenizer
+ * @returns {object|null} - AST root node or null if empty
+ */
+function parseExpression(tokens) {
+    if (!tokens || tokens.length === 0) return null;
+
+    const parser = {
+        tokens: tokens,
+        index: 0,
+        current() {
+            return this.tokens[this.index];
+        },
+        peek() {
+            return this.tokens[this.index + 1];
+        },
+        consume() {
+            return this.tokens[this.index++];
+        },
+        isAtEnd() {
+            return this.index >= this.tokens.length;
+        }
+    };
+
+    try {
+        return parseOR(parser);
+    } catch (e) {
+        console.warn('Query parse error:', e);
+        return null; // Graceful degradation on parse errors
+    }
+}
+
+/**
+ * Parse OR expressions (lowest precedence).
+ * Grammar: orExpr ::= andExpr ('OR' andExpr)*
+ *
+ * @param {object} parser - Parser state
+ * @returns {object} - AST node
+ */
+function parseOR(parser) {
+    let left = parseAND(parser);
+
+    while (!parser.isAtEnd() && parser.current()?.toUpperCase() === 'OR') {
+        parser.consume(); // consume 'OR'
+        const right = parseAND(parser);
+        left = { type: 'OR', left, right };
+    }
+
+    return left;
+}
+
+/**
+ * Parse AND expressions (middle precedence).
+ * Grammar: andExpr ::= term ('AND' term)*
+ *
+ * @param {object} parser - Parser state
+ * @returns {object} - AST node
+ */
+function parseAND(parser) {
+    let left = parseTerm(parser);
+
+    while (!parser.isAtEnd() && parser.current()?.toUpperCase() === 'AND') {
+        parser.consume(); // consume 'AND'
+        const right = parseTerm(parser);
+        left = { type: 'AND', left, right };
+    }
+
+    return left;
+}
+
+/**
+ * Parse terminal expressions (highest precedence).
+ * Grammar: term ::= '(' expression ')' | field | hashtag | text
+ *
+ * @param {object} parser - Parser state
+ * @returns {object} - AST node
+ */
+function parseTerm(parser) {
+    if (parser.isAtEnd()) {
+        throw new Error('Unexpected end of query');
+    }
+
+    const token = parser.current();
+
+    // Parentheses - recurse
+    if (token === '(') {
+        parser.consume(); // consume '('
+        const expr = parseOR(parser); // Recurse for full expression
+        if (parser.current() === ')') {
+            parser.consume(); // consume ')'
+        } else {
+            console.warn('Missing closing parenthesis, auto-closing');
+        }
+        return expr;
+    }
+
+    // Field filter: field=value
+    if (token.includes('=')) {
+        parser.consume();
+        const [field, ...valueParts] = token.split('=');
+        const value = valueParts.join('='); // Handle values with '=' in them
+        return {
+            type: 'FIELD',
+            field: field.trim(),
+            value: value.trim()
+        };
+    }
+
+    // Hashtag: #tag
+    if (token.startsWith('#')) {
+        parser.consume();
+        return {
+            type: 'HASHTAG',
+            tag: token.toLowerCase() // Normalize to lowercase
+        };
+    }
+
+    // Skip standalone AND/OR (malformed query)
+    if (token.toUpperCase() === 'AND' || token.toUpperCase() === 'OR') {
+        parser.consume();
+        if (!parser.isAtEnd()) {
+            return parseTerm(parser); // Try to parse next term
+        }
+        return null;
+    }
+
+    // Bare word - could be hashtag (auto-prepend #) or text search
+    // To maintain compatibility with current tag search, treat as hashtag
+    parser.consume();
+
+    // If it looks like a tag word (alphanumeric, underscore, hyphen), treat as hashtag
+    if (/^[a-zA-Z0-9_-]+$/.test(token)) {
+        return {
+            type: 'HASHTAG',
+            tag: '#' + token.toLowerCase()
+        };
+    }
+
+    // Otherwise, treat as text search
+    return {
+        type: 'TEXT',
+        text: token
+    };
+}
+
+/**
+ * Evaluate AST against a node to determine if it matches the query.
+ *
+ * @param {object} node - The note node to test
+ * @param {object} ast - The AST to evaluate
+ * @returns {boolean} - True if node matches query
+ */
+function evaluateAST(node, ast) {
+    if (!ast) return true; // No filter = show all
+
+    switch (ast.type) {
+        case 'AND':
+            return evaluateAST(node, ast.left) && evaluateAST(node, ast.right);
+
+        case 'OR':
+            return evaluateAST(node, ast.left) || evaluateAST(node, ast.right);
+
+        case 'FIELD':
+            return matchesFieldFilter(node, ast.field, ast.value);
+
+        case 'HASHTAG':
+            return matchesHashtag(node, ast.tag);
+
+        case 'TEXT':
+            return matchesText(node, ast.text);
+
+        default:
+            console.warn('Unknown AST node type:', ast.type);
+            return false;
+    }
+}
+
+/**
+ * Check if a node's field matches a filter value.
+ * Handles First-Class and Second-Class fields, case-insensitive matching.
+ *
+ * @param {object} node - The note node
+ * @param {string} field - Field name (case-insensitive)
+ * @param {string} value - Expected value
+ * @returns {boolean} - True if field matches
+ */
+function matchesFieldFilter(node, field, value) {
+    if (!node.fields) return false;
+
+    // Normalize field name to lowercase for case-insensitive lookup
+    const fieldLower = field.toLowerCase();
+
+    // Find matching field (case-insensitive)
+    const actualFieldName = Object.keys(node.fields).find(
+        key => key.toLowerCase() === fieldLower
+    );
+
+    if (!actualFieldName) {
+        // Field doesn't exist on this node
+        // Check if value is 'none' or 'null' (match unset fields)
+        return value.toLowerCase() === 'none' || value.toLowerCase() === 'null';
+    }
+
+    const fieldValue = node.fields[actualFieldName];
+
+    // Handle null/undefined values
+    if (fieldValue === null || fieldValue === undefined || fieldValue === '') {
+        return value.toLowerCase() === 'none' || value.toLowerCase() === 'null';
+    }
+
+    // Multi-select field (array): partial match
+    if (Array.isArray(fieldValue)) {
+        const valueLower = value.toLowerCase();
+        return fieldValue.some(item =>
+            item.toLowerCase().includes(valueLower)
+        );
+    }
+
+    // Single-value field: case-insensitive exact match
+    return fieldValue.toString().toLowerCase() === value.toLowerCase();
+}
+
+/**
+ * Check if a node has a specific hashtag.
+ *
+ * @param {object} node - The note node
+ * @param {string} tag - Hashtag to match (already lowercase with #)
+ * @returns {boolean} - True if node has this tag
+ */
+function matchesHashtag(node, tag) {
+    if (!node.hashtags || node.hashtags.length === 0) return false;
+    // Tags are already normalized to lowercase in storage
+    return node.hashtags.includes(tag);
+}
+
+/**
+ * Check if a node's title or content contains text.
+ *
+ * @param {object} node - The note node
+ * @param {string} text - Text to search for (case-insensitive)
+ * @returns {boolean} - True if text found in title or content
+ */
+function matchesText(node, text) {
+    const searchLower = text.toLowerCase();
+    const titleMatch = (node.title || '').toLowerCase().includes(searchLower);
+    const contentMatch = (node.content || '').toLowerCase().includes(searchLower);
+    return titleMatch || contentMatch;
+}
+
+// ============================================================================
 // UTILITY FUNCTIONS
 // ============================================================================
 
@@ -2317,6 +2626,12 @@ function cycleCompletion(current) {
  * @returns {boolean} - True if node matches all active filters
  */
 function nodeMatchesFilter(node) {
+    // Use new query parser if AST is available
+    if (state.parsedFilterAST) {
+        return evaluateAST(node, state.parsedFilterAST);
+    }
+
+    // Fallback to legacy filter logic (for backward compatibility during transition)
     // Text search filter
     if (state.filterText) {
         const search = state.filterText.toLowerCase();
@@ -2397,11 +2712,13 @@ function clearFilter() {
     input.classList.remove('active');
     document.getElementById('hashtag-clear').classList.add('hidden');
 
-    // Also clear text search
+    // Also clear text search and query parser state
     const textInput = document.getElementById('text-search-input');
     if (textInput) {
         textInput.value = '';
         state.filterText = '';
+        state.filterQuery = '';
+        state.parsedFilterAST = null;
         textInput.classList.remove('active');
         document.getElementById('text-search-clear').classList.add('hidden');
     }
@@ -2429,12 +2746,17 @@ function setFilterHashtag(hashtag) {
  * @param {string} text - Search text to filter notes by
  */
 function updateTextFilter(text) {
-    state.filterText = text.trim();
+    state.filterQuery = text.trim();
+    state.filterText = text.trim(); // Keep for backward compatibility
+
+    // Parse query into AST
+    const tokens = tokenizeQuery(state.filterQuery);
+    state.parsedFilterAST = parseExpression(tokens);
 
     const input = document.getElementById('text-search-input');
     const clearBtn = document.getElementById('text-search-clear');
 
-    if (state.filterText) {
+    if (state.filterQuery) {
         input.classList.add('active');
         clearBtn.classList.remove('hidden');
     } else {
@@ -2453,6 +2775,8 @@ function clearTextFilter() {
     const input = document.getElementById('text-search-input');
     input.value = '';
     state.filterText = '';
+    state.filterQuery = '';
+    state.parsedFilterAST = null;
     input.classList.remove('active');
     document.getElementById('text-search-clear').classList.add('hidden');
     render();
