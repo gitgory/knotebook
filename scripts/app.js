@@ -289,7 +289,7 @@ const FIRST_CLASS_FIELDS = {
                 cssClass: 'priority-top'
             }
         },
-        cycleOrder: ['', 'low', 'medium', 'high', 'top'],
+        cycleOrder: ['low', 'medium', 'high', 'top'],
         noneState: { label: 'None', value: null }
     }
 };
@@ -345,9 +345,8 @@ function getNextPriorityState(current) {
  * @returns {Object|null} - State config or null
  */
 function getPriorityStateConfig(state) {
-    // Handle null/undefined as empty string (None state)
-    const key = (state === null || state === undefined) ? '' : state;
-    return FIRST_CLASS_FIELDS.priority.states[key] || null;
+    if (!state) return null;
+    return FIRST_CLASS_FIELDS.priority.states[state] || null;
 }
 
 /**
@@ -3666,8 +3665,10 @@ function appendPriorityIcon(group, config, position) {
  */
 function renderPriorityIndicator(g, node) {
     const priority = getNodeFieldValue(node, 'priority');
-    // Get config (handles empty string for None state)
-    const config = FIRST_CLASS_FIELDS.priority.states[priority === null || priority === undefined ? '' : priority];
+    // Don't render if priority is null/undefined (None state)
+    if (!priority) return;
+
+    const config = FIRST_CLASS_FIELDS.priority.states[priority];
     if (!config) return;
 
     const position = FIRST_CLASS_FIELDS.priority.position;
