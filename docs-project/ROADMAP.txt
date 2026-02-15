@@ -65,9 +65,9 @@ Desktop:
 Both:
 - [x] allow for tag search without typing # (v225)
 - [x] Reorder top toolbar: [Home][+][Export][Fit][#][Theme][?][Settings][Text Search][Save Status](Breadcrumbs) (v225)
-- center priority under completion-status indicator
-- change priority indicator to little prize/ribbon?
-- priority toggle goes away on None. Can't continue toggling like we can with completion-status
+- [x] center priority under completion-status indicator (v226-228)
+- [x] Add "Top" priority with star icon (v226-228)
+- [x] Remove None icon from priority cycle (v228)
 - Add method to make notes a child of another note...
   - add "Another note" to the Move to... modal, then click on the parent note.
 

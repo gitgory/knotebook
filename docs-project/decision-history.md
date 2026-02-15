@@ -4,6 +4,38 @@ This file tracks significant technical and design decisions made during developm
 
 ---
 
+## 2026-02-15: Priority Enhancements - Top State, Y-Axis Alignment, Cycle Simplification
+
+DECISION: Add "Top" priority, align with completion indicator, simplify cycle (no None icon)
+CHOSE: Low → Medium → High → Top → Low cycle, filled star for Top, Y-axis alignment with completion
+NOT: Include None in cycle with visible icon, outline star, misaligned indicators
+
+Reasoning:
+- Top priority: Needed highest urgency level above High; star icon (★) universally represents "top/best"
+- Gold color (#fbbf24): Visually distinct from red (High), connotes value/importance
+- Y-axis alignment: Completion and priority should form vertical column (same X offset from right edge)
+- Changed offsetX from 18 to 20 to match completion indicator position
+- Cycle simplification: None state shouldn't have visual indicator (unlike completion where To-do needs circle)
+- Priority is opt-in: Only shown when explicitly set, so no need for "None" icon
+- Continuous cycle: Low → Medium → High → Top → Low (easier to toggle through without removing)
+
+Implementation:
+- Priority states: '' (none, no icon) | 'low' (▼ blue) | 'medium' (▬ yellow) | 'high' (▲ red) | 'top' (★ gold)
+- cycleOrder: ['low', 'medium', 'high', 'top'] (None not in cycle)
+- renderPriorityIndicator(): Returns early if priority is null (no indicator rendered)
+- appendPriorityIcon(): Supports iconType='square' for future use (like completion circle)
+- CSS: Added .priority-top { fill: #fbbf24; } for gold star color
+- Editor & Settings: Added "Top" option to dropdowns
+
+Bug fixes (v227-228):
+- setNodeFieldValue(): Preserve empty string values (needed for potential future states)
+- Fixed star displaying black instead of gold (missing CSS class)
+- Removed None from cycle order per user feedback
+
+Versions: v226 (initial), v227 (icon fixes), v228 (cycle simplification)
+
+---
+
 ## 2026-02-15: Tag Search Without # and Toolbar Reordering
 
 DECISION: Allow tag filtering without typing # symbol and reorganize toolbar layout
