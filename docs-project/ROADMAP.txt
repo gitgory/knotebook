@@ -60,27 +60,19 @@ UP NEXT / FUTURE TASKS
 ================================================================================
 
 Desktop:
-- Zoom to fit should consider if the sidebar is open (desktop only)
+
 
 Both:
-- [x] allow for tag search without typing # (v225)
-- [x] Reorder top toolbar: [Home][+][Export][Fit][#][Theme][?][Settings][Text Search][Save Status](Breadcrumbs) (v225)
-- [x] center priority under completion-status indicator (v226-228)
-- [x] Add "Top" priority with star icon (v226-228)
-- [x] Remove None icon from priority cycle (v228)
-- [x] Zoom to fit should consider if the sidebar is open (desktop only) (v229)
 - Breadcrumbs are currently shortened with "..." Desired: Make allowed width 2.5x wider
-- Query parser with AND/OR operators + field filtering (IN PROGRESS)
-  * Design spec: feature-search-logic/design-spec.txt
-  * Syntax: field=value, #tag, text, AND/OR, parentheses
-  * Example: priority=low AND (#idea OR #project)
-  * Reusable for tag search, transclusion, saved filters
+- Add a "tagless" option to tag search
+- Add the same tag suggestion dropdown to the tag search box
+- Tag pill suggestions (outlines if not selected) to fill the first 2 lines?
+- Filter by fields - how?
+- Search logic w/ AND/OR
+- Calculate "blocked" status for notes with directed edges and completion status
+- Calculate % complete for parents with child nodes with completion status
+- store last view
 
-- How do we deal with notes that are super far away?
-
-Future/Maybe:
-- Field search autocomplete: Type field names to get value suggestions (e.g., "pri" → "priority=" → shows low/medium/high/top)
-- Simplified multi-value field syntax: priority=(low OR high) instead of priority=low OR priority=high
 
 Mobile updates:
 -

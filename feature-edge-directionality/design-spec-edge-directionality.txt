@@ -1,0 +1,455 @@
+================================================================================
+EDGE DIRECTIONALITY - DESIGN SPECIFICATION
+================================================================================
+Created: 2026-02-12
+Status: Design phase (not yet implemented)
+Related: design-spec.txt (current architecture)
+
+================================================================================
+OVERVIEW
+================================================================================
+
+Add optional directionality to edges while maintaining backwards compatibility
+with existing undirected edges. Edges can be:
+- **Undirected** (default, no arrow): A—B
+- **Directed** (arrow head): A→B or A←B
+
+**Key Constraint:** Only one edge between any two nodes (no A→B + B→A)
+
+================================================================================
+DESIGN DECISIONS (from user requirements)
+================================================================================
+
+1. **One edge per node pair** - Cannot have both A→B and B→A simultaneously
+2. **Direction determined by interaction**:
+   - From node: where user presses Shift+MouseDown (edge creation starts)
+   - To node: where user releases Shift+MouseUp (edge creation completes)
+   - Example: Shift+Down on A, Shift+Up on B → creates A→B edge
+3. **Default to undirected** - New edges created without modifier are undirected
+4. **Visual representation** - Arrow heads only (no line style changes initially)
+
+================================================================================
+USER INTERACTION DESIGN
+================================================================================
+
+## Creating Edges
+
+### Undirected Edge (Current Behavior - No Change)
+1. User clicks node A (or presses C with A selected)
+2. Enters edge creation mode
+3. Clicks node B
+4. Creates undirected edge A—B
+
+### Directed Edge (New Behavior)
+**Option 1: Shift modifier during creation**
+1. User Shift+Clicks node A → enters directed edge creation mode
+2. Mouse preview shows arrow pointing from A to cursor
+3. User Shift+Clicks node B
+4. Creates directed edge A→B
+
+**Option 2: Prompt after creation**
+1. User creates edge normally (A—B created as undirected)
+2. Right-click edge → "Set direction..."
+3. Menu: "None", "A→B", "B→A"
+
+**Option 3: Modifier key toggles direction**
+1. User presses C on selected node A → enters edge creation mode
+2. Shift+Click on B → creates A→B (directed)
+3. Regular Click on B → creates A—B (undirected)
+
+**RECOMMENDED: Option 3** (most intuitive, consistent with existing shortcuts)
+
+### Edge Direction Controls
+
+**On edge selection:**
+- Click edge → selects it
+- Right-click edge → context menu:
+  - "Remove direction" (if directed)
+  - "Reverse direction" (if directed)
+  - "Set direction..." (if undirected) → submenu: A→B, B→A
+  - "Delete"
+
+**Keyboard shortcuts:**
+- R key while edge selected → Reverse direction (toggle: →, ←, none)
+- D key while edge selected → Remove direction (set to undirected)
+
+**Click on arrow head:**
+- Click arrow head → toggles direction (A→B → B→A → A—B → A→B)
+- Makes it easy to cycle through states
+
+================================================================================
+DATA MODEL
+================================================================================
+
+## Edge Structure (Before)
+```javascript
+{
+  from: "node-123",  // First node ID
+  to: "node-456"     // Second node ID
+}
+```
+
+## Edge Structure (After)
+```javascript
+{
+  from: "node-123",       // Source node (where edge originates visually)
+  to: "node-456",         // Target node (where arrow points)
+  directed: false         // NEW: true = arrow visible, false = no arrow
+}
+```
+
+**Notes:**
+- `from` and `to` are still used for undirected edges (storage consistency)
+- When `directed: false`, from/to have no semantic meaning (just IDs)
+- When `directed: true`, arrow points from `from` to `to`
+
+## Backwards Compatibility
+
+**Loading old notebooks:**
+- Edges without `directed` property → assume `directed: false` (undirected)
+- No migration needed, just default handling
+
+**Exporting:**
+- Always include `directed` property in exports (explicit)
+- Old versions will ignore unknown properties (graceful degradation)
+
+================================================================================
+RENDERING
+================================================================================
+
+## SVG Arrow Markers
+
+**Define reusable arrow head marker:**
+```svg
+<defs>
+  <marker id="arrowhead" markerWidth="10" markerHeight="10"
+          refX="8" refY="3" orient="auto">
+    <polygon points="0 0, 10 3, 0 6" fill="var(--text-secondary)" />
+  </marker>
+  <marker id="arrowhead-selected" markerWidth="10" markerHeight="10"
+          refX="8" refY="3" orient="auto">
+    <polygon points="0 0, 10 3, 0 6" fill="var(--accent)" />
+  </marker>
+</defs>
+```
+
+**Apply to directed edges:**
+```javascript
+if (edge.directed) {
+  line.setAttribute('marker-end', 'url(#arrowhead)');
+  // Use 'marker-start' for reverse direction (not needed, just swap from/to)
+}
+```
+
+**Selected edge:**
+```javascript
+if (edge.directed && isSelected) {
+  line.setAttribute('marker-end', 'url(#arrowhead-selected)');
+}
+```
+
+## Arrow Positioning
+
+**Challenge:** Arrow head shouldn't overlap node body
+
+**Solution:** Shorten line endpoint by node radius
+```javascript
+function getEdgeEndpoint(fromNode, toNode, isDirected) {
+  const dx = toNode.x - fromNode.x;
+  const dy = toNode.y - fromNode.y;
+  const distance = Math.sqrt(dx * dx + dy * dy);
+
+  if (isDirected) {
+    // Shorten by node radius + arrow size
+    const offset = NODE_WIDTH / 2 + 12; // 12px for arrow
+    const ratio = (distance - offset) / distance;
+    return {
+      x: fromNode.x + dx * ratio,
+      y: fromNode.y + dy * ratio
+    };
+  }
+
+  // Undirected: line goes to node center
+  return { x: toNode.x, y: toNode.y };
+}
+```
+
+## Visual Styles
+
+**Undirected edge:**
+- Solid line, 1px width
+- No markers
+- Color: `var(--text-secondary)`
+
+**Directed edge:**
+- Same line style (1px, solid)
+- Arrow head marker at endpoint
+- Color: `var(--text-secondary)` (normal), `var(--accent)` (selected)
+
+**Arrow head dimensions:**
+- Width: 10px
+- Height: 6px
+- Offset from node: 12px
+
+================================================================================
+IMPLEMENTATION PLAN
+================================================================================
+
+## Phase 1: Data Model & Storage (~1-2 hours)
+
+1. Add `directed: false` property to edge creation
+2. Update `completeEdgeCreation()` to accept direction parameter
+3. Ensure backwards compatibility (default to false)
+4. Test export/import with directed property
+
+## Phase 2: SVG Rendering (~2-3 hours)
+
+1. Add `<marker>` definitions to SVG (arrowhead, arrowhead-selected)
+2. Modify `renderEdges()` to apply markers when `edge.directed === true`
+3. Adjust line endpoint calculation to prevent overlap
+4. Test rendering with mix of directed/undirected edges
+
+## Phase 3: Edge Creation UX (~2-3 hours)
+
+1. Detect Shift modifier during edge creation
+2. Update edge preview to show arrow when Shift held
+3. Pass `directed: true` to `completeEdgeCreation()` when Shift used
+4. Update status message: "Shift+Click for directed edge"
+
+## Phase 4: Edge Editing (~2-3 hours)
+
+1. Add edge context menu options:
+   - "Set direction..." (submenu: A→B, B→A)
+   - "Reverse direction"
+   - "Remove direction"
+2. Implement keyboard shortcuts (R, D)
+3. Implement click-on-arrow-head toggle
+4. Re-render after direction changes
+
+## Phase 5: Testing & Polish (~1-2 hours)
+
+1. Test directed edge creation (Shift+Click)
+2. Test undirected edge creation (normal Click)
+3. Test direction toggling (context menu, keyboard, click)
+4. Test edge selection with arrow heads
+5. Test export/import preserves direction
+6. Verify backwards compatibility with old notebooks
+
+**Total Estimated Effort: 8-13 hours**
+
+================================================================================
+EDGE CASES & CONSIDERATIONS
+================================================================================
+
+## Edge De-duplication
+
+**Current behavior:**
+- Check if edge exists: `edges.find(e => (e.from === A && e.to === B) || (e.from === B && e.to === A))`
+- Prevents duplicate edges
+
+**With directionality:**
+- Still only one edge between A-B
+- If A→B exists, cannot create B→A (would be two edges)
+- If A—B exists, can convert to A→B or B→A
+- Toggle behavior: A→B → B→A → A—B (cycles through)
+
+**Implementation:**
+```javascript
+function findEdgeBetween(nodeA, nodeB) {
+  return edges.find(e =>
+    (e.from === nodeA && e.to === nodeB) ||
+    (e.from === nodeB && e.to === nodeA)
+  );
+}
+
+function toggleEdgeDirection(edge) {
+  if (!edge.directed) {
+    // Undirected → Directed (from→to)
+    edge.directed = true;
+  } else if (edge.from === originalFrom) {
+    // Directed (from→to) → Reverse (to→from)
+    [edge.from, edge.to] = [edge.to, edge.from];
+  } else {
+    // Reversed → Undirected
+    edge.directed = false;
+    [edge.from, edge.to] = [edge.to, edge.from]; // Restore original order
+  }
+}
+```
+
+## Arrow Head Hitbox
+
+**Challenge:** Arrow head is small, hard to click
+
+**Solution:**
+- Invisible larger hitbox around arrow head
+- Or: Click anywhere on line to toggle (simpler)
+
+## Zoom & Arrow Scaling
+
+**Challenge:** Arrow heads might look too large/small at different zoom levels
+
+**Solution:**
+- Use `markerUnits="strokeWidth"` → scales with line
+- Or: Keep fixed size regardless of zoom (better visibility)
+
+## Mobile Touch Interaction
+
+**Challenge:** No Shift key on mobile
+
+**Solution:**
+- Long-press node to enter directed edge mode
+- Or: Always create undirected, then tap arrow to toggle
+
+## Edge Preview During Creation
+
+**Current:** Dotted line follows cursor
+
+**With direction:**
+- Show arrow head in preview when Shift held
+- Update preview arrow as cursor moves
+- Clear visual feedback of directionality
+
+================================================================================
+GRADIENT EDGES - FEASIBILITY ANALYSIS
+================================================================================
+
+**Question:** Can edges have color gradients along the line?
+
+**Answer:** Yes! SVG supports gradients via `<linearGradient>`.
+
+**Implementation:**
+```svg
+<defs>
+  <linearGradient id="edge-gradient-123" x1="0%" y1="0%" x2="100%" y2="0%">
+    <stop offset="0%" stop-color="var(--accent)" />
+    <stop offset="100%" stop-color="var(--highlight)" />
+  </linearGradient>
+</defs>
+
+<line x1="..." y1="..." x2="..." y2="..."
+      stroke="url(#edge-gradient-123)"
+      stroke-width="2" />
+```
+
+**Dynamic gradients (per edge):**
+- Need to create unique gradient ID per edge
+- Update gradient stops when nodes move
+- Recalculate gradient angle based on edge slope
+
+**Performance Impact:**
+- **Minimal** for small graphs (<100 edges)
+- **Moderate** for medium graphs (100-500 edges)
+  - More DOM elements (one `<linearGradient>` per edge)
+  - Gradient rendering is GPU-accelerated in modern browsers
+- **Noticeable** for large graphs (500+ edges)
+  - Consider disabling gradients at high zoom-out levels
+  - Or: Use shared gradients for edges with similar angles
+
+**Rendering Cost:**
+- Creating gradient: ~0.1ms per gradient
+- Applying gradient: ~0.05ms per edge
+- For 100 edges: ~15ms total (60fps = 16.67ms budget)
+- **Verdict:** Feasible even for moderate-sized graphs
+
+**Potential Use Cases:**
+- Edge type indication (concept→example, cause→effect)
+- Edge weight/strength visualization
+- Time-based edges (older = faded, newer = bright)
+- Tag-based coloring (edges connecting #project nodes)
+
+**Recommendation:**
+- Start with solid color edges + arrow heads
+- Add gradients as optional feature later (toggle in settings)
+- Use gradients for semantic meaning (not just decoration)
+
+================================================================================
+FUTURE ENHANCEMENTS
+================================================================================
+
+## Edge Labels
+- Text displayed at midpoint of edge
+- Example: "causes", "related to", "depends on"
+- Rotated to follow edge angle
+
+## Edge Types/Styles
+- Solid line: default relationship
+- Dashed line: weak/tentative relationship
+- Dotted line: temporal relationship
+- Different colors: different relationship types
+
+## Edge Weights
+- Thicker lines = stronger relationship
+- Displayed as number near edge
+
+## Curved Edges
+- Bezier curves for visual appeal
+- Helps distinguish multiple edges in dense graphs
+
+## Edge Filtering
+- Show only directed edges
+- Show only undirected edges
+- Filter by edge type
+
+## Directional Navigation
+- "Navigate to target" button on selected directed edge
+- Follow chain of directed edges (A→B→C→D)
+
+================================================================================
+OPEN QUESTIONS
+================================================================================
+
+1. **Should we allow edges to self-reference?** (A→A loops)
+   - Currently not supported
+   - Useful for: "reminds me of itself", self-referential notes
+   - Visual challenge: how to render loop
+
+2. **Edge bundling for dense graphs?**
+   - When many edges between nearby nodes, bundle them
+   - Improves readability but hides individual edges
+
+3. **Should direction affect search/filter?**
+   - "Show all notes pointing TO this node"
+   - "Show all notes this node points TO"
+   - Requires new filter logic
+
+4. **Import/Export edge direction between notebooks?**
+   - Already handled (property in JSON)
+   - Conflict resolution if merging notebooks?
+
+5. **Should we show edge count when multiple edges overlap?**
+   - Example: A→B shown as "A→B (3)" if three edges between them
+   - Only relevant if we later allow multiple edge types
+
+================================================================================
+SUCCESS CRITERIA
+================================================================================
+
+Edge directionality feature is successful if:
+
+1. **Intuitive creation** - Users can create directed/undirected edges easily
+2. **Clear visual distinction** - Arrow heads make direction obvious
+3. **Easy editing** - Can toggle/reverse direction without friction
+4. **Backwards compatible** - Old notebooks still work
+5. **Performance** - No lag when rendering 100+ directed edges
+6. **Semantic value** - Users adopt directionality for meaningful relationships
+   (not just aesthetic)
+
+================================================================================
+REFERENCES
+================================================================================
+
+**Similar implementations:**
+- Obsidian Graph View: Undirected only
+- Roam Research: Bidirectional links (both A→B and B→A shown)
+- draw.io: Full directionality support with multiple arrow styles
+- Gephi: Supports directed/undirected graphs with arrow rendering
+- D3.js force-directed graphs: Marker-based arrow heads
+
+**Knotebook's approach:**
+- Simpler than D3.js (no force simulation)
+- More flexible than Obsidian (supports direction)
+- Less complex than draw.io (no multiple arrow styles initially)
+- Different from Roam (only one edge per pair, not two)
+
+================================================================================

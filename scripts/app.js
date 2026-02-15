@@ -2414,19 +2414,10 @@ function parseTerm(parser) {
         return null;
     }
 
-    // Bare word - could be hashtag (auto-prepend #) or text search
-    // To maintain compatibility with current tag search, treat as hashtag
+    // Bare word - default to TEXT search
+    // Only treat as hashtag if user explicitly uses # prefix
     parser.consume();
 
-    // If it looks like a tag word (alphanumeric, underscore, hyphen), treat as hashtag
-    if (/^[a-zA-Z0-9_-]+$/.test(token)) {
-        return {
-            type: 'HASHTAG',
-            tag: '#' + token.toLowerCase()
-        };
-    }
-
-    // Otherwise, treat as text search
     return {
         type: 'TEXT',
         text: token

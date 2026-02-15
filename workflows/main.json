@@ -1,0 +1,718 @@
+{
+  "version": 1,
+  "name": "Claude Instructions",
+  "created": "2026-02-15T08:06:09.872Z",
+  "nodes": [
+    {
+      "id": "note-1770846551473-1",
+      "title": "START (FEATURE)",
+      "content": "This workflow guides the implementation of a new feature from design proposal through testing.\n\nResponsibility:\n- #claude: Design, implementation, technical decisions\n- #grigri: Requirements, approval, testing, feedback\n\nFlow: Design → Review → Implement → Test → Complete\n\n#claude #grigri",
+      "hashtags": [
+        "#claude",
+        "#grigri"
+      ],
+      "fields": {},
+      "position": {
+        "x": 42.2107567523916,
+        "y": -651.3244771752895
+      },
+      "zIndex": 0,
+      "children": [],
+      "childEdges": [],
+      "created": "2026-02-11T21:49:11.473Z",
+      "modified": "2026-02-15T07:38:45.056Z"
+    },
+    {
+      "id": "note-1770848470111-9",
+      "title": "Implement the approved plan",
+      "content": "Claude implements the feature, issues, or fixes.\n\nOnce complete, move to USER TESTING.\n\n#claude",
+      "hashtags": [
+        "#claude"
+      ],
+      "fields": {
+        "Files": [
+          "index.html",
+          "scripts/app.js",
+          "styles/main.css"
+        ]
+      },
+      "position": {
+        "x": -259.3737451468841,
+        "y": -64.73235232512775
+      },
+      "zIndex": 0,
+      "children": [],
+      "childEdges": [],
+      "created": "2026-02-11T22:21:10.111Z",
+      "modified": "2026-02-15T06:02:09.879Z"
+    },
+    {
+      "id": "note-1770848473986-10",
+      "title": "commit & push",
+      "content": "grigri is using the app via github-pages so you'll need to commit changes and push before he can test changes.\n\nBe sure to update the version number in the JS and CSS, as well as the landing page. Display the current version in the CLI.\n#claude",
+      "hashtags": [
+        "#claude"
+      ],
+      "fields": {
+        "Files": [
+          "index.html",
+          "scripts/app.js",
+          "styles/main.css"
+        ]
+      },
+      "position": {
+        "x": -259.42840545959587,
+        "y": 58.08174808935371
+      },
+      "zIndex": 0,
+      "children": [],
+      "childEdges": [],
+      "created": "2026-02-11T22:21:13.986Z",
+      "modified": "2026-02-14T07:47:55.614Z"
+    },
+    {
+      "id": "note-1770848481686-11",
+      "title": "create test plan",
+      "content": "#claude\n\n1. Create a test plan for grigri regarding the recent changes\n2. Save it to the tests/ folder. \n3. Offer to walk through it together.",
+      "hashtags": [
+        "#claude"
+      ],
+      "fields": {},
+      "position": {
+        "x": 329.89524254917035,
+        "y": 59.353379887535766
+      },
+      "zIndex": 0,
+      "children": [],
+      "childEdges": [],
+      "created": "2026-02-11T22:21:21.686Z",
+      "modified": "2026-02-14T07:03:53.832Z"
+    },
+    {
+      "id": "note-1770848485487-12",
+      "title": "Test",
+      "content": "#grigri\n\nGrigri tests the feature and provides feedback.\n2. Grigri will either:\n     a) request further edits\n     b) approve/affirm the feature is completed\n\n\n\nIf issues found: Claude fixes and returns to this step.\nIf approved: Proceed to COMPLETE.\n\n#grigri",
+      "hashtags": [
+        "#grigri"
+      ],
+      "fields": {},
+      "position": {
+        "x": 329.9310306595537,
+        "y": -62.921186190269395
+      },
+      "zIndex": 0,
+      "children": [],
+      "childEdges": [],
+      "created": "2026-02-11T22:21:25.487Z",
+      "modified": "2026-02-15T06:04:53.000Z"
+    },
+    {
+      "id": "note-1770849035808-19",
+      "title": "Update documentation",
+      "content": "1. Update all relevant documentation.\n2. Show which documentation files were updated.\n3. If anything worked well about this workflow, notify grigri\n4. Similarly, if anything could be improved in this workflow, notify grigri.\n\n#claude ",
+      "hashtags": [
+        "#claude"
+      ],
+      "fields": {
+        "Files": [
+          "docs-project/FEATURE-NAME-progress.txt",
+          "docs-project/PROJECT-NAME-progress.txt",
+          "docs-project/design-decisions.txt"
+        ]
+      },
+      "position": {
+        "x": 331.1231146711092,
+        "y": -307.66286821588045
+      },
+      "zIndex": 0,
+      "children": [],
+      "childEdges": [],
+      "created": "2026-02-11T22:30:35.808Z",
+      "modified": "2026-02-15T06:07:49.821Z"
+    },
+    {
+      "id": "note-1770849145319-20",
+      "title": "Select new task",
+      "content": "Propose some next steps to work on from the project documentaiton.\n\nProceed to the next step after grigri has selected a task.\n\n#claude",
+      "hashtags": [
+        "#claude"
+      ],
+      "fields": {
+        "Files": [
+          "docs-project/FEATURE-NAME-design-spec.txt",
+          "docs-project/FEATURE-NAME-progress.txt"
+        ]
+      },
+      "position": {
+        "x": 40.85364173673884,
+        "y": -310.35393577227586
+      },
+      "zIndex": 0,
+      "children": [],
+      "childEdges": [],
+      "created": "2026-02-11T22:32:25.319Z",
+      "modified": "2026-02-15T06:07:20.361Z"
+    },
+    {
+      "id": "note-1770849800238-22",
+      "title": "/ pickup",
+      "content": "#skill",
+      "hashtags": [
+        "#skill"
+      ],
+      "fields": {},
+      "position": {
+        "x": -290.57776352012115,
+        "y": -531.3403618283425
+      },
+      "zIndex": 0,
+      "children": [],
+      "childEdges": [],
+      "created": "2026-02-11T22:43:20.238Z",
+      "modified": "2026-02-14T07:51:51.690Z"
+    },
+    {
+      "id": "note-1770849819007-23",
+      "title": "/ handoff",
+      "content": "#skill",
+      "hashtags": [
+        "#skill"
+      ],
+      "fields": {},
+      "position": {
+        "x": -294.6403779842499,
+        "y": -1026.4014746817536
+      },
+      "zIndex": 0,
+      "children": [],
+      "childEdges": [],
+      "created": "2026-02-11T22:43:39.007Z",
+      "modified": "2026-02-14T07:51:56.393Z"
+    },
+    {
+      "id": "note-1770849886891-24",
+      "title": "/ review-code",
+      "content": "#skill",
+      "hashtags": [
+        "#skill"
+      ],
+      "fields": {},
+      "position": {
+        "x": -660.0984410077248,
+        "y": -1028.2528622563516
+      },
+      "zIndex": 0,
+      "children": [],
+      "childEdges": [],
+      "created": "2026-02-11T22:44:46.891Z",
+      "modified": "2026-02-11T22:47:11.353Z"
+    },
+    {
+      "id": "note-1770849931407-26",
+      "title": "/ review-ux",
+      "content": "#skill",
+      "hashtags": [
+        "#skill"
+      ],
+      "fields": {},
+      "position": {
+        "x": -658.5260886459389,
+        "y": -938.7739704405931
+      },
+      "zIndex": 0,
+      "children": [],
+      "childEdges": [],
+      "created": "2026-02-11T22:45:31.407Z",
+      "modified": "2026-02-11T22:45:35.309Z"
+    },
+    {
+      "id": "note-1770971909744-2",
+      "title": "Select project/feature to plan",
+      "content": "grigri will select and describe the feature or project we want to plan out.\n\n#grigri ",
+      "hashtags": [
+        "#grigri"
+      ],
+      "fields": {},
+      "position": {
+        "x": 793.0816165184787,
+        "y": -806.0323768273104
+      },
+      "zIndex": 0,
+      "children": [],
+      "childEdges": [],
+      "created": "2026-02-13T08:38:29.744Z",
+      "modified": "2026-02-15T07:58:57.707Z"
+    },
+    {
+      "id": "note-1770972870874-7",
+      "title": "Create/Update plan",
+      "content": "Claude will create a plan to address the task.\nProvide options and alternatives to grigri when possible.\nRequest feedback\n\n#claude",
+      "hashtags": [
+        "#claude"
+      ],
+      "fields": {},
+      "position": {
+        "x": 793.1478114462858,
+        "y": -687.932037114185
+      },
+      "zIndex": 0,
+      "children": [],
+      "childEdges": [],
+      "created": "2026-02-13T08:54:30.874Z",
+      "modified": "2026-02-15T08:00:02.834Z"
+    },
+    {
+      "id": "note-1770972886888-8",
+      "title": "Request feedback & provide options",
+      "content": "#claude",
+      "hashtags": [
+        "#claude"
+      ],
+      "fields": {},
+      "position": {
+        "x": 790.9140594887623,
+        "y": -549.7622008540352
+      },
+      "zIndex": 0,
+      "children": [],
+      "childEdges": [],
+      "created": "2026-02-13T08:54:46.888Z",
+      "modified": "2026-02-15T08:00:05.693Z"
+    },
+    {
+      "id": "note-1770972896737-9",
+      "title": "Feedback",
+      "content": "grigri will provide feedback, sugggestions, or select his choice from a list of options.\n\nIf grigri is satisfied with the plan, he will approve it and ask claude to implement (next step)\n\n#grigri \n\n",
+      "hashtags": [
+        "#grigri"
+      ],
+      "fields": {},
+      "position": {
+        "x": 1129.646328799889,
+        "y": -615.3182783865046
+      },
+      "zIndex": 0,
+      "children": [],
+      "childEdges": [],
+      "created": "2026-02-13T08:54:56.737Z",
+      "modified": "2026-02-15T08:00:55.905Z"
+    },
+    {
+      "id": "note-1771051326191-13",
+      "title": "Review project docs",
+      "content": "#claude",
+      "hashtags": [
+        "#claude"
+      ],
+      "fields": {
+        "Files": [
+          "docs-project/file_structure.txt",
+          "docs-project/app_js_table_of_contents.txt",
+          "docs-project/PROJECT-NAME-progress.txt",
+          "docs-project/design-decisions.txt"
+        ]
+      },
+      "position": {
+        "x": 40.411984062472925,
+        "y": -425.6068662949026
+      },
+      "zIndex": 0,
+      "children": [],
+      "childEdges": [],
+      "created": "2026-02-14T06:42:06.191Z",
+      "modified": "2026-02-15T06:06:02.048Z"
+    },
+    {
+      "id": "note-1771052154530-3",
+      "title": "This Workflow",
+      "content": "The notes in this workflow include a field named \"Files\" which indicate which files might be relevant to each task.\n\nAll filepaths are relative to the main project directory.\n\nCAPITALS indicate a placeholder. For example, If we are working on a task called \"Update sidebar,\" and the \"Files\" field includes \"EATURE-NAME-design-spec.txt\" You might look for files called \"update-sidebar-design-spec.txt\" or \"new-sidebar-tool-design-spec.txt\"\n\nRead the file if it exists, ask to create the file if it doesn't exist.\n\nYou only need to read each file once, not every time its referenced. \n\nIn some cases, the text body of the note doesn't include specific instructions. Refer to your context about the listed files to determine your next steps.|\n\n#claude",
+      "hashtags": [
+        "#claude"
+      ],
+      "fields": {},
+      "position": {
+        "x": 40.411984062472925,
+        "y": -532.0054200537134
+      },
+      "zIndex": 0,
+      "children": [],
+      "childEdges": [],
+      "created": "2026-02-14T06:55:54.530Z",
+      "modified": "2026-02-15T05:57:41.003Z"
+    },
+    {
+      "id": "note-1771054422094-9",
+      "title": "DESIGN PROPOSAL",
+      "content": "Claude proposes the design.\n\nInclude:\n1. Technical approach - How will this be implemented?\n2. Files affected - Which files need changes?\n3. Open questions - What needs clarification?\n4. Estimated scope - How much work?\n\n#claude",
+      "hashtags": [
+        "#claude"
+      ],
+      "fields": {},
+      "position": {
+        "x": -259.5818365409425,
+        "y": -306.19755454934204
+      },
+      "zIndex": 0,
+      "children": [],
+      "childEdges": [],
+      "created": "2026-02-14T07:33:42.094Z",
+      "modified": "2026-02-15T06:00:15.231Z"
+    },
+    {
+      "id": "note-1771054422094-10",
+      "title": "USER REVIEW & APPROVAL",
+      "content": "Grigri reviews the proposal and provides feedback.\n\nRespond with:\n1. Approval or requested changes\n2. Clarifications on requirements\n3. Priority or scope adjustments\n4. Any constraints or concerns\n\nOnce approved, Claude proceeds to IMPLEMENTATION.\n\n#grigri",
+      "hashtags": [
+        "#grigri"
+      ],
+      "fields": {},
+      "position": {
+        "x": -256.24189001059233,
+        "y": -181.7017175041238
+      },
+      "zIndex": 0,
+      "children": [],
+      "childEdges": [],
+      "created": "2026-02-14T07:33:42.094Z",
+      "modified": "2026-02-15T05:54:55.211Z"
+    },
+    {
+      "id": "note-1771054422095-13",
+      "title": "COMPLETE",
+      "content": "Feature is approved and deployed.\n\nNext steps:\n1. Document design decision in decision-history.md (if major)\n2. Update ROADMAP.txt\n3. Close any related issues\n\n#claude #grigri",
+      "hashtags": [
+        "#claude",
+        "#grigri"
+      ],
+      "fields": {},
+      "position": {
+        "x": -300.1362756000352,
+        "y": -932.818845029055
+      },
+      "zIndex": 0,
+      "children": [],
+      "childEdges": [],
+      "created": "2026-02-14T07:33:42.095Z",
+      "modified": "2026-02-15T06:11:45.811Z"
+    },
+    {
+      "id": "note-1771056530936-1",
+      "title": "/ workflow",
+      "content": "#skill",
+      "hashtags": [
+        "#skill"
+      ],
+      "fields": {},
+      "position": {
+        "x": 40.55114874503931,
+        "y": -1025.8232756921732
+      },
+      "zIndex": 0,
+      "children": [],
+      "childEdges": [],
+      "created": "2026-02-14T08:08:50.936Z",
+      "modified": "2026-02-14T08:08:57.515Z"
+    }
+  ],
+  "edges": [
+    {
+      "from": "note-1770848485487-12",
+      "to": "note-1770848545629-13",
+      "directed": true
+    },
+    {
+      "from": "note-1770848470111-9",
+      "to": "note-1770848473986-10",
+      "directed": true
+    },
+    {
+      "from": "note-1770848473986-10",
+      "to": "note-1770848481686-11",
+      "directed": true
+    },
+    {
+      "from": "note-1770848481686-11",
+      "to": "note-1770848485487-12",
+      "directed": true
+    },
+    {
+      "from": "note-1770848545629-13",
+      "to": "note-1770848470111-9",
+      "directed": true
+    },
+    {
+      "from": "note-1770848659893-14",
+      "to": "note-1770848796991-16",
+      "directed": true
+    },
+    {
+      "from": "note-1770849020491-18",
+      "to": "note-1770849035808-19",
+      "directed": true
+    },
+    {
+      "from": "note-1770848228124-6",
+      "to": "note-1770849145319-20",
+      "directed": true
+    },
+    {
+      "from": "note-1770846589652-2",
+      "to": "note-1770848670648-15",
+      "directed": true
+    },
+    {
+      "from": "note-1770848485487-12",
+      "to": "note-1770849020491-18",
+      "directed": true
+    },
+    {
+      "from": "note-1770849145319-20",
+      "to": "note-1770849697609-21",
+      "directed": true
+    },
+    {
+      "from": "note-1770848390507-8",
+      "to": "note-1770970412566-1",
+      "directed": true
+    },
+    {
+      "from": "note-1770848670648-15",
+      "to": "note-1770848470111-9",
+      "directed": true
+    },
+    {
+      "from": "note-1770848390507-8",
+      "to": "note-1770848659893-14",
+      "directed": true
+    },
+    {
+      "from": "note-1770848659893-14",
+      "to": "note-1770846589652-2",
+      "directed": true
+    },
+    {
+      "from": "note-1770848796991-16",
+      "to": "note-1770848390507-8",
+      "directed": true
+    },
+    {
+      "from": "note-1770849035808-19",
+      "to": "note-1770972130519-4",
+      "directed": true
+    },
+    {
+      "from": "note-1770972130519-4",
+      "to": "note-1770849145319-20",
+      "directed": true
+    },
+    {
+      "from": "note-1770849035808-19",
+      "to": "note-1770849145319-20",
+      "directed": true
+    },
+    {
+      "from": "note-1770849886891-24",
+      "to": "note-1770972435016-5",
+      "directed": true
+    },
+    {
+      "from": "note-1770972435016-5",
+      "to": "note-1770848228124-6",
+      "directed": true
+    },
+    {
+      "from": "note-1770971909744-2",
+      "to": "note-1770850039341-27",
+      "directed": true
+    },
+    {
+      "from": "note-1770972785552-6",
+      "to": "note-1770850039341-27",
+      "directed": true
+    },
+    {
+      "from": "note-1770850039341-27",
+      "to": "note-1770972435016-5",
+      "directed": true
+    },
+    {
+      "from": "note-1770972870874-7",
+      "to": "note-1770972886888-8",
+      "directed": true
+    },
+    {
+      "from": "note-1770972886888-8",
+      "to": "note-1770972896737-9",
+      "directed": true
+    },
+    {
+      "from": "note-1770972896737-9",
+      "to": "note-1770972907653-10",
+      "directed": true
+    },
+    {
+      "from": "note-1770972907653-10",
+      "to": "note-1770972915806-11",
+      "directed": true
+    },
+    {
+      "from": "note-1770972915806-11",
+      "to": "note-1770972923020-12",
+      "directed": true
+    },
+    {
+      "from": "note-1770848659893-14",
+      "to": "note-1771045692782-1",
+      "directed": true
+    },
+    {
+      "from": "note-1771045692782-1",
+      "to": "note-1770848670648-15",
+      "directed": true
+    },
+    {
+      "from": "note-1770846551473-1",
+      "to": "note-1771051326191-13",
+      "directed": true
+    },
+    {
+      "from": "note-1771051326191-13",
+      "to": "note-1770848228124-6",
+      "directed": true
+    },
+    {
+      "from": "note-1770972907653-10",
+      "to": "note-1770972870874-7",
+      "directed": true
+    },
+    {
+      "from": "note-1770972886888-8",
+      "to": "note-1770972923020-12",
+      "directed": true
+    },
+    {
+      "from": "note-1770972923020-12",
+      "to": "note-1771051415628-14",
+      "directed": true
+    },
+    {
+      "from": "note-1771052150162-2",
+      "to": "note-1771052150162-1",
+      "directed": true
+    },
+    {
+      "from": "note-1770849697609-21",
+      "to": "note-1770848659893-14",
+      "directed": true
+    },
+    {
+      "from": "note-1771045692782-1",
+      "to": "note-1770848470111-9",
+      "directed": true
+    },
+    {
+      "from": "note-1770972896737-9",
+      "to": "note-1770972870874-7",
+      "directed": true
+    },
+    {
+      "from": "note-1771056530936-1",
+      "to": "note-1770846551473-1",
+      "directed": true
+    },
+    {
+      "from": "note-1770849819007-23",
+      "to": "note-1771054422095-13",
+      "directed": true
+    },
+    {
+      "from": "note-1770849800238-22",
+      "to": "note-1771052154530-3",
+      "directed": true
+    },
+    {
+      "from": "note-1770849697609-21",
+      "to": "note-1771054422094-10",
+      "directed": true
+    },
+    {
+      "from": "note-1771054422094-10",
+      "to": "note-1770848470111-9",
+      "directed": true
+    },
+    {
+      "from": "note-1771051326191-13",
+      "to": "note-1770849145319-20",
+      "directed": true
+    },
+    {
+      "from": "note-1770849145319-20",
+      "to": "note-1771054422094-9",
+      "directed": true
+    },
+    {
+      "from": "note-1771054422094-9",
+      "to": "note-1771054422094-10",
+      "directed": true
+    },
+    {
+      "from": "note-1770848485487-12",
+      "to": "note-1770848470111-9",
+      "directed": true
+    },
+    {
+      "from": "note-1770848485487-12",
+      "to": "note-1770849035808-19",
+      "directed": true
+    },
+    {
+      "from": "note-1770971909744-2",
+      "to": "note-1770972870874-7",
+      "directed": true
+    },
+    {
+      "from": "note-1770972785552-6",
+      "to": "note-1770972870874-7",
+      "directed": true
+    },
+    {
+      "from": "note-1770972896737-9",
+      "to": "note-1771051415628-14",
+      "directed": true
+    }
+  ],
+  "hashtagColors": {
+    "#puser": "#22c55e",
+    "#secondary": "#ef4444",
+    "#skill": "#ef4444",
+    "#claude": "#3b82f6",
+    "#grigri": "#eab308"
+  },
+  "settings": {
+    "fieldDefaults": {
+      "completion": null,
+      "priority": null
+    },
+    "customFields": [
+      {
+        "id": "field-1770849329103",
+        "name": "Files",
+        "label": "Files",
+        "type": "multi-select",
+        "options": [
+          "docs-project/file_structure.txt",
+          "docs-project/app_js_table_of_contents.txt",
+          "docs-project/project-design-spec.txt",
+          "docs-project/project-progress.txt",
+          "docs-project/design-decisions.txt",
+          "FEATURE-NAME/FEATURE-NAME-design-spec.txt",
+          "FEATURE-NAME/FEATURE-NAME-progress.txt",
+          "index.html",
+          "scripts/app.js",
+          "styles/main.css"
+        ]
+      }
+    ]
+  },
+  "hiddenHashtags": []
+}
