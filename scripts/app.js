@@ -3279,20 +3279,31 @@ function fitToView() {
         return;
     }
 
+    // Adjust viewport width if sidebar is open on desktop
+    let effectiveWidth = rect.width;
+    const sidebar = document.getElementById('hashtag-sidebar');
+    const isSidebarOpen = sidebar && !sidebar.classList.contains('hidden');
+    const isDesktop = !isMobileDevice();
+
+    if (isSidebarOpen && isDesktop) {
+        // Subtract sidebar width (344px on desktop) to avoid fitting behind it
+        effectiveWidth = rect.width - 344;
+    }
+
     // Add padding around the graph
     const padding = VIEWPORT_PADDING;
     const graphWidth = bounds.maxX - bounds.minX + padding * 2;
     const graphHeight = bounds.maxY - bounds.minY + padding * 2;
 
     // Calculate zoom to fit
-    const zoomX = rect.width / graphWidth;
+    const zoomX = effectiveWidth / graphWidth;
     const zoomY = rect.height / graphHeight;
-    const newZoom = Math.min(zoomX, zoomY, ZOOM_MAX_FIT_TO_VIEW); 
+    const newZoom = Math.min(zoomX, zoomY, ZOOM_MAX_FIT_TO_VIEW);
 
     state.viewport.zoom = newZoom;
 
     // Center the graph
-    const viewWidth = rect.width / newZoom;
+    const viewWidth = effectiveWidth / newZoom;
     const viewHeight = rect.height / newZoom;
     const graphCenterX = (bounds.minX + bounds.maxX) / 2;
     const graphCenterY = (bounds.minY + bounds.maxY) / 2;

@@ -68,21 +68,10 @@ Both:
 - [x] center priority under completion-status indicator (v226-228)
 - [x] Add "Top" priority with star icon (v226-228)
 - [x] Remove None icon from priority cycle (v228)
-- Add method to make notes a child of another note...
-  - add "Another note" to the Move to... modal, then click on the parent note.
 
 - How do we deal with notes that are super far away?
 Mobile updates:
-- 
-
-
-
-1. You made the tag filter work even when the user ommits the # symbol, just like i asked for. However, it looks like you did that by turning ALL WORDS into tags?!?! That's not the way to do it. Please put together a plan for how to implement this.
-2. It appears the priority icons are not directly overlaying the completion status icons in the Y direction. They ought to be where they were previously with completion status on the "top row" and priority on the "bottom row".
-3. To be checked again after implementing 2
-4. For some reason you changed the medium-priority icon from the yellow box to a yellow star. The medium priority icon should remain the yellow box. But I like the star. Please add it to the priority field as "Top" priority.  So going forward, the toggle will be from  None -> Low -> Medium -> High -> Top -> None.
-5. To be checked again after implementing 2
-6. Looks good
+-
 
 
 
