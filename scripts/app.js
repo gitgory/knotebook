@@ -212,12 +212,12 @@ const FIRST_CLASS_FIELDS = {
             offsetY: 22   // From top
         },
         states: {
-            'no': {
+            'todo': {
                 label: 'To do',
                 icon: null,
                 iconType: 'circle',
                 color: 'var(--text-secondary)',
-                cssClass: 'completion-no',
+                cssClass: 'completion-todo',
                 marksCompleted: false
             },
             'partial': {
@@ -229,12 +229,12 @@ const FIRST_CLASS_FIELDS = {
                 marksCompleted: false,
                 iconYOffset: 1
             },
-            'yes': {
+            'done': {
                 label: 'Done',
                 icon: '✓',
                 iconType: 'text',
                 color: '#22c55e',
-                cssClass: 'completion-yes',
+                cssClass: 'completion-done',
                 marksCompleted: true
             },
             'cancelled': {
@@ -246,7 +246,7 @@ const FIRST_CLASS_FIELDS = {
                 marksCompleted: true
             }
         },
-        cycleOrder: ['no', 'partial', 'yes', 'cancelled'],
+        cycleOrder: ['todo', 'partial', 'done', 'cancelled'],
         noneState: { label: 'None', value: null }
     },
     priority: {
@@ -524,9 +524,6 @@ function setNodeFieldValue(node, fieldName, value) {
  * @param {Object} node - Node object to migrate
  */
 function migrateNodeFields(node) {
-    // Skip if already migrated (has fields object with data, or no legacy fields)
-    if (node.fields && Object.keys(node.fields).length > 0) return;
-
     // Initialize fields object if needed
     if (!node.fields) node.fields = {};
 
@@ -544,6 +541,14 @@ function migrateNodeFields(node) {
             node.fields.priority = node.priority;
         }
         delete node.priority;
+    }
+
+    // Migrate old completion values to new ones (backward compatibility)
+    if (node.fields.completion === 'yes') {
+        node.fields.completion = 'done';
+    }
+    if (node.fields.completion === 'no') {
+        node.fields.completion = 'todo';
     }
 }
 
@@ -2247,11 +2252,26 @@ function tokenizeQuery(queryString) {
     const tokens = [];
     let current = '';
     let i = 0;
+    let inQuotes = false;
 
     while (i < queryString.length) {
         const char = queryString[i];
 
-        // Parentheses - emit as separate tokens
+        // Quote handling - toggle quote mode
+        if (char === '"') {
+            inQuotes = !inQuotes;
+            i++;
+            continue; // Don't include quotes in token
+        }
+
+        // If inside quotes, add everything (including spaces) to current token
+        if (inQuotes) {
+            current += char;
+            i++;
+            continue;
+        }
+
+        // Parentheses - emit as separate tokens (only when not in quotes)
         if (char === '(' || char === ')') {
             if (current.trim()) {
                 tokens.push(current.trim());
@@ -2262,7 +2282,7 @@ function tokenizeQuery(queryString) {
             continue;
         }
 
-        // Whitespace - separator
+        // Whitespace - separator (only when not in quotes)
         if (char === ' ' || char === '\t' || char === '\n') {
             if (current.trim()) {
                 tokens.push(current.trim());
@@ -2405,17 +2425,8 @@ function parseTerm(parser) {
         };
     }
 
-    // Skip standalone AND/OR (malformed query)
-    if (token.toUpperCase() === 'AND' || token.toUpperCase() === 'OR') {
-        parser.consume();
-        if (!parser.isAtEnd()) {
-            return parseTerm(parser); // Try to parse next term
-        }
-        return null;
-    }
-
     // Bare word - default to TEXT search
-    // Only treat as hashtag if user explicitly uses # prefix
+    // This includes standalone AND/OR (treated as text to search for)
     parser.consume();
 
     return {
@@ -2495,6 +2506,24 @@ function matchesFieldFilter(node, field, value) {
         return fieldValue.some(item =>
             item.toLowerCase().includes(valueLower)
         );
+    }
+
+    // Special handling for completion field: support aliases
+    if (actualFieldName === 'completion') {
+        const valueLower = value.toLowerCase();
+        const fieldValueLower = fieldValue.toString().toLowerCase();
+
+        // Map user-friendly aliases to internal values
+        const completionAliases = {
+            'yes': 'done',
+            'no': 'todo',
+            'to-do': 'todo',
+            'part': 'partial',
+            'cancel': 'cancelled'
+        };
+
+        const normalizedValue = completionAliases[valueLower] || valueLower;
+        return fieldValueLower === normalizedValue;
     }
 
     // Single-value field: case-insensitive exact match

@@ -1066,7 +1066,7 @@ body {
     user-select: none;
 }
 
-.completion-yes {
+.completion-done {
     fill: #22c55e;
 }
 
@@ -1079,7 +1079,7 @@ body {
     fill: #ef4444;
 }
 
-.node-completion-circle.completion-no {
+.node-completion-circle.completion-todo {
     fill: none;
     stroke: var(--text-secondary);
     stroke-width: 2;
