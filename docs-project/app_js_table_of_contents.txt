@@ -933,6 +933,7 @@ function getTouchCenter(touches)  // line 8544
         // Update selection box if active
         // Detect drag direction for mode (enclosed vs intersecting)
         // Cancel panning if selection box started
+        // Only hide action bar if no nodes are selected (preserve it during multi-select pan)
         // Move all selected nodes together
         // Update connected edges
         // Touch end
@@ -1029,9 +1030,9 @@ function getTouchCenter(touches)  // line 8544
         // Debug tools buttons
         // Error recovery modal buttons
 // ============================================================================
-// INITIALIZATION (line 9693)
+// INITIALIZATION (line 9696)
 // ============================================================================
-function init()  // line 9703
+function init()  // line 9706
         // Check if localStorage is available
         // Clear any stale pending move operations from browser refresh
         // Start the app when DOM is ready
