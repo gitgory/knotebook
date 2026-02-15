@@ -2347,7 +2347,11 @@ function updateSidebarButtonState() {
  * @param {string} inputValue - Raw input value containing hashtags
  */
 function updateFilter(inputValue) {
-    const hashtags = parseHashtags(inputValue);
+    // Normalize input: split by spaces, ensure each word starts with #
+    const words = inputValue.trim().split(/\s+/).filter(w => w.length > 0);
+    const normalizedInput = words.map(word => word.startsWith('#') ? word : '#' + word).join(' ');
+
+    const hashtags = parseHashtags(normalizedInput);
     state.filterHashtags = hashtags;
 
     const input = document.getElementById('hashtag-input');
@@ -5985,9 +5989,10 @@ function removeTagFromContent(tag) {
 function getAutocompleteSuggestions(query) {
     const counts = getHashtagCounts();
     const tags = Object.keys(counts);
-    const q = query.toLowerCase();
+    // Strip leading # from query if present for matching
+    const q = query.startsWith('#') ? query.slice(1).toLowerCase() : query.toLowerCase();
     const filtered = tags
-        .filter(tag => tag.toLowerCase().startsWith('#' + q))
+        .filter(tag => tag.slice(1).toLowerCase().startsWith(q)) // Compare without # prefix
         .sort((a, b) => {
             const diff = counts[b] - counts[a];
             return diff !== 0 ? diff : a.toLowerCase().localeCompare(b.toLowerCase());

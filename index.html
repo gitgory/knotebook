@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>knotebook</title>
     <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
-    <link rel="stylesheet" href="styles/main.css?v=224">
+    <link rel="stylesheet" href="styles/main.css?v=225">
 </head>
 <body>
     <div id="app">
@@ -89,6 +89,7 @@
                 <button id="add-node-btn" title="Add Note">+</button>
                 <button id="save-btn" title="Export to File">⬇</button>
                 <button id="fit-view-btn" title="Fit graph to view">⛶</button>
+                <button id="hashtag-sidebar-btn" title="Tags (H)">#</button>
                 <div id="theme-selector">
                     <button id="theme-toggle" title="Change theme">◐</button>
                     <div id="theme-dropdown" class="hidden">
@@ -106,15 +107,14 @@
                 </div>
                 <button id="help-btn" title="Keyboard shortcuts">?</button>
                 <button id="settings-btn" title="Notebook settings">⚙</button>
-                <div id="save-status" class="save-status saved">
-                    <span class="save-icon">✓</span>
-                    <span class="save-text">Saved</span>
-                </div>
                 <div id="text-search">
                     <input type="text" id="text-search-input" placeholder="Search..." title="Search notes (S)">
                     <button id="text-search-clear" class="hidden" title="Clear search">×</button>
                 </div>
-                <button id="hashtag-sidebar-btn" title="Tags (H)">#</button>
+                <div id="save-status" class="save-status saved">
+                    <span class="save-icon">✓</span>
+                    <span class="save-text">Saved</span>
+                </div>
                 <div id="breadcrumbs" class="breadcrumb-trail"></div>
             </div>
 
@@ -160,7 +160,7 @@
                     <button id="sidebar-close" title="Close">×</button>
                 </div>
                 <div id="hashtag-search">
-                    <input type="text" id="hashtag-input" placeholder="Filter #tag..." title="Filter by tag (/)">
+                    <input type="text" id="hashtag-input" placeholder="Filter by tag..." title="Filter by tag (/)">
                     <button id="hashtag-clear" class="hidden" title="Clear filter">×</button>
                 </div>
                 <div id="sidebar-content">
@@ -446,7 +446,7 @@
         </div>
     </div>
 
-    <script src="scripts/app.js?v=224"></script>
+    <script src="scripts/app.js?v=225"></script>
     <script>
         // Extract version numbers from script and link tags
         (function() {
