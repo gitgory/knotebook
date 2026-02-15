@@ -34,63 +34,64 @@ function hideErrorRecoveryUI()  // line 62
     // Node dimensions
     // Drag threshold for Ctrl+Drag (prevents accidental duplication on multi-select clicks)
     // Preset color palette for hashtags (works across all dark themes)
-function getNextCompletionState(current)  // line 288
-function getCompletionStateConfig(state)  // line 300
-function isCompletedState(state)  // line 310
-function getNextPriorityState(current)  // line 320
-        // After last item, return null (none state)
-function getPriorityStateConfig(state)  // line 333
-function cyclePriority(current)  // line 343
+function getNextCompletionState(current)  // line 302
+function getCompletionStateConfig(state)  // line 314
+function isCompletedState(state)  // line 324
+function getNextPriorityState(current)  // line 334
+        // Cycle back to first item after last (loops continuously)
+function getPriorityStateConfig(state)  // line 347
+function cyclePriority(current)  // line 357
 // ============================================================================
-// GENERIC FIRST CLASS FIELD HELPERS (line 347)
+// GENERIC FIRST CLASS FIELD HELPERS (line 361)
 // ============================================================================
-function getFieldValue(fieldName)  // line 356
-function hasFieldSelection(fieldName)  // line 367
-function setFieldButtons(fieldName, value)  // line 376
-function getAllFieldValues()  // line 387
+function getFieldValue(fieldName)  // line 370
+function hasFieldSelection(fieldName)  // line 381
+function setFieldButtons(fieldName, value)  // line 390
+function getAllFieldValues()  // line 401
         // Get First-Class field values (button-based)
         // Get Second-Class field values (various input types)
-function loadAllFieldValues(node)  // line 409
+function loadAllFieldValues(node)  // line 423
         // Load First-Class field values into buttons
         // Load Second-Class field values into their inputs
-function updateNodeFields(node, fieldValues)  // line 430
+function updateNodeFields(node, fieldValues)  // line 444
         // Update First-Class fields
         // Update Second-Class fields
-function updateBatchField(nodes, fieldName, value)  // line 454
-function initializeFieldButtons()  // line 464
+function updateBatchField(nodes, fieldName, value)  // line 468
+function initializeFieldButtons()  // line 478
 // ============================================================================
-// UNIFIED FIELD STORAGE (node.fields.{fieldName}) (line 474)
+// UNIFIED FIELD STORAGE (node.fields.{fieldName}) (line 488)
 // ============================================================================
-function getNodeFieldValue(node, fieldName)  // line 485
-function setNodeFieldValue(node, fieldName, value)  // line 495
-function migrateNodeFields(node)  // line 509
+function getNodeFieldValue(node, fieldName)  // line 499
+function setNodeFieldValue(node, fieldName, value)  // line 509
+        // Store the value even if it's empty string (needed for priority None state)
+function migrateNodeFields(node)  // line 524
         // Skip if already migrated (has fields object with data, or no legacy fields)
         // Initialize fields object if needed
         // Migrate completion from top-level
         // Migrate priority from top-level
-function migrateAllNodeFields(nodes)  // line 538
+function migrateAllNodeFields(nodes)  // line 553
 // ============================================================================
-// UNIFIED FIELD DEFINITIONS (First-Class + Second-Class) (line 548)
+// UNIFIED FIELD DEFINITIONS (First-Class + Second-Class) (line 563)
 // ============================================================================
-function getFieldDefinitions({ includeFirstClass = true, includeSecondClass = true } = {})  // line 562
-function getCustomFieldDefinitions()  // line 596
-function getCustomFieldInputValue(fieldDef)  // line 606
-function setCustomFieldInputValue(fieldDef, value)  // line 648
+function getFieldDefinitions({ includeFirstClass = true, includeSecondClass = true } = {})  // line 577
+function getCustomFieldDefinitions()  // line 611
+function getCustomFieldInputValue(fieldDef)  // line 621
+function setCustomFieldInputValue(fieldDef, value)  // line 663
         // Clear all buttons first
         // Activate selected values
-function getFieldUsedValues(fieldName)  // line 692
-function collectFromNodes(nodes)  // line 695
+function getFieldUsedValues(fieldName)  // line 707
+function collectFromNodes(nodes)  // line 710
         // Collect from current level and root
-function getFieldOptions(fieldDef)  // line 726
+function getFieldOptions(fieldDef)  // line 741
         // Add used values if field allows new entries or has no predefined options
-function fieldDefinitionsMatch(field1, field2)  // line 745
+function fieldDefinitionsMatch(field1, field2)  // line 760
         // Compare essential properties
         // For select types, compare options (order-independent)
-function mergeCustomFieldDefinitions(existingFields, importedFields)  // line 767
+function mergeCustomFieldDefinitions(existingFields, importedFields)  // line 782
         // New field, add it
         // Field name exists, check if definitions match
         // If they match, keep existing (no action needed)
-function formatFieldDefinition(fieldDef)  // line 798
+function formatFieldDefinition(fieldDef)  // line 813
         // Autocomplete state (kept separate as it's transient UI state)
         // Constants
         // Timing (milliseconds)
@@ -102,37 +103,37 @@ function formatFieldDefinition(fieldDef)  // line 798
         // Z-Index Layers
         // Mobile Detection
         // This allows small desktop windows to keep desktop features
-function isMobileDevice()  // line 889
+function isMobileDevice()  // line 904
         // Check if device has coarse pointer (touch) and cannot hover
         // Both conditions should be true for mobile devices
         // This avoids treating small desktop windows as mobile
         // Storage Keys
-function isLocalStorageAvailable()  // line 910
-function showStorageUnavailableWarning()  // line 928
+function isLocalStorageAvailable()  // line 925
+function showStorageUnavailableWarning()  // line 943
         // Move to notebook constant
 // ============================================================================
-// THEME (line 950)
+// THEME (line 965)
 // ============================================================================
-function getCurrentTheme()  // line 960
-function setTheme(themeName)  // line 973
+function getCurrentTheme()  // line 975
+function setTheme(themeName)  // line 988
         // Validate theme exists (in case of deleted/renamed themes)
         // Remove theme from root if it's 'midnight' (default), otherwise set it
         // Update active option state
         // Save to localStorage (global default)
         // Save to current notebook if one is open
-function loadSavedTheme()  // line 1008
-function initThemeSelector()  // line 1020
+function loadSavedTheme()  // line 1023
+function initThemeSelector()  // line 1035
         // Toggle dropdown
         // Select theme option
         // Close dropdown when clicking elsewhere
 // ============================================================================
-// PROJECT STORAGE (localStorage) (line 1044)
+// PROJECT STORAGE (localStorage) (line 1059)
 // ============================================================================
-function getProjectsList()  // line 1055
+function getProjectsList()  // line 1070
         // Clear corrupted data and return empty list
-function generateProjectId()  // line 1101
-function countNotes(nodes)  // line 1112
-function stringifyAsync(data)  // line 1131
+function generateProjectId()  // line 1116
+function countNotes(nodes)  // line 1127
+function stringifyAsync(data)  // line 1146
         // Use requestIdleCallback if available, otherwise fallback to immediate execution
         // Fallback for browsers without requestIdleCallback (like Safari)
         // Ensure root state is captured
@@ -142,13 +143,13 @@ function stringifyAsync(data)  // line 1131
         // Success
         // Store error for UI display
         // Re-throw to allow queue to handle failure
-function loadProjectFromStorage(projectId)  // line 1232
+function loadProjectFromStorage(projectId)  // line 1247
         // Don't remove corrupted project data automatically - user may want to recover it
         // Just return null so app doesn't crash
         // Save empty project data
         // Remove from index if storage failed
-function renameProject(projectId, newName)  // line 1312
-function deleteProject(projectId)  // line 1328
+function renameProject(projectId, newName)  // line 1327
+function deleteProject(projectId)  // line 1343
         // Non-critical - index is already updated
         // Reset navigation
         // Load data
@@ -160,31 +161,31 @@ function deleteProject(projectId)  // line 1328
         // Update sidebar button state
         // Close sidebar
         // Check for pending move operation
-function getSaveStatusElements()  // line 1451
-function clearSaveFadeTimeout()  // line 1465
-function resetSaveStatusClasses(statusEl, newStatus)  // line 1477
+function getSaveStatusElements()  // line 1466
+function clearSaveFadeTimeout()  // line 1480
+function resetSaveStatusClasses(statusEl, newStatus)  // line 1492
         // Remove all status classes
         // Only remove fade-out if we're changing to a non-saved state
-function applyStatusContent(elements, status, error)  // line 1495
-function scheduleSavedFadeOut(statusEl)  // line 1516
+function applyStatusContent(elements, status, error)  // line 1510
+function scheduleSavedFadeOut(statusEl)  // line 1531
         // Remove fade-out first (make visible)
         // Auto-fade after 2 seconds
-function updateSaveStatus(status, error = null)  // line 1532
+function updateSaveStatus(status, error = null)  // line 1547
         // 1. Get elements (guard clause)
         // 2. Clean up any existing fade timeout
         // 3. Update CSS classes
         // 4. Update icon and text
         // 5. Handle saved status fade animation
-function shouldUpdateToSaved()  // line 1558
-function getCurrentProjectData()  // line 1568
-function handleSaveSuccess(savedData)  // line 1585
-function handleSaveFailure(error)  // line 1600
-function continueQueueProcessing()  // line 1611
+function shouldUpdateToSaved()  // line 1573
+function getCurrentProjectData()  // line 1583
+function handleSaveSuccess(savedData)  // line 1600
+function handleSaveFailure(error)  // line 1615
+function continueQueueProcessing()  // line 1626
         // Guard: Already processing
         // Guard: Empty queue - update status if needed
         // Mark as in progress
-function hashData(data)  // line 1662
-function scheduleAutoSave()  // line 1681
+function hashData(data)  // line 1677
+function scheduleAutoSave()  // line 1696
         // Calculate hash of current data to detect changes
         // Skip if nothing changed since last save
         // Don't add to queue if we already have a pending save
@@ -194,68 +195,69 @@ function scheduleAutoSave()  // line 1681
         // Update status to pending
         // Debounce: set timer
 // ============================================================================
-// PROJECT LIST UI (line 1731)
+// PROJECT LIST UI (line 1746)
 // ============================================================================
-function populateProjectsList()  // line 1741
+function populateProjectsList()  // line 1756
         // Click on project to open
         // Click on menu button
-function showProjectMenu(projectId, x, y)  // line 1810
+function showProjectMenu(projectId, x, y)  // line 1825
         // Position menu
         // Adjust if menu goes off screen
-function hideProjectMenu()  // line 1832
-function showNewProjectModal()  // line 1841
-function hideNewProjectModal()  // line 1852
-function getConfirmModalElements()  // line 1869
-function configureConfirmModal(elements, message)  // line 1883
-function createConfirmHandlers(elements, resolve, delay)  // line 1895
+function hideProjectMenu()  // line 1847
+function showNewProjectModal()  // line 1856
+function hideNewProjectModal()  // line 1867
+function getConfirmModalElements()  // line 1884
+function configureConfirmModal(elements, message)  // line 1898
+function createConfirmHandlers(elements, resolve, delay)  // line 1910
         // Start countdown if delay specified
-function attachConfirmListeners(elements, handlers)  // line 1964
-function showConfirmation(message, delay = 0)  // line 1976
-function showAlert(message, title = 'Alert')  // line 1992
+function attachConfirmListeners(elements, handlers)  // line 1979
+function showConfirmation(message, delay = 0)  // line 1991
+function showAlert(message, title = 'Alert')  // line 2007
         // Set content and show
         // Focus OK button
         // OK handler
         // Keyboard handler
         // Cleanup
         // Attach listeners
-function getPromptModalElements()  // line 2046
-function configurePromptModal(elements, message, defaultValue, title)  // line 2064
-function createPromptHandlers(elements, resolve)  // line 2079
-function attachPromptListeners(elements, handlers)  // line 2116
-function showPrompt(message, defaultValue = '', title = 'Input Required')  // line 2129
+function getPromptModalElements()  // line 2061
+function configurePromptModal(elements, message, defaultValue, title)  // line 2079
+function createPromptHandlers(elements, resolve)  // line 2094
+function attachPromptListeners(elements, handlers)  // line 2131
+function showPrompt(message, defaultValue = '', title = 'Input Required')  // line 2144
         // Validate: max length
         // Validate: not empty
         // Validate: max length
 // ============================================================================
-// UTILITY FUNCTIONS (line 2216)
+// UTILITY FUNCTIONS (line 2231)
 // ============================================================================
-function generateId()  // line 2226
-function parseHashtags(text)  // line 2238
+function generateId()  // line 2241
+function parseHashtags(text)  // line 2253
         // Normalize to lowercase for consistent storage and comparison
-function truncateText(text, maxLength)  // line 2253
-function getNodeCenter(node)  // line 2265
-function hasBodyText(node)  // line 2279
-function cycleCompletion(current)  // line 2292
-function nodeMatchesFilter(node)  // line 2304
+function truncateText(text, maxLength)  // line 2268
+function getNodeCenter(node)  // line 2280
+function hasBodyText(node)  // line 2294
+function cycleCompletion(current)  // line 2307
+function nodeMatchesFilter(node)  // line 2319
         // Text search filter
         // Hashtag filter (OR logic)
         // Tags are already normalized to lowercase, so direct comparison is safe
-function getVisibleNodeIds()  // line 2325
-function updateSidebarButtonState()  // line 2333
-function updateFilter(inputValue)  // line 2349
+function getVisibleNodeIds()  // line 2340
+function updateSidebarButtonState()  // line 2348
+function updateFilter(inputValue)  // line 2364
+        // Normalize input: split by spaces, ensure each word starts with #
         // Update visual state
-function clearFilter()  // line 2374
+function clearFilter()  // line 2393
         // Also clear text search
-function setFilterHashtag(hashtag)  // line 2400
-function updateTextFilter(text)  // line 2412
-function clearTextFilter()  // line 2433
-function toggleFilterHashtag(hashtag)  // line 2449
+function setFilterHashtag(hashtag)  // line 2419
+function updateTextFilter(text)  // line 2431
+function clearTextFilter()  // line 2452
+function toggleFilterHashtag(hashtag)  // line 2468
         // Remove it
         // Add it
-function toggleHiddenHashtag(hashtag)  // line 2475
+function toggleHiddenHashtag(hashtag)  // line 2494
         // Unhide it
         // Hide it
-function showAllHashtags()  // line 2495
+function showAllHashtags()  // line 2514
         // Validate new tag format
         // Validate hashtag format (must be #word with alphanumeric, underscore, or hyphen)
         // Normalize to lowercase
@@ -268,117 +270,118 @@ function showAllHashtags()  // line 2495
         // Update the filter input to show the new tag
         // Update hidden tags if this tag was hidden
         // Transfer color to new tag name
-function deleteHashtag(tag)  // line 2578
+function deleteHashtag(tag)  // line 2597
         // Remove from all nodes at current level
         // Remove from content text (case-insensitive, match whole hashtag)
         // Re-parse hashtags from updated content
         // Clear from filter if active
         // Clear from hidden tags
         // Remove color assignment
-function getHashtagContextMenuItems()  // line 2615
+function getHashtagContextMenuItems()  // line 2634
         // Open sidebar if not already open
         // Wait for sidebar to render, then open color picker
-function attachHashtagMenuHandler(menu, tag)  // line 2664
-function showHashtagContextMenu(tag, x, y)  // line 2683
+function attachHashtagMenuHandler(menu, tag)  // line 2683
+function showHashtagContextMenu(tag, x, y)  // line 2702
         // 1. Get menu configuration
         // 2. Create menu structure
         // 3. Add to DOM (required for position adjustment)
         // 4. Adjust position to prevent off-screen rendering
         // 5. Attach event handler
-function hideHashtagContextMenu()  // line 2706
+function hideHashtagContextMenu()  // line 2725
 // ============================================================================
-// HASHTAG SIDEBAR (line 2713)
+// HASHTAG SIDEBAR (line 2732)
 // ============================================================================
-function toggleSidebar()  // line 2723
-function showSidebar()  // line 2736
-function hideSidebar()  // line 2747
-function closeAllColorPickers()  // line 2757
-function getHashtagCounts()  // line 2769
-function getHashtagColor(hashtag, autoAssign = true)  // line 2790
+function toggleSidebar()  // line 2742
+function showSidebar()  // line 2755
+function hideSidebar()  // line 2766
+function closeAllColorPickers()  // line 2776
+function getHashtagCounts()  // line 2788
+function getHashtagColor(hashtag, autoAssign = true)  // line 2809
         // Assign a color based on hash of the hashtag name
-function setHashtagColor(hashtag, color)  // line 2807
-function renderEmptyHashtagState(list)  // line 2818
-function createShowAllTagsButton(hasHiddenTags)  // line 2830
-function createHashtagRow(tag, color, isActive, isHidden, count)  // line 2848
+function setHashtagColor(hashtag, color)  // line 2826
+function renderEmptyHashtagState(list)  // line 2837
+function createShowAllTagsButton(hasHiddenTags)  // line 2849
+function createHashtagRow(tag, color, isActive, isHidden, count)  // line 2867
         // Pill
         // Count
         // Color button
         // Hide button
         // Color picker dropdown
-function populateSidebar()  // line 2906
-function attachShowAllTagsHandler(button)  // line 2944
-function attachHashtagRowHandlers(list)  // line 2956
+function populateSidebar()  // line 2925
+function attachShowAllTagsHandler(button)  // line 2963
+function attachHashtagRowHandlers(list)  // line 2975
         // Hide button handlers
         // Filter handlers (pill + count only)
         // Color button handlers
         // Close other dropdowns
         // Color swatch handlers
-function attachHashtagContextMenuHandlers(list)  // line 3007
+function attachHashtagContextMenuHandlers(list)  // line 3026
         // Desktop: right-click
         // Mobile: long-press (500ms)
-function screenToCanvas(screenX, screenY)  // line 3053
-function canvasToScreen(canvasX, canvasY)  // line 3071
-function getGraphBounds(visibleOnly = false)  // line 3088
+function screenToCanvas(screenX, screenY)  // line 3072
+function canvasToScreen(canvasX, canvasY)  // line 3090
+function getGraphBounds(visibleOnly = false)  // line 3107
         // If visibleOnly is true, only include nodes that pass the current filters
 // ============================================================================
-// VIEW SWITCHING (line 3111)
+// VIEW SWITCHING (line 3130)
 // ============================================================================
-function showLandingPage()  // line 3121
-function showGraphView()  // line 3134
-function newProject()  // line 3144
+function showLandingPage()  // line 3140
+function showGraphView()  // line 3153
+function newProject()  // line 3163
         // Show the new project modal instead of directly creating
         // Save current project before leaving
         // Force immediate save before navigation
         // Reset state
 // ============================================================================
-// VIEWPORT (PAN/ZOOM) (line 3184)
+// VIEWPORT (PAN/ZOOM) (line 3203)
 // ============================================================================
-function updateViewport()  // line 3195
+function updateViewport()  // line 3214
         // Calculate viewBox based on viewport state
-function zoomAtPoint(delta, screenX, screenY)  // line 3218
+function zoomAtPoint(delta, screenX, screenY)  // line 3237
         // Get canvas coordinates before zoom
         // Apply zoom
         // Get canvas coordinates after zoom
         // Adjust pan to keep the point under cursor stationary
-function fitToView()  // line 3247
+function fitToView()  // line 3266
         // Use visible nodes only when filters are active
         // No nodes, reset to default view
         // Add padding around the graph
         // Calculate zoom to fit
         // Center the graph
-function resetViewport()  // line 3293
+function resetViewport()  // line 3312
 // ============================================================================
-// RENDERING (line 3300)
+// RENDERING (line 3319)
 // ============================================================================
-function render()  // line 3312
-function renderImmediate()  // line 3328
+function render()  // line 3331
+function renderImmediate()  // line 3347
         // Refresh sidebar if open
         // Auto-save if we have a current project (only saves if data changed)
-function prepareNodesLayer()  // line 3358
-function sortNodesByZIndex(nodes)  // line 3369
-function createNodeGroup(node)  // line 3382
-function renderChildStackIndicators(g, node)  // line 3398
+function prepareNodesLayer()  // line 3377
+function sortNodesByZIndex(nodes)  // line 3388
+function createNodeGroup(node)  // line 3401
+function renderChildStackIndicators(g, node)  // line 3417
         // Second stack layer for 3+ children
         // First stack layer
-function renderNodeBody(g, node)  // line 3429
+function renderNodeBody(g, node)  // line 3448
         // Node body rectangle
         // Dog-ear fold for body text indicator
-function renderNodeTitle(g, node)  // line 3451
-function renderNodeHashtags(g, node)  // line 3467
+function renderNodeTitle(g, node)  // line 3470
+function renderNodeHashtags(g, node)  // line 3486
         // Filter out hidden hashtags
         // Stop if we'd overflow the node
         // Pill background
         // Pill text
-function createCompletionGroup()  // line 3525
-function appendCompletionBackground(group, position)  // line 3537
-function appendCompletionIcon(group, config, position)  // line 3552
-function renderCompletionIndicator(g, node)  // line 3577
-function createPriorityGroup()  // line 3594
-function appendPriorityBackground(group, position)  // line 3606
-function appendPriorityIcon(group, config, position)  // line 3621
-function renderPriorityIndicator(g, node)  // line 3637
-function renderNodes()  // line 3654
-function renderEdges()  // line 3678
+function createCompletionGroup()  // line 3544
+function appendCompletionBackground(group, position)  // line 3556
+function appendCompletionIcon(group, config, position)  // line 3571
+function renderCompletionIndicator(g, node)  // line 3596
+function createPriorityGroup()  // line 3613
+function appendPriorityBackground(group, position)  // line 3625
+function appendPriorityIcon(group, config, position)  // line 3640
+function renderPriorityIndicator(g, node)  // line 3666
+        // Don't render if priority is null/undefined (None state)
+function renderNodes()  // line 3685
+function renderEdges()  // line 3709
         // Get visible node IDs for filtering edges
         // Backwards compatibility: convert array format to object format
         // Skip edges where either node is hidden by filter
@@ -386,52 +389,52 @@ function renderEdges()  // line 3678
         // Invisible wider hitbox for easier clicking (always full length)
         // For directed edges: single line with arrow marker
         // Undirected edge: single line center to center
-function renderEdgePreview(x, y)  // line 3778
+function renderEdgePreview(x, y)  // line 3809
         // Remove existing preview
-function clearEdgePreview()  // line 3805
-function renderSelectionBox()  // line 3815
-function clearSelectionBox()  // line 3844
-function renderGhostNodes()  // line 3855
+function clearEdgePreview()  // line 3836
+function renderSelectionBox()  // line 3846
+function clearSelectionBox()  // line 3875
+function renderGhostNodes()  // line 3886
         // Update ghost node positions to follow cursor
         // Render each ghost node
         // Node body
         // Node title
         // Hashtags (reuse shared rendering function)
-function getNodesInSelectionBox(box)  // line 3910
+function getNodesInSelectionBox(box)  // line 3941
         // Drag left-to-right: fully enclosed only
         // Drag right-to-left: fully enclosed OR intersecting
-function navigateToBreadcrumbLevel(pathIndex)  // line 3942
+function navigateToBreadcrumbLevel(pathIndex)  // line 3973
         // Clear undo snapshot when navigating (level change)
         // Truncate the current path to the target level
         // Restore the appropriate node and edge state for the target level
         // Back to root - restore root state
         // Clear selections and UI state
         // Reset viewport and render
-function updateBreadcrumbs()  // line 3977
+function updateBreadcrumbs()  // line 4008
         // Get current project name
         // Create single pill for "projectName: Root" when at root level
         // Create single pill for "projectName: Root" that goes back to root
         // Create pills for each level in the current path (nested notes only)
 // ============================================================================
-// NODE OPERATIONS (line 4022)
+// NODE OPERATIONS (line 4053)
 // ============================================================================
-function createNode(x, y)  // line 4034
+function createNode(x, y)  // line 4065
         // Capture undo snapshot before modification
         // Apply default completion if set
         // Apply default field values from settings
-function deepCopyNode(node, offsetX = 0, offsetY = 0)  // line 4074
+function deepCopyNode(node, offsetX = 0, offsetY = 0)  // line 4105
         // Deep copy children recursively and create ID mapping
         // Copy child edges and remap IDs to new child IDs
-function deepCopyNodeForUndo(node)  // line 4121
+function deepCopyNodeForUndo(node)  // line 4152
         // Deep copy children recursively, preserving IDs
-function createUndoSnapshot()  // line 4153
-function performUndo()  // line 4172
+function createUndoSnapshot()  // line 4184
+function performUndo()  // line 4203
         // Silently ignore if no snapshot exists
         // Restore state from snapshot
         // Clear snapshot after restore (single-level undo)
         // Update visuals and trigger save
         // Preserve snapshot on error so user can try again
-function deleteNode(nodeId)  // line 4209
+function deleteNode(nodeId)  // line 4240
         // Capture undo snapshot before modification (only if not already captured)
         // This allows multi-select delete to capture once before the loop
         // Find the node being deleted
@@ -442,59 +445,59 @@ function deleteNode(nodeId)  // line 4209
         // Remove edges connected to this node
         // Remove the node
         // Remove from selection
-function selectNode(nodeId, addToSelection = false)  // line 4258
+function selectNode(nodeId, addToSelection = false)  // line 4289
         // Toggle: add if not selected, remove if already selected
         // Replace selection with single node
-function clearSelection()  // line 4279
-function updateSelectionVisuals()  // line 4292
+function clearSelection()  // line 4310
+function updateSelectionVisuals()  // line 4323
         // Update node selection visuals without full re-render
         // Update edge selection visuals
         // Update selection action bar
-function updateSelectionActionBar()  // line 4323
+function updateSelectionActionBar()  // line 4354
         // Node(s) selected - show all buttons (Connect now works for batch connect)
         // Action bar is only shown on mobile via long-press
         // Edge selected - show only delete
         // On mobile, show action bar for edge deletion (hard to long-press edges)
         // Nothing selected
-function showActionBar()  // line 4352
+function showActionBar()  // line 4383
         // Trigger reflow for animation
-function hideActionBar()  // line 4362
+function hideActionBar()  // line 4393
         // Hide after animation completes
-function bringToFront()  // line 4380
+function bringToFront()  // line 4411
         // Find the current max zIndex
         // Set selected nodes to maxZ + 1
-function sendToBack()  // line 4400
+function sendToBack()  // line 4431
         // Find the current min zIndex
         // Set selected nodes to minZ - 1
-function getNodeContextMenuItems(selectionCount)  // line 4422
+function getNodeContextMenuItems(selectionCount)  // line 4453
         // Multi-selection specific items
         // Common items (always available)
-function createContextMenuItem(action, text)  // line 4446
-function createContextMenuContainer(menuId, x, y)  // line 4463
-function populateContextMenu(menu, items)  // line 4480
-function adjustContextMenuPosition(menu, originalX, originalY)  // line 4496
+function createContextMenuItem(action, text)  // line 4477
+function createContextMenuContainer(menuId, x, y)  // line 4494
+function populateContextMenu(menu, items)  // line 4511
+function adjustContextMenuPosition(menu, originalX, originalY)  // line 4527
         // Flip to left if extending beyond right edge
         // Flip to top if extending beyond bottom edge
-function commandBringToFront()  // line 4514
-function commandSendToBack()  // line 4522
-function commandMoveTo()  // line 4530
-function commandConnectTo()  // line 4538
-function executeContextMenuAction(action)  // line 4548
-function attachContextMenuHandler(menu, onAction)  // line 4569
-function showNodeContextMenu(nodeId, x, y)  // line 4589
+function commandBringToFront()  // line 4545
+function commandSendToBack()  // line 4553
+function commandMoveTo()  // line 4561
+function commandConnectTo()  // line 4569
+function executeContextMenuAction(action)  // line 4579
+function attachContextMenuHandler(menu, onAction)  // line 4600
+function showNodeContextMenu(nodeId, x, y)  // line 4620
         // 1. Get menu configuration based on selection state
         // 2. Create menu structure
         // 3. Add to DOM (required for position adjustment)
         // 4. Adjust position to prevent off-screen rendering
         // 5. Attach event handler
-function hideNodeContextMenu()  // line 4609
+function hideNodeContextMenu()  // line 4640
 // ============================================================================
-// EDGE OPERATIONS (line 4614)
+// EDGE OPERATIONS (line 4645)
 // ============================================================================
-function startEdgeCreation(nodeId)  // line 4626
+function startEdgeCreation(nodeId)  // line 4657
         // If nodeId provided, use it; otherwise use current selection (for batch connect)
         // Batch connect mode: store all selected nodes
-function completeEdgeCreation(targetNodeId)  // line 4645
+function completeEdgeCreation(targetNodeId)  // line 4676
         // Capture undo snapshot before modification
         // Batch connect mode: create edges from all source nodes to target
         // Toggle edge: remove if exists, create if not
@@ -504,24 +507,24 @@ function completeEdgeCreation(targetNodeId)  // line 4645
         // This inconsistency causes bugs in edge operations (copy, delete).
         // Consider standardizing to single format (see ROADMAP).
         // Select newly created edge (if one was created)
-function selectEdge(index)  // line 4721
-function deleteSelectedEdge()  // line 4727
+function selectEdge(index)  // line 4752
+function deleteSelectedEdge()  // line 4758
         // Capture undo snapshot before modification
-function toggleEdgeDirection(edgeIndex)  // line 4743
+function toggleEdgeDirection(edgeIndex)  // line 4774
         // Capture undo snapshot before modification
         // Undirected → Directed (from→to)
         // Directed: swap direction (reverse arrow)
 // ============================================================================
-// NAVIGATION (NESTING) (line 4761)
+// NAVIGATION (NESTING) (line 4792)
 // ============================================================================
-function enterNode(nodeId)  // line 4772
+function enterNode(nodeId)  // line 4803
         // Clear undo snapshot when navigating (level change)
         // Save current state to the node we're leaving
         // Push current node to path
         // Load children
         // Clear filter when navigating
         // Reset viewport for the new level
-function goBack()  // line 4810
+function goBack()  // line 4841
         // Clear undo snapshot when navigating (level change)
         // Save current state
         // Go to parent level
@@ -530,15 +533,15 @@ function goBack()  // line 4810
         // Reset viewport for the new level
         // Save after navigation to persist the updated tree
         // Root state storage (saved when entering first node)
-function getRootNodes()  // line 4847
-function getRootEdges()  // line 4851
-function saveRootState()  // line 4855
+function getRootNodes()  // line 4878
+function getRootEdges()  // line 4882
+function saveRootState()  // line 4886
 // ============================================================================
-// EDITOR (line 4862)
+// EDITOR (line 4893)
 // ============================================================================
-function prepareEditorSession()  // line 4877
-function getEditorElements()  // line 4886
-function openBatchEditor(nodes)  // line 4899
+function prepareEditorSession()  // line 4908
+function getEditorElements()  // line 4917
+function openBatchEditor(nodes)  // line 4930
         // Snapshot all nodes for cancel/revert
         // Configure title input (disabled in batch mode)
         // Configure textarea for tag entry
@@ -548,7 +551,7 @@ function openBatchEditor(nodes)  // line 4899
         // Load First-Class field values (show value if all same, otherwise clear)
         // Render and load Second-Class custom fields
         // Show modal and focus textarea
-function openSingleEditor(node, nodeId)  // line 4969
+function openSingleEditor(node, nodeId)  // line 5000
         // Snapshot current state for cancel/revert
         // Enable all fields
         // Load node data
@@ -557,37 +560,37 @@ function openSingleEditor(node, nodeId)  // line 4969
         // Update enter button based on whether node has children
         // Show modal and focus title
 // ============================================================================
-// CUSTOM FIELDS RENDERING (Editor Integration) (line 5021)
+// CUSTOM FIELDS RENDERING (Editor Integration) (line 5052)
 // ============================================================================
-function appendCreateFieldControl(container, hasExistingFields)  // line 5031
-function renderCustomFieldsInEditor(node, nodes, isBatchMode)  // line 5061
+function appendCreateFieldControl(container, hasExistingFields)  // line 5062
+function renderCustomFieldsInEditor(node, nodes, isBatchMode)  // line 5092
         // Render existing custom fields
         // Render the field control
         // Load current value(s) into the control
         // Always append "Create custom field..." control
-function saveCustomFieldsFromEditor(node, nodes, isBatchMode)  // line 5099
+function saveCustomFieldsFromEditor(node, nodes, isBatchMode)  // line 5130
         // ----------------------------------------------------------------------------
         // Single-Select Field Type
         // ----------------------------------------------------------------------------
-function renderSingleSelectField(fieldDef)  // line 5123
+function renderSingleSelectField(fieldDef)  // line 5154
         // Label
         // Dropdown select
         // None option
         // Field options
         // Add new option
         // Handle selection change
-function loadSingleSelectFieldValue(fieldDef, nodeOrNodes, isBatchMode)  // line 5184
+function loadSingleSelectFieldValue(fieldDef, nodeOrNodes, isBatchMode)  // line 5215
         // Batch mode: show value if unanimous, otherwise show nothing
         // If mixed, set to empty (None)
         // Single mode: show node's current value
         // Set dropdown value
-function saveSingleSelectFieldValue(fieldDef, nodeOrNodes, isBatchMode)  // line 5213
+function saveSingleSelectFieldValue(fieldDef, nodeOrNodes, isBatchMode)  // line 5244
         // In batch mode: always save (user explicitly chose a value from dropdown)
         // Single mode: always save the value
         // ----------------------------------------------------------------------------
         // Multi-Select Field Type
         // ----------------------------------------------------------------------------
-function renderMultiSelectField(fieldDef)  // line 5239
+function renderMultiSelectField(fieldDef)  // line 5270
         // Label
         // Dropdown wrapper
         // Display button (shows selected items)
@@ -600,14 +603,14 @@ function renderMultiSelectField(fieldDef)  // line 5239
         // Toggle dropdown on button click
         // Close other dropdowns
         // Close dropdown when clicking outside
-function updateMultiSelectDisplay(fieldName)  // line 5332
-function loadMultiSelectFieldValue(fieldDef, nodeOrNodes, isBatchMode)  // line 5353
+function updateMultiSelectDisplay(fieldName)  // line 5363
+function loadMultiSelectFieldValue(fieldDef, nodeOrNodes, isBatchMode)  // line 5384
         // Batch mode: show values only if unanimous across all nodes
         // Check if all nodes have the same set of values
         // If mixed, leave all checkboxes unchecked
         // Single mode: show node's current values
         // Check the checkboxes matching the values
-function saveMultiSelectFieldValue(fieldDef, nodeOrNodes, isBatchMode)  // line 5395
+function saveMultiSelectFieldValue(fieldDef, nodeOrNodes, isBatchMode)  // line 5426
         // In batch mode: always save (user explicitly interacted with dropdown)
         // Single mode: always save the values
         // Prompt for new option
@@ -618,121 +621,122 @@ function saveMultiSelectFieldValue(fieldDef, nodeOrNodes, isBatchMode)  // line 
         // Re-render custom fields to show new option
         // Future: 'text', 'number', 'date', 'checkbox', 'url'
 // ============================================================================
-// EDITOR (line 5477)
+// EDITOR (line 5508)
 // ============================================================================
-function openEditor(nodeId)  // line 5486
-function closeEditor()  // line 5501
-function cancelEditor()  // line 5517
+function openEditor(nodeId)  // line 5517
+function closeEditor()  // line 5532
+function cancelEditor()  // line 5548
         // Batch mode: restore all nodes from snapshot
         // Single node mode
         // Restore node from snapshot
         // Restore all fields from snapshot
         // Delete empty nodes (new node that was never filled in)
-function getEditorMode()  // line 5559
-function getEditorFormData()  // line 5579
-function removeBatchTags(nodes, tagsToRemove)  // line 5598
+function getEditorMode()  // line 5590
+function getEditorFormData()  // line 5610
+function removeBatchTags(nodes, tagsToRemove)  // line 5629
         // Remove from hashtags array
         // Remove from content text
         // Clean up multiple spaces
-function addBatchTags(nodes, tagsToAdd)  // line 5620
+function addBatchTags(nodes, tagsToAdd)  // line 5651
         // Update content to include new tags
-function updateBatchTimestamps(nodes)  // line 5644
+function updateBatchTimestamps(nodes)  // line 5675
         // Validate title length (soft limit)
         // Validate content length (soft limit)
-function saveSingleNode(node, nodeId, titleValue, contentValue, fieldValues)  // line 5685
+function saveSingleNode(node, nodeId, titleValue, contentValue, fieldValues)  // line 5716
         // Update all fields (First-Class and Second-Class)
         // Delete empty nodes (created but never filled in)
-function cleanupEditorState()  // line 5705
+function cleanupEditorState()  // line 5736
         // Capture undo snapshot before modification
         // Update all First-Class fields in batch (only if user made a selection)
         // Save all Second-Class custom fields from editor
         // formData already contains all field values from getAllFieldValues()
         // Save all Second-Class custom fields from editor
-function getHashtagBadgeText(tag, isBatchMode, isRemoved, tagCounts, totalNodes)  // line 5769
-function applyHashtagPillStyle(element, color, isRemoved)  // line 5784
+function getHashtagBadgeText(tag, isBatchMode, isRemoved, tagCounts, totalNodes)  // line 5800
+function applyHashtagPillStyle(element, color, isRemoved)  // line 5815
         // Outlined pill: transparent background, colored border
         // Solid pill: background color, white text
-function createHashtagPill(tag, badge, color, isRemoved)  // line 5807
-function saveCursorPosition(textarea)  // line 5822
-function restoreCursorPosition(textarea, position)  // line 5833
-function reAddRemovedTag(tag, textarea)  // line 5845
-function markTagAsRemoved(tag)  // line 5857
-function triggerInputWithoutAutocomplete(textarea)  // line 5868
-function attachHashtagPillHandlers(display, textarea)  // line 5882
+function createHashtagPill(tag, badge, color, isRemoved)  // line 5838
+function saveCursorPosition(textarea)  // line 5853
+function restoreCursorPosition(textarea, position)  // line 5864
+function reAddRemovedTag(tag, textarea)  // line 5876
+function markTagAsRemoved(tag)  // line 5888
+function triggerInputWithoutAutocomplete(textarea)  // line 5899
+function attachHashtagPillHandlers(display, textarea)  // line 5913
         // Abort previous listener if exists (prevents duplicates on re-render)
         // Create new AbortController for this listener
         // Create delegated handler
         // Check if clicked element is a pill
         // Return focus to textarea for better editing flow
         // Attach listener with abort signal
-function cleanupHashtagPillHandlers()  // line 5924
-function updateHashtagDisplay(hashtags, isBatchMode = false, totalNodes = 1, tagCounts = {})  // line 5943
+function cleanupHashtagPillHandlers()  // line 5955
+function updateHashtagDisplay(hashtags, isBatchMode = false, totalNodes = 1, tagCounts = {})  // line 5974
         // Helper function to remove a tag from content textarea
-function removeTagFromContent(tag)  // line 5961
+function removeTagFromContent(tag)  // line 5992
         // Remove tag + optional trailing space, preserving leading space (unless at start)
         // Clean up multiple spaces
 // ============================================================================
-// HASHTAG AUTOCOMPLETE (line 5973)
+// HASHTAG AUTOCOMPLETE (line 6004)
 // ============================================================================
-function getAutocompleteSuggestions(query)  // line 5985
-function updateAutocompleteState(suggestions, inputElement)  // line 6010
-function renderEmptyAutocomplete()  // line 6023
-function createAutocompleteItem(suggestion, index)  // line 6038
-function attachAutocompleteItemHandler(itemElement, index)  // line 6069
-function populateAutocompleteList(suggestions)  // line 6082
-function displayAutocompleteDropdown(inputElement)  // line 6104
-function showAutocomplete(inputElement)  // line 6117
-function positionAutocomplete(inputElement)  // line 6132
+function getAutocompleteSuggestions(query)  // line 6016
+        // Strip leading # from query if present for matching
+function updateAutocompleteState(suggestions, inputElement)  // line 6042
+function renderEmptyAutocomplete()  // line 6055
+function createAutocompleteItem(suggestion, index)  // line 6070
+function attachAutocompleteItemHandler(itemElement, index)  // line 6101
+function populateAutocompleteList(suggestions)  // line 6114
+function displayAutocompleteDropdown(inputElement)  // line 6136
+function showAutocomplete(inputElement)  // line 6149
+function positionAutocomplete(inputElement)  // line 6164
         // Filter input: position below the input
         // Textarea: position near caret
         // Viewport clamping
-function getTextareaCaretCoords(textarea, position)  // line 6171
-function hideAutocomplete()  // line 6206
-function selectAutocompleteItem(index)  // line 6224
+function getTextareaCaretCoords(textarea, position)  // line 6203
+function hideAutocomplete()  // line 6238
+function selectAutocompleteItem(index)  // line 6256
         // Assign color when user commits a tag via autocomplete selection
         // Scan forward from cursor to skip any remaining word characters
         // Set cursor after inserted text
         // Dispatch input event to trigger existing handlers
-function updateAutocompleteFromInput(inputElement)  // line 6267
+function updateAutocompleteFromInput(inputElement)  // line 6299
         // Skip if autocomplete is suppressed (synthetic event from tag pill clicks)
         // Scan backwards from cursor to find '#'
         // Check if we found a '#' at a word boundary
         // Word boundary check: '#' must be at position 0 or preceded by whitespace
         // No valid '#' found — hide
-function handleAutocompleteKeydown(e)  // line 6309
+function handleAutocompleteKeydown(e)  // line 6341
         // If an item is highlighted, insert it
         // If only one suggestion remains, insert it automatically
         // Otherwise, let Enter/Tab pass through
-function highlightAutocompleteItem(index)  // line 6353
+function highlightAutocompleteItem(index)  // line 6385
         // Scroll into view
 // ============================================================================
-// HELP MODAL (line 6366)
+// HELP MODAL (line 6398)
 // ============================================================================
-function showHelp()  // line 6375
-function hideHelp()  // line 6384
+function showHelp()  // line 6407
+function hideHelp()  // line 6416
 // ============================================================================
-// MOVE TO NOTEBOOK MODAL (line 6388)
+// MOVE TO NOTEBOOK MODAL (line 6420)
 // ============================================================================
-function showMoveToModal()  // line 6397
+function showMoveToModal()  // line 6429
         // Get all projects except the current one
         // Populate the list
-function hideMoveToModal()  // line 6437
-function createNodeCopiesWithMapping(selectedNodeIds, allNodes)  // line 6449
-function filterAndRemapEdges(edges, idMapping, selectedNodeIds)  // line 6468
-function calculateBoundingBox(nodes)  // line 6483
-function calculateRelativeOffsets(nodes, centerX, centerY)  // line 6503
-function getSourceProjectName(projectId, projectsList)  // line 6521
-function buildMovePackage(data)  // line 6532
-function storePendingMove(movePackage)  // line 6550
-function validateMoveOperation(targetProjectId)  // line 6568
-function prepareMoveData(projectsList)  // line 6599
+function hideMoveToModal()  // line 6469
+function createNodeCopiesWithMapping(selectedNodeIds, allNodes)  // line 6481
+function filterAndRemapEdges(edges, idMapping, selectedNodeIds)  // line 6500
+function calculateBoundingBox(nodes)  // line 6515
+function calculateRelativeOffsets(nodes, centerX, centerY)  // line 6535
+function getSourceProjectName(projectId, projectsList)  // line 6553
+function buildMovePackage(data)  // line 6564
+function storePendingMove(movePackage)  // line 6582
+function validateMoveOperation(targetProjectId)  // line 6600
+function prepareMoveData(projectsList)  // line 6631
         // Data transformation
         // Geometric calculations
         // Metadata
         // Validate all preconditions
         // Prepare move data (transformation, calculations, metadata)
         // Execute move: store and navigate
-function checkForPendingMove()  // line 6668
+function checkForPendingMove()  // line 6700
         // Set up ghost nodes
         // Store pending move data for later use
         // Remove from sessionStorage
@@ -751,77 +755,77 @@ function checkForPendingMove()  // line 6668
         // Step 6: Show feedback toast
         // Step 7: Clear all ghost state
         // Step 8: Render and save
-function cancelGhostDrag()  // line 6795
+function cancelGhostDrag()  // line 6827
         // Guard clause: validate we're in ghost drag mode
         // Step 1: Extract source info before clearing state
         // Step 2: Clear ghost state (don't clear selection box - not placing)
         // Step 3: Show cancellation feedback
         // Step 4: Render to update UI
-function clearGhostState(clearSelectionBox = true)  // line 6828
-function showMoveToast(message, sourceProjectId, sourceProjectName)  // line 6849
-function integrateGhostNodes()  // line 6864
+function clearGhostState(clearSelectionBox = true)  // line 6860
+function showMoveToast(message, sourceProjectId, sourceProjectName)  // line 6881
+function integrateGhostNodes()  // line 6896
         // Guard clause: validate ghost nodes exist
         // Add ghost nodes to current notebook as real nodes
         // Add edges if present
         // Return IDs for selection
-function selectPlacedNodes(nodeIds)  // line 6891
-function syncSourceAfterMove(sourceProjectId, originalNodeIds)  // line 6901
+function selectPlacedNodes(nodeIds)  // line 6923
+function syncSourceAfterMove(sourceProjectId, originalNodeIds)  // line 6933
         // Guard clause: validate parameters
         // Delegate to existing function
-function queueTargetProjectSave()  // line 6921
-function updateProjectNoteCount(projectId, nodes)  // line 6934
-function removeNodesRecursively(nodes, nodeIdsToRemove)  // line 6951
+function queueTargetProjectSave()  // line 6953
+function updateProjectNoteCount(projectId, nodes)  // line 6966
+function removeNodesRecursively(nodes, nodeIdsToRemove)  // line 6983
         // If node has children, recursively remove from children too
-function removeNodesFromSourceNotebook(sourceProjectId, nodeIds)  // line 6973
+function removeNodesFromSourceNotebook(sourceProjectId, nodeIds)  // line 7005
         // Guard clause: validate parameters
         // Load source project data
         // Remove nodes by ID recursively (searches all nesting levels)
         // Remove edges that reference removed nodes
         // Save back to localStorage
         // Update note count in projects index
-function createToastElement(message)  // line 7030
-function appendToastLink(toast, linkText, linkOnClick)  // line 7044
-function styleToastElement(toast, hasLink)  // line 7064
-function setupToastKeyboardHandler(toast)  // line 7089
-function setupToastAutoRemove(toast, message, options, escHandler)  // line 7109
-function showToast(message, options = {})  // line 7127
+function createToastElement(message)  // line 7062
+function appendToastLink(toast, linkText, linkOnClick)  // line 7076
+function styleToastElement(toast, hasLink)  // line 7096
+function setupToastKeyboardHandler(toast)  // line 7121
+function setupToastAutoRemove(toast, message, options, escHandler)  // line 7141
+function showToast(message, options = {})  // line 7159
         // Remove any existing toast
         // Create and configure toast element
         // Setup keyboard and auto-removal handlers
         // Override toast.remove to clean up listeners and timer
 // ============================================================================
-// SETTINGS MODAL (line 7156)
+// SETTINGS MODAL (line 7188)
 // ============================================================================
-function getProjectSettings(projectId)  // line 7165
+function getProjectSettings(projectId)  // line 7197
         // Ensure structure exists
         // Migrate legacy defaultCompletion
-function showSettings(projectId)  // line 7190
+function showSettings(projectId)  // line 7222
         // Set dropdown values
         // Render custom fields list
-function hideSettings()  // line 7214
-function updateFieldDefault(fieldName, value)  // line 7227
+function hideSettings()  // line 7246
+function updateFieldDefault(fieldName, value)  // line 7259
         // Update in-memory settings for the currently open project
         // Update localStorage directly for a non-open project
         // Clean up legacy field if present
-function switchSettingsTab(tabName)  // line 7257
+function switchSettingsTab(tabName)  // line 7289
         // Update tab buttons
         // Update tab panels
-function renderCustomFieldsList()  // line 7283
+function renderCustomFieldsList()  // line 7315
         // Header with name and actions
         // Details
         // Show options for select types
-function formatFieldType(type)  // line 7363
-function addCustomField()  // line 7380
-function openFieldEditorFromEditor()  // line 7394
+function formatFieldType(type)  // line 7395
+function addCustomField()  // line 7412
+function openFieldEditorFromEditor()  // line 7426
         // Get current editor state before opening modal
         // Store editor context for restoration
         // Open field editor in "add" mode
-function openFieldEditorModal(mode, fieldIndex, fieldData)  // line 7408
+function openFieldEditorModal(mode, fieldIndex, fieldData)  // line 7440
         // Set title
         // Populate form
         // Store mode and index in modal dataset
         // Show modal
-function closeFieldEditorModal()  // line 7450
+function closeFieldEditorModal()  // line 7482
         // Get form values
         // Validate name
         // Check reserved names (only in add mode)
@@ -838,23 +842,23 @@ function closeFieldEditorModal()  // line 7450
         // Save changes
         // If called from note editor, re-render custom fields
         // Clear context
-function editCustomField(index)  // line 7594
+function editCustomField(index)  // line 7626
         // Remove field
         // Save changes
 // ============================================================================
-// FILE OPERATIONS (line 7641)
+// FILE OPERATIONS (line 7673)
 // ============================================================================
-function downloadAsFile(filename, data)  // line 7652
+function downloadAsFile(filename, data)  // line 7684
         // Ensure root state is captured
         // Get project name for filename
         // Try File System Access API first, fall back to data URL download
         // Fallback for mobile/unsupported browsers
         // Try File System Access API first, fall back to data URL download
         // Fallback for mobile/unsupported browsers
-function getFilesViaInput()  // line 7803
+function getFilesViaInput()  // line 7835
         // Guard clause: empty file
         // Guard clause: empty content
-function validateImportData(data)  // line 7844
+function validateImportData(data)  // line 7876
         // Guard clauses for required fields
         // Optional fields with defaults
         // Step 1: Select files (supports multiple)
@@ -862,8 +866,8 @@ function validateImportData(data)  // line 7844
         // Step 2: Import each file as new notebook
         // Step 3: Refresh project list
         // Guard clause: ignore user cancellation
-function createFieldOptionRadio(fieldName, value, label, fieldDef, checked)  // line 7968
-function createConflictElement(conflict, targetNotebookName, sourceNotebookName)  // line 7999
+function createFieldOptionRadio(fieldName, value, label, fieldDef, checked)  // line 8000
+function createConflictElement(conflict, targetNotebookName, sourceNotebookName)  // line 8031
         // Existing definition option (default selected)
         // Imported definition option
         // Update batch button labels with notebook names
@@ -875,9 +879,9 @@ function createConflictElement(conflict, targetNotebookName, sourceNotebookName)
         // Handle resolution
         // Handle cancellation
 // ============================================================================
-// EVENT HANDLERS (line 8116)
+// EVENT HANDLERS (line 8148)
 // ============================================================================
-function initEventListeners()  // line 8120
+function initEventListeners()  // line 8152
         // Mouse down on canvas
         // Click on children indicator - enter the node
         // Click on completion indicator - cycle state
@@ -910,9 +914,9 @@ function initEventListeners()  // line 8120
         // Mouse wheel for zooming
         // Touch state for mobile
         // Helper to get distance between two touches
-function getTouchDistance(touches)  // line 8537
+function getTouchDistance(touches)  // line 8569
         // Helper to get center point between two touches
-function getTouchCenter(touches)  // line 8544
+function getTouchCenter(touches)  // line 8576
         // Touch start (for mobile drag and pan)
         // Close hashtag sidebar on touch (mobile UX)
         // Handle pinch zoom (2 fingers)
@@ -1030,9 +1034,9 @@ function getTouchCenter(touches)  // line 8544
         // Debug tools buttons
         // Error recovery modal buttons
 // ============================================================================
-// INITIALIZATION (line 9696)
+// INITIALIZATION (line 9728)
 // ============================================================================
-function init()  // line 9706
+function init()  // line 9738
         // Check if localStorage is available
         // Clear any stale pending move operations from browser refresh
         // Start the app when DOM is ready
