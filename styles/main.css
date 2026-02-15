@@ -2698,11 +2698,12 @@ body {
         gap: 6px;
     }
 
-    /* Search input takes full width on its own row */
+    /* Search input limited width on mobile to prevent overflow */
     #text-search {
         order: 10;
-        flex: 1 1 100%;
+        flex: 1 1 auto;
         min-width: 0;
+        max-width: 75%;
     }
 
     #text-search-input {
@@ -2742,6 +2743,17 @@ body {
     /* Reduce textarea height on mobile so buttons are visible without scrolling */
     #note-text {
         height: 80px;
+    }
+
+    /* Position prompt modal at top on mobile to avoid keyboard overlap */
+    #prompt-modal {
+        align-items: flex-start;
+        padding-top: 20px;
+    }
+
+    #prompt-content {
+        max-height: 50vh;
+        overflow-y: auto;
     }
 }
 
@@ -3060,6 +3072,7 @@ body {
 @media (hover: none) and (pointer: coarse) {
     #hashtag-sidebar {
         width: 220px; /* Narrower on mobile */
+        z-index: 110; /* Higher than toolbar (z-index: 100) to prevent search from being covered */
     }
 
     #sidebar-content {

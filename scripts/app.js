@@ -8783,7 +8783,10 @@ function initEventListeners() {
 
         if (state.panning) {
             e.preventDefault();
-            hideActionBar();
+            // Only hide action bar if no nodes are selected (preserve it during multi-select pan)
+            if (state.selectedNodes.length === 0) {
+                hideActionBar();
+            }
             const dx = (touch.clientX - state.panStart.x) / state.viewport.zoom;
             const dy = (touch.clientY - state.panStart.y) / state.viewport.zoom;
             state.viewport.x -= dx;
