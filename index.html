@@ -22,7 +22,7 @@
                     <h2>Your Notebooks</h2>
                     <div id="projects-list"></div>
                 </div>
-                <div id="version-info">CSS v223 | JS v223</div>
+                <div id="version-info"></div>
 
                 <!-- Debug Tools (hidden by default) -->
                 <div id="debug-tools" class="hidden">
@@ -446,6 +446,21 @@
         </div>
     </div>
 
+    <script>
+        // Extract version numbers from script and link tags
+        (function() {
+            const cssLink = document.querySelector('link[href*="main.css"]');
+            const jsScript = document.querySelector('script[src*="app.js"]');
+
+            const cssVersion = cssLink ? new URL(cssLink.href, window.location.href).searchParams.get('v') : 'unknown';
+            const jsVersion = jsScript ? new URL(jsScript.src, window.location.href).searchParams.get('v') : 'unknown';
+
+            const versionInfo = document.getElementById('version-info');
+            if (versionInfo) {
+                versionInfo.textContent = `CSS v${cssVersion} | JS v${jsVersion}`;
+            }
+        })();
+    </script>
     <script src="scripts/app.js?v=223"></script>
 </body>
 </html>
