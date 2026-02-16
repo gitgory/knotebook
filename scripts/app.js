@@ -2341,6 +2341,7 @@ function parseExpression(tokens) {
 function parseOR(parser) {
     let left = parseAND(parser);
 
+    // Explicit OR operator
     while (!parser.isAtEnd() && parser.current()?.toUpperCase() === 'OR') {
         const orToken = parser.consume(); // consume 'OR'
 
@@ -2353,6 +2354,18 @@ function parseOR(parser) {
         }
 
         const right = parseAND(parser);
+        left = { type: 'OR', left, right };
+    }
+
+    // Implicit OR for adjacent hashtags
+    // When we see adjacent hashtags without an operator, treat as OR
+    // Example: "#idea #bug" → OR, "#idea #bug priority=high" → OR for hashtags
+    while (!parser.isAtEnd() &&
+           parser.current()?.toUpperCase() !== 'AND' &&
+           parser.current() !== ')' &&
+           left.type === 'HASHTAG' &&
+           parser.current().startsWith('#')) {
+        const right = parseTerm(parser);
         left = { type: 'OR', left, right };
     }
 
@@ -2773,29 +2786,86 @@ function clearTextFilter() {
  *
  * @param {string} hashtag - The hashtag to append to the search (e.g., "#example")
  */
-function appendHashtagToTextSearch(hashtag) {
-    const textInput = document.getElementById('text-search-input');
-    const currentQuery = textInput.value.trim();
+/**
+ * Remove leading, trailing, and consecutive operators from token array.
+ * Used when removing hashtags to clean up orphaned AND/OR operators.
+ *
+ * @param {string[]} tokens - Array of query tokens
+ * @returns {string[]} - Cleaned token array
+ */
+function cleanupOrphanedOperators(tokens) {
+    const operators = ['AND', 'OR'];
 
-    // Check if hashtag already exists in query (case-insensitive)
-    const tokens = currentQuery.toLowerCase().split(/\s+/);
-    if (tokens.includes(hashtag.toLowerCase())) {
-        // Already in search, do nothing
-        return;
+    // Remove leading operators
+    while (tokens.length > 0 && operators.includes(tokens[0].toUpperCase())) {
+        tokens.shift();
     }
 
-    // Append hashtag with space separator
-    const newQuery = currentQuery === ''
-        ? hashtag
-        : `${currentQuery} ${hashtag}`;
+    // Remove trailing operators
+    while (tokens.length > 0 && operators.includes(tokens[tokens.length - 1].toUpperCase())) {
+        tokens.pop();
+    }
+
+    // Remove consecutive operators (keep first one)
+    const cleaned = [];
+    let lastWasOperator = false;
+    for (const token of tokens) {
+        const isOperator = operators.includes(token.toUpperCase());
+        if (isOperator && lastWasOperator) {
+            continue; // Skip consecutive operator
+        }
+        cleaned.push(token);
+        lastWasOperator = isOperator;
+    }
+
+    return cleaned;
+}
+
+/**
+ * Toggle a hashtag in the main text search filter.
+ * If the hashtag is already in the query, removes it; otherwise adds it.
+ * Automatically cleans up orphaned operators (AND/OR) after removal.
+ *
+ * @param {string} hashtag - The hashtag to toggle (e.g., "#example")
+ */
+function toggleHashtagInTextSearch(hashtag) {
+    const textInput = document.getElementById('text-search-input');
+    let currentQuery = textInput.value.trim();
+
+    // Parse query into tokens
+    let tokens = currentQuery.split(/\s+/).filter(t => t.length > 0);
+    const hashtagLower = hashtag.toLowerCase();
+
+    // Find if hashtag exists (case-insensitive)
+    const index = tokens.findIndex(t => t.toLowerCase() === hashtagLower);
+
+    let newQuery;
+    if (index >= 0) {
+        // Remove hashtag
+        tokens.splice(index, 1);
+
+        // Clean up orphaned operators
+        tokens = cleanupOrphanedOperators(tokens);
+
+        newQuery = tokens.join(' ');
+    } else {
+        // Add hashtag
+        newQuery = currentQuery === ''
+            ? hashtag
+            : `${currentQuery} ${hashtag}`;
+    }
 
     textInput.value = newQuery;
     updateTextFilter(newQuery);
 }
 
-// Alias for backward compatibility with existing code
+// Aliases for backward compatibility with existing code
+function appendHashtagToTextSearch(hashtag) {
+    toggleHashtagInTextSearch(hashtag);
+}
+
 function toggleFilterHashtag(hashtag) {
-    appendHashtagToTextSearch(hashtag);
+    toggleHashtagInTextSearch(hashtag);
 }
 
 /**
