@@ -4,6 +4,88 @@ This file tracks significant technical and design decisions made during developm
 
 ---
 
+## 2026-02-15: Implicit OR for All Adjacent Terms (v236)
+
+DECISION: Make implicit OR apply to ALL adjacent terms (hashtags, text, field filters)
+CHOSE: Universal implicit OR - space-separated terms always use OR logic
+NOT: Hashtag-only implicit OR, implicit AND for field filters, explicit operators required
+
+Reasoning:
+- User confusion: Mixed queries like "#bug refactor" or "refactor test" weren't working (only first term matched)
+- Consistency: Simpler mental model - spaces = OR, use explicit AND when needed
+- Intuitive search: Users expect "tag1 tag2 text" to find notes matching ANY term
+- Explicit control: Users can still write "term1 AND term2" for strict filtering
+
+Parser changes:
+- parseOR() now consumes ALL adjacent terms without operators (implicit OR)
+- Works for: hashtags (#idea #bug), text (refactor test), fields (priority=high completion=done)
+- Explicit AND/OR still work for precise control
+
+Examples:
+- "#bug refactor" → notes with #bug OR "refactor"
+- "refactor test" → notes with "refactor" OR "test"
+- "priority=high completion=done" → high priority OR done notes
+- "priority=high AND completion=done" → high priority AND done (explicit)
+
+Version: v236
+
+---
+
+## 2026-02-15: Hashtag Implicit OR and Toggle Pills (v235)
+
+DECISION: Make space-separated hashtags use OR logic and clicking pills toggle on/off
+CHOSE: Implicit OR for hashtags, toggle behavior with operator cleanup
+NOT: Implicit AND for hashtags, append-only behavior
+
+Reasoning:
+- User expectation: "#idea #bug" should show notes with EITHER tag (not both)
+- Toggle UX: Clicking active pill should remove it from search
+- Operator cleanup: Removing terms should clean up orphaned AND/OR operators
+
+Implementation:
+- parseOR() handles implicit OR for adjacent hashtags
+- toggleHashtagInTextSearch() replaces appendHashtagToTextSearch()
+- cleanupOrphanedOperators() removes leading/trailing/consecutive operators
+- Example: "priority=high AND #idea" → remove #idea → "priority=high"
+
+Behavior:
+- Click #idea → adds "#idea"
+- Click #bug → adds "#idea #bug" (implicit OR)
+- Click #idea again → removes it, leaving "#bug"
+- Operator cleanup: "priority=high AND #idea" → click #idea → "priority=high"
+
+Version: v235
+
+---
+
+## 2026-02-15: Remove Hashtag Sidebar Search Input (v234)
+
+DECISION: Remove redundant hashtag search input from sidebar
+CHOSE: Single unified text search in toolbar, pills append to main search
+NOT: Keep dual search inputs, make sidebar search use query parser too
+
+Reasoning:
+- Redundancy: Sidebar search only supported simple hashtag filtering
+- Main search superior: Supports hashtags, text, field filters, operators
+- UI simplification: One search location, clearer UX
+- Pills integration: Clicking sidebar pills appends to main text search
+
+Changes removed:
+- #hashtag-input and #hashtag-clear elements from sidebar HTML
+- CSS styling for hashtag search components
+- updateFilter() function (no longer needed)
+- Event listeners for removed elements
+- "/" keyboard shortcut no longer focuses removed input (just opens sidebar)
+
+New pill behavior:
+- Clicking pill appends hashtag to main text search
+- Pills show "active" state when present in main search query
+- Sidebar button no longer shows "active" state for filters
+
+Version: v234
+
+---
+
 ## 2026-02-15: Query Parser with AND/OR Logic and Field Filters
 
 DECISION: Implement unified query parser for advanced search
