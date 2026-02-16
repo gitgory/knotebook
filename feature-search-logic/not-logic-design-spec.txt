@@ -1,0 +1,317 @@
+# NOT Logic Design Specification
+
+## Overview
+Add NOT operator to the query parser to support exclusion queries and searching for notes without specific attributes.
+
+## User Stories
+1. Find notes without any tags: `NOT #*` or `-tags`
+2. Exclude specific tags: `#bug NOT #resolved` or `#bug -resolved`
+3. Exclude priorities: `NOT priority=high` or `-priority=high`
+4. Exclude text: `refactor NOT test` or `refactor -test`
+5. Complex combinations: `(#idea OR #bug) NOT #archived`
+
+## Syntax Options
+
+### Option 1: NOT prefix (Recommended)
+- Syntax: `NOT term`
+- Examples:
+  - `NOT #idea` - exclude notes with #idea
+  - `NOT priority=high` - exclude high priority notes
+  - `#bug NOT #resolved` - bugs that aren't resolved
+  - `NOT #*` - notes with no tags at all
+
+**Pros:**
+- Clear and explicit
+- Matches SQL/programming language conventions
+- Easy to parse (already handling AND/OR keywords)
+
+**Cons:**
+- More typing than minus sign
+- Takes up more space in search bar
+
+### Option 2: Minus prefix
+- Syntax: `-term`
+- Examples:
+  - `-#idea` - exclude notes with #idea
+  - `-priority=high` - exclude high priority
+  - `#bug -#resolved` - bugs that aren't resolved
+  - `-tags` - notes with no tags
+
+**Pros:**
+- Concise (Google search style)
+- Less typing
+
+**Cons:**
+- `-` could be confused with hyphenated text
+- Harder to parse (need to distinguish from text)
+- Special case: `-tags` needs special handling
+
+### Option 3: Both (Flexible) ✅ CHOSEN
+Support both `NOT term` and `-term` as aliases
+
+**Pros:**
+- User choice (power users use `-`, beginners use `NOT`)
+- Backwards compatible if we add one syntax later
+
+**Cons:**
+- More parser complexity
+- Two ways to do the same thing (less consistency)
+
+**Decision: Option 3 (Both syntaxes)** - Support both `NOT` and `-` for flexibility.
+
+## Special Cases
+
+### 1. No Tags At All
+**Syntax:** `NOT #*`
+- `#*` = wildcard matching any tag
+- `NOT #*` = no tags match = note has no tags
+
+**Alternative:** Could also support `tags=none` as a special field filter
+
+### 2. Operator Precedence
+**Question:** Where does NOT fit in precedence?
+
+Current: Parentheses > AND > OR (implicit OR for adjacent terms)
+
+**Option A:** Parentheses > NOT > AND > OR
+- `NOT #idea AND #bug` = `(NOT #idea) AND #bug`
+- Clear: NOT binds tighter than AND
+
+**Option B:** Parentheses > AND > NOT > OR
+- `#idea AND NOT #bug OR #docs` = `#idea AND (NOT #bug) OR #docs`
+- Confusing
+
+**Recommendation: Option A** - NOT has highest precedence (after parentheses)
+- `NOT term` always binds to the immediate next term
+- Use parentheses for complex NOT: `NOT (#idea OR #bug)`
+
+### 3. Double Negation
+**Question:** What does `NOT NOT #idea` mean?
+
+**Options:**
+- A) Allow it, treat as `#idea` (cancel out)
+- B) Parse error
+- C) Treat second NOT as text search
+
+**Recommendation: Option A** - Two NOTs cancel out (like mathematics)
+
+### 4. Implicit OR with NOT
+**Question:** How does `NOT #idea #bug` parse?
+
+Current implicit OR: `#idea #bug` = `#idea OR #bug`
+
+**Option A:** NOT only applies to first term
+- `NOT #idea #bug` = `(NOT #idea) OR #bug`
+- Users must write: `NOT #idea NOT #bug`
+
+**Option B:** NOT applies to all following terms until operator
+- `NOT #idea #bug` = `NOT (#idea OR #bug)` = `(NOT #idea) AND (NOT #bug)`
+- Intuitive for "exclude all these tags"
+
+**Recommendation: Option A** - NOT binds to single term only
+- More predictable
+- Users can use parentheses: `NOT (#idea #bug)` for Option B behavior
+
+## Technical Approach
+
+### 1. Parser Changes (scripts/app.js)
+
+#### Update parseOR()
+Currently handles implicit OR for adjacent terms. No changes needed for NOT.
+
+#### Update parseAND()
+Currently handles explicit AND. May need to handle NOT terms in AND chains.
+
+#### Add parseTerm() Enhancement
+Need to check for NOT keyword or minus prefix before parsing term:
+
+```javascript
+function parseTerm(parser) {
+    if (parser.isAtEnd()) {
+        throw new Error('Unexpected end of query');
+    }
+
+    const token = parser.current();
+
+    // Check for NOT operator (keyword or minus sign)
+    if (token.toUpperCase() === 'NOT' || token === '-') {
+        parser.consume(); // consume 'NOT' or '-'
+
+        // Check if there's a term after NOT/minus
+        if (parser.isAtEnd()) {
+            // Trailing NOT/minus - treat as text search
+            return {
+                type: 'TEXT',
+                text: token
+            };
+        }
+
+        // Parse the term to negate
+        const term = parseTerm(parser); // Recursive for nested NOT
+
+        return {
+            type: 'NOT',
+            operand: term
+        };
+    }
+
+    // Parentheses
+    if (token === '(') {
+        parser.consume();
+        const expr = parseOR(parser);
+        if (parser.current() === ')') {
+            parser.consume();
+        }
+        return expr;
+    }
+
+    // Field filter
+    if (token.includes('=')) {
+        parser.consume();
+        const [field, ...valueParts] = token.split('=');
+        const value = valueParts.join('=');
+        return {
+            type: 'FIELD',
+            field: field.trim(),
+            value: value.trim()
+        };
+    }
+
+    // Hashtag
+    if (token.startsWith('#')) {
+        parser.consume();
+
+        // Special case: #* = wildcard
+        if (token === '#*') {
+            return {
+                type: 'HASHTAG_WILDCARD'
+            };
+        }
+
+        return {
+            type: 'HASHTAG',
+            tag: token.toLowerCase()
+        };
+    }
+
+    // Text search
+    parser.consume();
+    return {
+        type: 'TEXT',
+        text: token
+    };
+}
+```
+
+### 2. Evaluator Changes
+
+#### Update evaluateAST()
+Add NOT case:
+
+```javascript
+function evaluateAST(node, noteNode) {
+    if (!node) return true;
+
+    switch (node.type) {
+        case 'NOT':
+            return !evaluateAST(node.operand, noteNode);
+
+        case 'HASHTAG_WILDCARD':
+            // Match if note has ANY tag
+            return noteNode.hashtags && noteNode.hashtags.length > 0;
+
+        // ... existing cases (AND, OR, HASHTAG, FIELD, TEXT)
+    }
+}
+```
+
+### 3. Special Case: No Tags
+**Query:** `NOT #*`
+- Parse: `{ type: 'NOT', operand: { type: 'HASHTAG_WILDCARD' } }`
+- Evaluate: `!(note has any tags)` = note has no tags
+
+### 4. Tokenizer Changes
+The minus sign `-` needs special handling in the tokenizer:
+- Currently, `-` would be part of a hyphenated word token
+- Need to split `-` as a separate token when it appears as a prefix
+
+**Implementation:**
+- Check for `-` at start of token during tokenization
+- Split `-word` into two tokens: `-` and `word`
+- Keep hyphens in middle of words: `test-plan` stays as one token
+
+## Files Affected
+
+1. **scripts/app.js**
+   - `parseTerm()` - Add NOT keyword detection
+   - `evaluateAST()` - Add NOT and HASHTAG_WILDCARD cases
+   - No changes to tokenizer (keywords handled in parser)
+
+2. **index.html**
+   - Increment JS version: v236 → v237
+
+3. **feature-search-logic/not-logic-test-plan.md** (new)
+   - Test plan for NOT logic
+
+4. **docs-project/decision-history.md** (after implementation)
+   - Document NOT logic design decision
+
+## Design Decisions ✅
+
+1. **Support minus sign (`-term`) syntax in addition to NOT?**
+   - ✅ YES - Support both `NOT term` and `-term` as aliases
+
+2. **Should `NOT` be case-insensitive?**
+   - ✅ YES - Case-insensitive (like AND/OR)
+
+3. **What happens with trailing NOT?**
+   - Query: `priority=high NOT`
+   - ✅ Treat NOT as text search (consistent with trailing AND/OR behavior)
+
+4. **Should we support `tags=none` as an alternative to `NOT #*`?**
+   - ⏳ NOT YET - Add to Future/Maybe list, use `NOT #*` for now
+
+## Estimated Scope
+
+**Size:** Small-Medium
+- Parser changes: ~20 lines
+- Evaluator changes: ~10 lines
+- Test plan: ~20 test cases
+- Documentation: ~1 decision entry
+
+**Complexity:** Low
+- Well-defined syntax
+- Fits naturally into existing parser
+- AST evaluation is straightforward (negate result)
+
+**Time Estimate:** 1-2 hours (including testing)
+
+## Examples
+
+### Basic Exclusion
+- `NOT #idea` - all notes except those with #idea
+- `NOT priority=high` - all notes except high priority
+- `NOT refactor` - all notes without "refactor" in title/content
+
+### Combination Queries
+- `#bug NOT #resolved` - bugs that aren't resolved yet
+- `priority=high NOT completion=done` - high priority incomplete tasks
+- `#idea NOT #archived NOT #cancelled` - active ideas only
+
+### Complex Queries
+- `(#idea OR #bug) NOT #archived` - active ideas or bugs
+- `NOT (#archived OR #cancelled)` - anything not archived or cancelled
+- `priority=high AND NOT completion=done` - high priority incomplete (explicit AND)
+
+### No Tags
+- `NOT #*` - notes with no tags at all
+- `NOT #* priority=high` - untagged high priority notes
+
+## Next Steps
+
+1. Get user approval on design
+2. Implement parser changes
+3. Implement evaluator changes
+4. Create test plan
+5. Test implementation
+6. Update documentation

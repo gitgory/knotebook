@@ -2273,6 +2273,14 @@ function tokenizeQuery(queryString) {
             continue;
         }
 
+        // Minus sign - emit as separate token if at start of word (NOT operator)
+        // Keep hyphens in middle of words like "test-plan"
+        if (char === '-' && current.trim() === '') {
+            tokens.push('-');
+            i++;
+            continue;
+        }
+
         // Whitespace - separator (only when not in quotes)
         if (char === ' ' || char === '\t' || char === '\n') {
             if (current.trim()) {
@@ -2405,7 +2413,7 @@ function parseAND(parser) {
 
 /**
  * Parse terminal expressions (highest precedence).
- * Grammar: term ::= '(' expression ')' | field | hashtag | text
+ * Grammar: term ::= NOT term | '-' term | '(' expression ')' | field | hashtag | text
  *
  * @param {object} parser - Parser state
  * @returns {object} - AST node
@@ -2416,6 +2424,28 @@ function parseTerm(parser) {
     }
 
     const token = parser.current();
+
+    // Check for NOT operator (keyword or minus sign)
+    if (token.toUpperCase() === 'NOT' || token === '-') {
+        parser.consume(); // consume 'NOT' or '-'
+
+        // Check if there's a term after NOT/minus
+        if (parser.isAtEnd()) {
+            // Trailing NOT/minus - treat as text search
+            return {
+                type: 'TEXT',
+                text: token
+            };
+        }
+
+        // Parse the term to negate
+        const term = parseTerm(parser); // Recursive for nested NOT
+
+        return {
+            type: 'NOT',
+            operand: term
+        };
+    }
 
     // Parentheses - recurse
     if (token === '(') {
@@ -2441,9 +2471,17 @@ function parseTerm(parser) {
         };
     }
 
-    // Hashtag: #tag
+    // Hashtag: #tag or #* (wildcard)
     if (token.startsWith('#')) {
         parser.consume();
+
+        // Special case: #* = wildcard (matches any tag)
+        if (token === '#*') {
+            return {
+                type: 'HASHTAG_WILDCARD'
+            };
+        }
+
         return {
             type: 'HASHTAG',
             tag: token.toLowerCase() // Normalize to lowercase
@@ -2471,11 +2509,18 @@ function evaluateAST(node, ast) {
     if (!ast) return true; // No filter = show all
 
     switch (ast.type) {
+        case 'NOT':
+            return !evaluateAST(node, ast.operand);
+
         case 'AND':
             return evaluateAST(node, ast.left) && evaluateAST(node, ast.right);
 
         case 'OR':
             return evaluateAST(node, ast.left) || evaluateAST(node, ast.right);
+
+        case 'HASHTAG_WILDCARD':
+            // Match if note has ANY tag
+            return node.hashtags && node.hashtags.length > 0;
 
         case 'FIELD':
             return matchesFieldFilter(node, ast.field, ast.value);
