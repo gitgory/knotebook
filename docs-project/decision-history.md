@@ -4,6 +4,54 @@ This file tracks significant technical and design decisions made during developm
 
 ---
 
+## 2026-02-15: NOT Logic for Query Parser (v237)
+
+DECISION: Add NOT operator for exclusion queries with dual syntax support
+CHOSE: Both `NOT term` and `-term` syntaxes, case-insensitive, special `#*` wildcard
+NOT: NOT-only syntax, case-sensitive, full wildcard pattern matching
+
+Reasoning:
+- User need: Search for notes without specific attributes, exclude tags/fields
+- Dual syntax: `NOT` keyword (explicit, beginner-friendly) and `-` prefix (concise, power-user)
+- Case-insensitive: Consistent with AND/OR operators
+- Wildcard limited: `#*` means "any tag exists" (boolean), not pattern matching
+- Trailing NOT: Treat as text search (consistent with AND/OR behavior)
+
+Features:
+- Exclude tags: `NOT #idea` or `-#idea`
+- Exclude fields: `NOT priority=high` or `-priority=high`
+- Exclude text: `NOT refactor` or `-refactor`
+- No tags at all: `NOT #*` or `-#*` (special case)
+- Combinations: `#bug NOT #resolved`, `#bug -#resolved`
+- Double negation: `NOT NOT #idea` cancels out to `#idea`
+- Nested: `NOT (#idea OR #bug)` excludes both
+
+Implementation:
+- Tokenizer: Emit `-` as separate token when at word start (preserve mid-word hyphens)
+- Parser: Detect NOT/minus in parseTerm(), create NOT AST node with operand
+- Evaluator: Add NOT case to negate operand result
+- Wildcard: Add HASHTAG_WILDCARD type for `#*` matching notes with any tag
+
+Precedence:
+- Parentheses > NOT > AND > OR (implicit OR)
+- `NOT term` binds to immediate next term only
+- Use parentheses for complex: `NOT (#idea OR #bug)`
+
+Examples:
+- `NOT #idea` → notes without #idea tag
+- `-priority=high` → notes except high priority
+- `#bug -#resolved` → bugs not resolved (implicit OR between terms)
+- `NOT #*` → notes with no tags
+- `(#idea OR #bug) NOT #archived` → active ideas or bugs
+
+Future consideration:
+- `tags=none` as alias for `NOT #*` (deferred to Future/Maybe list)
+- Pattern matching wildcards like `#b*` for `#bug`, `#backend` (not implemented)
+
+Version: v237
+
+---
+
 ## 2026-02-15: Implicit OR for All Adjacent Terms (v236)
 
 DECISION: Make implicit OR apply to ALL adjacent terms (hashtags, text, field filters)
