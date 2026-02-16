@@ -801,59 +801,6 @@ body {
     to { transform: rotate(360deg); }
 }
 
-#hashtag-search {
-    position: relative;
-    display: flex;
-    align-items: center;
-    padding: 8px 10px;
-    border-bottom: 1px solid var(--surface);
-}
-
-#hashtag-input {
-    width: 100%;
-    padding: 6px 24px 6px 10px;
-    border: 1px solid var(--surface);
-    border-radius: 4px;
-    background: var(--bg-primary);
-    color: var(--text-primary);
-    font-size: 13px;
-    transition: border-color 0.2s;
-}
-
-#hashtag-input:focus {
-    outline: none;
-    border-color: var(--accent);
-}
-
-#hashtag-input.active {
-    border-color: var(--highlight);
-}
-
-#hashtag-input::placeholder {
-    color: var(--text-secondary);
-}
-
-#hashtag-clear {
-    position: absolute;
-    right: 4px;
-    padding: 4px 8px;
-    border: none;
-    border-radius: 2px;
-    background: transparent;
-    color: var(--text-secondary);
-    cursor: pointer;
-    font-size: 18px;
-    line-height: 1;
-}
-
-#hashtag-clear:hover {
-    color: var(--text-primary);
-}
-
-#hashtag-clear.hidden {
-    display: none;
-}
-
 #breadcrumbs {
     margin-left: auto;
     display: flex;

@@ -1417,18 +1417,12 @@ async function openProject(projectId) {
     // Clear selection and filter
     state.selectedNodes = [];
     state.selectedEdge = null;
-    state.filterHashtags = [];
+    state.filterHashtags = [];  // Deprecated but kept for compatibility
     state.filterText = '';
+    state.filterQuery = '';
+    state.parsedFilterAST = null;
 
-    const input = document.getElementById('hashtag-input');
-    if (input) {
-        input.value = '';
-        input.classList.remove('active');
-    }
-    const clearBtn = document.getElementById('hashtag-clear');
-    if (clearBtn) {
-        clearBtn.classList.add('hidden');
-    }
+    // Clear text search input
     const textInput = document.getElementById('text-search-input');
     if (textInput) {
         textInput.value = '';
@@ -1438,9 +1432,6 @@ async function openProject(projectId) {
     if (textClearBtn) {
         textClearBtn.classList.add('hidden');
     }
-
-    // Update sidebar button state
-    updateSidebarButtonState();
 
     // Close sidebar
     const sidebar = document.getElementById('hashtag-sidebar');
@@ -2695,16 +2686,11 @@ function getVisibleNodeIds() {
 }
 
 /**
- * Update sidebar button visual state to show when filters are active.
- * Adds 'active' class if any hashtag filters are applied.
+ * Update sidebar button visual state (deprecated).
+ * Sidebar button no longer shows active filter state since sidebar search was removed.
  */
 function updateSidebarButtonState() {
-    const sidebarBtn = document.getElementById('hashtag-sidebar-btn');
-    if (state.filterHashtags.length > 0) {
-        sidebarBtn.classList.add('active');
-    } else {
-        sidebarBtn.classList.remove('active');
-    }
+    // Function kept for compatibility but does nothing now
 }
 
 /**
@@ -2714,67 +2700,27 @@ function updateSidebarButtonState() {
  *
  * @param {string} inputValue - Raw input value containing hashtags
  */
-function updateFilter(inputValue) {
-    // Normalize input: split by spaces, ensure each word starts with #
-    const words = inputValue.trim().split(/\s+/).filter(w => w.length > 0);
-    const normalizedInput = words.map(word => word.startsWith('#') ? word : '#' + word).join(' ');
-
-    const hashtags = parseHashtags(normalizedInput);
-    state.filterHashtags = hashtags;
-
-    const input = document.getElementById('hashtag-input');
-    const clearBtn = document.getElementById('hashtag-clear');
-
-    // Update visual state
-    if (hashtags.length > 0) {
-        input.classList.add('active');
-        clearBtn.classList.remove('hidden');
-    } else {
-        input.classList.remove('active');
-        clearBtn.classList.add('hidden');
-    }
-
-    updateSidebarButtonState();
-    render();
-}
+// Removed: updateFilter() - hashtag sidebar search input has been removed
 
 /**
- * Clear both hashtag and text search filters.
- * Resets filter state, clears input fields, hides clear buttons, updates sidebar button,
- * and triggers re-render.
+ * Clear all filters (now just delegates to clearTextFilter).
+ * Kept for backward compatibility with existing code.
  */
 function clearFilter() {
-    const input = document.getElementById('hashtag-input');
-    input.value = '';
-    state.filterHashtags = [];
-    input.classList.remove('active');
-    document.getElementById('hashtag-clear').classList.add('hidden');
-
-    // Also clear text search and query parser state
-    const textInput = document.getElementById('text-search-input');
-    if (textInput) {
-        textInput.value = '';
-        state.filterText = '';
-        state.filterQuery = '';
-        state.parsedFilterAST = null;
-        textInput.classList.remove('active');
-        document.getElementById('text-search-clear').classList.add('hidden');
-    }
-
-    updateSidebarButtonState();
-    render();
+    clearTextFilter();
 }
 
 /**
  * Set the filter to a specific hashtag.
  * Used when clicking a hashtag pill in the editor.
+ * Now uses the main text search instead of the removed sidebar search.
  *
  * @param {string} hashtag - The hashtag to filter by (e.g., "#example")
  */
 function setFilterHashtag(hashtag) {
-    const input = document.getElementById('hashtag-input');
-    input.value = hashtag;
-    updateFilter(hashtag);
+    const textInput = document.getElementById('text-search-input');
+    textInput.value = hashtag;
+    updateTextFilter(hashtag);
 }
 
 /**
@@ -2821,29 +2767,35 @@ function clearTextFilter() {
 }
 
 /**
- * Toggle a hashtag in the filter on/off.
- * Used when clicking hashtag pills in the sidebar. If hashtag is in filter, removes it;
- * otherwise adds it.
+ * Append a hashtag to the main text search filter.
+ * Used when clicking hashtag pills in the sidebar.
+ * If the hashtag already exists in the query, does nothing.
  *
- * @param {string} hashtag - The hashtag to toggle in the filter
+ * @param {string} hashtag - The hashtag to append to the search (e.g., "#example")
  */
-function toggleFilterHashtag(hashtag) {
-    const input = document.getElementById('hashtag-input');
-    const currentTags = parseHashtags(input.value);
-    const tagLower = hashtag.toLowerCase();
+function appendHashtagToTextSearch(hashtag) {
+    const textInput = document.getElementById('text-search-input');
+    const currentQuery = textInput.value.trim();
 
-    const index = currentTags.findIndex(t => t.toLowerCase() === tagLower);
-
-    if (index >= 0) {
-        // Remove it
-        currentTags.splice(index, 1);
-    } else {
-        // Add it
-        currentTags.push(hashtag);
+    // Check if hashtag already exists in query (case-insensitive)
+    const tokens = currentQuery.toLowerCase().split(/\s+/);
+    if (tokens.includes(hashtag.toLowerCase())) {
+        // Already in search, do nothing
+        return;
     }
 
-    input.value = currentTags.join(' ');
-    updateFilter(input.value);
+    // Append hashtag with space separator
+    const newQuery = currentQuery === ''
+        ? hashtag
+        : `${currentQuery} ${hashtag}`;
+
+    textInput.value = newQuery;
+    updateTextFilter(newQuery);
+}
+
+// Alias for backward compatibility with existing code
+function toggleFilterHashtag(hashtag) {
+    appendHashtagToTextSearch(hashtag);
 }
 
 /**
@@ -3294,7 +3246,10 @@ function populateSidebar() {
         return;
     }
 
-    const activeFilters = state.filterHashtags.map(t => t.toLowerCase());
+    // Parse active filters from text search query (not from deprecated filterHashtags)
+    const queryTokens = (state.filterQuery || '').toLowerCase().split(/\s+/);
+    const activeFilters = queryTokens.filter(t => t.startsWith('#'));
+
     const hiddenTags = state.hiddenHashtags.map(t => t.toLowerCase());
     list.replaceChildren();
 
@@ -9447,11 +9402,10 @@ function initEventListeners() {
             document.getElementById('text-search-input').focus();
         }
 
-        // / - Open sidebar and focus hashtag filter
+        // / - Open sidebar (hashtag search removed, just opens sidebar)
         if (e.key === '/') {
             e.preventDefault();
             showSidebar();
-            document.getElementById('hashtag-input').focus();
         }
 
         // H - Toggle hashtag sidebar
@@ -9856,23 +9810,7 @@ function initEventListeners() {
         }
     });
 
-    // Hashtag search input + autocomplete
-    document.getElementById('hashtag-input').addEventListener('input', (e) => {
-        updateFilter(e.target.value);
-        updateAutocompleteFromInput(e.target);
-    });
-
-    // Hashtag clear button
-    document.getElementById('hashtag-clear').addEventListener('click', clearFilter);
-
-    // Allow Escape to blur the search input and clear filter (autocomplete gets first chance)
-    document.getElementById('hashtag-input').addEventListener('keydown', (e) => {
-        if (handleAutocompleteKeydown(e)) return;
-        if (e.key === 'Escape') {
-            e.target.blur();
-            clearFilter();
-        }
-    });
+    // Removed: hashtag-input and hashtag-clear event listeners (sidebar search removed)
 
     // Click-outside to dismiss autocomplete
     document.addEventListener('mousedown', (e) => {
@@ -9886,14 +9824,6 @@ function initEventListeners() {
         setTimeout(() => {
             if (autocomplete.active && autocomplete.targetInput &&
                 autocomplete.targetInput.id === 'note-text') {
-                hideAutocomplete();
-            }
-        }, 150);
-    });
-    document.getElementById('hashtag-input').addEventListener('blur', () => {
-        setTimeout(() => {
-            if (autocomplete.active && autocomplete.targetInput &&
-                autocomplete.targetInput.id === 'hashtag-input') {
                 hideAutocomplete();
             }
         }, 150);
