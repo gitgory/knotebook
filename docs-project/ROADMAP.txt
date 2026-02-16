@@ -1,7 +1,7 @@
 ================================================================================
 KNOTEBOOK - ROADMAP
 ================================================================================
-Last updated: 2026-01-31
+Last updated: 2026-02-15
 
 ================================================================================
 COMPLETED
@@ -64,8 +64,11 @@ Desktop:
 
 Both:
 - [x] Filter by fields with AND/OR logic (v230-233)
+- [x] Remove redundant sidebar search (v234)
+- [x] Hashtag toggle pills and implicit OR (v235-236)
+- [x] NOT logic for exclusion queries (v237)
 - Breadcrumbs are currently shortened with "..." Desired: Make allowed width 2.5x wider
-- Add a "tagless" option to tag search
+- Add a "tagless" option to tag search (note: NOT #* already works for this)
 - Add the same tag suggestion dropdown to the tag search box
 - Tag pill suggestions (outlines if not selected) to fill the first 2 lines?
 - Calculate "blocked" status for notes with directed edges and completion status
