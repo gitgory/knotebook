@@ -2357,14 +2357,17 @@ function parseOR(parser) {
         left = { type: 'OR', left, right };
     }
 
-    // Implicit OR for adjacent hashtags
-    // When we see adjacent hashtags without an operator, treat as OR
-    // Example: "#idea #bug" → OR, "#idea #bug priority=high" → OR for hashtags
+    // Implicit OR for ALL adjacent terms (hashtags, text, field filters)
+    // When we see adjacent terms without an operator, treat as OR
+    // Examples:
+    //   "#idea #bug" → OR
+    //   "refactor test" → OR
+    //   "#bug refactor" → OR
+    //   "priority=high completion=done" → OR
+    //   "#bug priority=high refactor" → OR
     while (!parser.isAtEnd() &&
            parser.current()?.toUpperCase() !== 'AND' &&
-           parser.current() !== ')' &&
-           left.type === 'HASHTAG' &&
-           parser.current().startsWith('#')) {
+           parser.current() !== ')') {
         const right = parseTerm(parser);
         left = { type: 'OR', left, right };
     }
