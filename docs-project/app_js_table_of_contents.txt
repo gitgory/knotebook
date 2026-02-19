@@ -64,7 +64,15 @@ function initializeFieldButtons()  // line 480
 function getNodeFieldValue(node, fieldName)  // line 501
 function setNodeFieldValue(node, fieldName, value)  // line 511
         // Store the value even if it's empty string (needed for priority None state)
-function migrateNodeFields(node)  // line 526
+// ============================================================================
+// NODE INDEX (O(1) LOOKUPS) (line 520)
+// ============================================================================
+function rebuildNodeIndex()  // line 535
+        // Rebuilds the node index Map for O(1) lookups by ID
+function getNodeById(nodeId)  // line 548
+        // Gets a node by ID using the indexed Map (O(1) instead of O(n))
+// ============================================================================
+function migrateNodeFields(node)  // line 558
         // Initialize fields object if needed
         // Migrate completion from top-level
         // Migrate priority from top-level

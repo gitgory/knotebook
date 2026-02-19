@@ -175,7 +175,10 @@ const state = {
     savedFadeTimeout: null,        // Timeout for fading out "Saved" status
 
     // Render throttling
-    renderScheduled: false         // True when render is scheduled for next frame
+    renderScheduled: false,        // True when render is scheduled for next frame
+
+    // Node index for O(1) lookups
+    nodeIndex: new Map()           // Map of node ID -> node object
 };
 
 // Node dimensions
@@ -516,6 +519,34 @@ function setNodeFieldValue(node, fieldName, value) {
         // Store the value even if it's empty string (needed for priority None state)
         node.fields[fieldName] = value;
     }
+}
+
+// ============================================================================
+// NODE INDEX (O(1) LOOKUPS)
+// ============================================================================
+
+/**
+ * Rebuilds the node index Map for O(1) lookups by ID.
+ * Must be called after any operation that modifies state.nodes:
+ * - Assignment: state.nodes = [...]
+ * - Push: state.nodes.push(node)
+ * - Filter/delete: state.nodes = state.nodes.filter(...)
+ */
+function rebuildNodeIndex() {
+    state.nodeIndex.clear();
+    for (const node of state.nodes) {
+        state.nodeIndex.set(node.id, node);
+    }
+}
+
+/**
+ * Gets a node by ID using the indexed Map.
+ * O(1) lookup instead of O(n) array search.
+ * @param {string} nodeId - The node ID to look up
+ * @returns {Object|undefined} - The node object, or undefined if not found
+ */
+function getNodeById(nodeId) {
+    return state.nodeIndex.get(nodeId);
 }
 
 /**
@@ -1383,6 +1414,7 @@ async function openProject(projectId) {
     // Load data
     state.nodes = data.nodes || [];
     state.edges = data.edges || [];
+    rebuildNodeIndex();
 
     // Migrate legacy field storage (completion/priority at top-level) to unified storage (node.fields)
     migrateAllNodeFields(state.nodes);
@@ -3621,6 +3653,7 @@ async function goHome() {
     // Reset state
     state.nodes = [];
     state.edges = [];
+    rebuildNodeIndex();
     state.selectedNodes = [];
     state.selectedEdge = null;
     state.edgeStartNode = null;
@@ -4168,8 +4201,8 @@ function renderEdges() {
             continue; // Re-render on next frame with updated format
         }
 
-        const nodeA = state.nodes.find(n => n.id === edge.from);
-        const nodeB = state.nodes.find(n => n.id === edge.to);
+        const nodeA = getNodeById(edge.from);
+        const nodeB = getNodeById(edge.to);
 
         if (!nodeA || !nodeB) continue;
 
@@ -4259,7 +4292,7 @@ function renderEdgePreview(x, y) {
 
     if (!state.edgeStartNode) return;
 
-    const startNode = state.nodes.find(n => n.id === state.edgeStartNode);
+    const startNode = getNodeById(state.edgeStartNode);
     if (!startNode) return;
 
     const center = getNodeCenter(startNode);
@@ -4433,6 +4466,7 @@ function navigateToBreadcrumbLevel(pathIndex) {
         state.nodes = parent.children;
         state.edges = parent.childEdges;
     }
+    rebuildNodeIndex();
 
     // Clear selections and UI state
     state.selectedNodes = [];
@@ -4534,6 +4568,7 @@ function createNode(x, y) {
         }
     }
     state.nodes.push(node);
+    state.nodeIndex.set(node.id, node);
     render();
     return node;
 }
@@ -4660,6 +4695,7 @@ function performUndo() {
             to: edge.to,
             directed: edge.directed
         }));
+        rebuildNodeIndex();
         state.selectedNodes = [...state.undoSnapshot.selectedNodes];
         state.selectedEdge = null;
 
@@ -4691,7 +4727,7 @@ function deleteNode(nodeId) {
     }
 
     // Find the node being deleted
-    const node = state.nodes.find(n => n.id === nodeId);
+    const node = getNodeById(nodeId);
 
     // Promote children to current level before deleting
     if (node && node.children && node.children.length > 0) {
@@ -4704,6 +4740,7 @@ function deleteNode(nodeId) {
             child.position.x += offsetX;
             child.position.y += offsetY + (index * CHILD_NODE_STAGGER); // Slight stagger to avoid overlap
             state.nodes.push(child);
+            state.nodeIndex.set(child.id, child);
         });
 
         // Promote child edges to current level
@@ -4717,6 +4754,7 @@ function deleteNode(nodeId) {
 
     // Remove the node
     state.nodes = state.nodes.filter(n => n.id !== nodeId);
+    rebuildNodeIndex();
 
     // Remove from selection
     state.selectedNodes = state.selectedNodes.filter(id => id !== nodeId);
@@ -4862,7 +4900,7 @@ function bringToFront() {
 
     // Set selected nodes to maxZ + 1
     state.selectedNodes.forEach(id => {
-        const node = state.nodes.find(n => n.id === id);
+        const node = getNodeById(id);
         if (node) node.zIndex = maxZ + 1;
     });
 
@@ -4882,7 +4920,7 @@ function sendToBack() {
 
     // Set selected nodes to minZ - 1
     state.selectedNodes.forEach(id => {
-        const node = state.nodes.find(n => n.id === id);
+        const node = getNodeById(id);
         if (node) node.zIndex = minZ - 1;
     });
 
@@ -5247,7 +5285,7 @@ function toggleEdgeDirection(edgeIndex) {
  * @param {string} nodeId - ID of node to enter
  */
 function enterNode(nodeId) {
-    const node = state.nodes.find(n => n.id === nodeId);
+    const node = getNodeById(nodeId);
     if (!node) return;
 
     // Clear undo snapshot when navigating (level change)
@@ -5268,6 +5306,7 @@ function enterNode(nodeId) {
     // Load children
     state.nodes = node.children;
     state.edges = node.childEdges;
+    rebuildNodeIndex();
     state.selectedNodes = [];
     state.selectedEdge = null;
 
@@ -5305,6 +5344,7 @@ function goBack() {
         state.nodes = parent.children;
         state.edges = parent.childEdges;
     }
+    rebuildNodeIndex();
 
     state.selectedNodes = [];
     state.selectedEdge = null;
@@ -5966,11 +6006,11 @@ function openEditor(nodeId) {
 
     if (isBatchMode) {
         const nodes = state.selectedNodes
-            .map(id => state.nodes.find(n => n.id === id))
+            .map(id => getNodeById(id))
             .filter(Boolean);
         openBatchEditor(nodes);
     } else {
-        const node = state.nodes.find(n => n.id === nodeId);
+        const node = getNodeById(nodeId);
         openSingleEditor(node, nodeId);
     }
 }
@@ -5997,7 +6037,7 @@ function cancelEditor() {
     if (state.editorSnapshot && state.editorSnapshot.batchMode) {
         // Batch mode: restore all nodes from snapshot
         state.editorSnapshot.nodes.forEach(snapshot => {
-            const node = state.nodes.find(n => n.id === snapshot.id);
+            const node = getNodeById(snapshot.id);
             if (node) {
                 node.hashtags = snapshot.hashtags;
                 // Restore all fields from snapshot
@@ -6007,7 +6047,7 @@ function cancelEditor() {
     } else {
         // Single node mode
         const nodeId = modal.dataset.nodeId;
-        const node = state.nodes.find(n => n.id === nodeId);
+        const node = getNodeById(nodeId);
 
         // Restore node from snapshot
         if (node && state.editorSnapshot) {
@@ -6039,12 +6079,12 @@ function getEditorMode() {
 
     if (isBatchMode) {
         const nodes = state.selectedNodes
-            .map(id => state.nodes.find(n => n.id === id))
+            .map(id => getNodeById(id))
             .filter(Boolean);
         return { isBatchMode, nodes, node: null };
     } else {
         const nodeId = modal.dataset.nodeId;
-        const node = state.nodes.find(n => n.id === nodeId);
+        const node = getNodeById(nodeId);
         return { isBatchMode, nodes: null, node, nodeId };
     }
 }
@@ -7349,6 +7389,7 @@ function integrateGhostNodes() {
     // Add ghost nodes to current notebook as real nodes
     state.ghostNodes.forEach(node => {
         state.nodes.push(node);
+        state.nodeIndex.set(node.id, node);
     });
 
     // Add edges if present
@@ -8608,7 +8649,7 @@ function initEventListeners() {
 
         if (nodeEl) {
             const nodeId = nodeEl.dataset.id;
-            const node = state.nodes.find(n => n.id === nodeId);
+            const node = getNodeById(nodeId);
 
             // Click on children indicator - enter the node
             if (target.classList.contains('node-stack')) {
@@ -8619,7 +8660,7 @@ function initEventListeners() {
 
             // Click on completion indicator - cycle state
             if (target.closest('.node-completion')) {
-                const node = state.nodes.find(n => n.id === nodeId);
+                const node = getNodeById(nodeId);
                 if (node) {
                     const current = getNodeFieldValue(node, 'completion');
                     setNodeFieldValue(node, 'completion', cycleCompletion(current));
@@ -8632,7 +8673,7 @@ function initEventListeners() {
 
             // Click on priority indicator - cycle state
             if (target.closest('.node-priority')) {
-                const node = state.nodes.find(n => n.id === nodeId);
+                const node = getNodeById(nodeId);
                 if (node) {
                     const current = getNodeFieldValue(node, 'priority');
                     setNodeFieldValue(node, 'priority', cyclePriority(current));
@@ -8695,7 +8736,7 @@ function initEventListeners() {
                 const canvasPos = screenToCanvas(e.clientX, e.clientY);
                 state.dragOffsets = {};
                 state.selectedNodes.forEach(id => {
-                    const n = state.nodes.find(n => n.id === id);
+                    const n = getNodeById(id);
                     if (n) {
                         state.dragOffsets[id] = {
                             x: canvasPos.x - n.position.x,
@@ -8833,10 +8874,11 @@ function initEventListeners() {
 
                     // Create deep copies of all selected nodes
                     state.selectedNodes.forEach(id => {
-                        const originalNode = state.nodes.find(n => n.id === id);
+                        const originalNode = getNodeById(id);
                         if (originalNode) {
                             const copy = deepCopyNode(originalNode, 0, 0);
                             state.nodes.push(copy);
+                            state.nodeIndex.set(copy.id, copy);
                             newNodeIds.push(copy.id);
                             idMapping[id] = copy.id;
 
@@ -8874,7 +8916,7 @@ function initEventListeners() {
 
             // Move all selected nodes together (whether originals or duplicates)
             state.selectedNodes.forEach(nodeId => {
-                const node = state.nodes.find(n => n.id === nodeId);
+                const node = getNodeById(nodeId);
                 const offset = state.dragOffsets[nodeId];
                 if (node && offset) {
                     node.position.x = canvasPos.x - offset.x;
@@ -9074,7 +9116,7 @@ function initEventListeners() {
 
             // Touch on completion indicator - cycle state
             if (target?.closest('.node-completion')) {
-                const node = state.nodes.find(n => n.id === nodeId);
+                const node = getNodeById(nodeId);
                 if (node) {
                     const current = getNodeFieldValue(node, 'completion');
                     setNodeFieldValue(node, 'completion', cycleCompletion(current));
@@ -9087,7 +9129,7 @@ function initEventListeners() {
 
             // Touch on priority indicator - cycle state
             if (target?.closest('.node-priority')) {
-                const node = state.nodes.find(n => n.id === nodeId);
+                const node = getNodeById(nodeId);
                 if (node) {
                     const current = getNodeFieldValue(node, 'priority');
                     setNodeFieldValue(node, 'priority', cyclePriority(current));
@@ -9213,7 +9255,7 @@ function initEventListeners() {
 
                 // If we started on a node, begin dragging it now
                 if (touchStartNode) {
-                    const node = state.nodes.find(n => n.id === touchStartNode);
+                    const node = getNodeById(touchStartNode);
                     if (node) {
                         // If the node isn't already selected, select only it
                         if (!state.selectedNodes.includes(touchStartNode)) {
@@ -9224,7 +9266,7 @@ function initEventListeners() {
                         // Store drag offsets for ALL selected nodes (for multi-drag)
                         state.dragOffsets = {};
                         state.selectedNodes.forEach(id => {
-                            const n = state.nodes.find(n => n.id === id);
+                            const n = getNodeById(id);
                             if (n) {
                                 state.dragOffsets[id] = {
                                     x: canvasPos.x - n.position.x,
@@ -9278,7 +9320,7 @@ function initEventListeners() {
             e.preventDefault();
             // Move all selected nodes together
             state.selectedNodes.forEach(nodeId => {
-                const node = state.nodes.find(n => n.id === nodeId);
+                const node = getNodeById(nodeId);
                 const offset = state.dragOffsets[nodeId];
                 if (node && offset) {
                     node.position.x = canvasPos.x - offset.x;
@@ -9805,7 +9847,7 @@ function initEventListeners() {
     document.getElementById('editor-enter').addEventListener('click', () => {
         const modal = document.getElementById('editor-modal');
         const nodeId = modal.dataset.nodeId;
-        const node = state.nodes.find(n => n.id === nodeId);
+        const node = getNodeById(nodeId);
 
         // Sync editor fields to node before navigating
         if (node) {
@@ -9866,7 +9908,7 @@ function initEventListeners() {
 
         if (isBatchMode) {
             // In batch mode, show all unique tags across selected nodes
-            const nodes = state.selectedNodes.map(id => state.nodes.find(n => n.id === id)).filter(Boolean);
+            const nodes = state.selectedNodes.map(id => getNodeById(id)).filter(Boolean);
             const tagCounts = {};
 
             // Count existing tags in nodes
@@ -10005,10 +10047,11 @@ function initEventListeners() {
 
             // Create deep copies of all selected nodes
             state.selectedNodes.forEach(id => {
-                const originalNode = state.nodes.find(n => n.id === id);
+                const originalNode = getNodeById(id);
                 if (originalNode) {
                     const copy = deepCopyNode(originalNode, offset, offset);
                     state.nodes.push(copy);
+                    state.nodeIndex.set(copy.id, copy);
                     newNodeIds.push(copy.id);
                     idMapping[id] = copy.id;
                 }
