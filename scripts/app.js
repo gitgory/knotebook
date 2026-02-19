@@ -599,6 +599,50 @@ function migrateAllNodeFields(nodes) {
 }
 
 // ============================================================================
+// EDGE FORMAT MIGRATION
+// ============================================================================
+
+/**
+ * Converts an edge from array format [fromId, toId] to object format {from, to, directed}.
+ * If already in object format, returns as-is.
+ * @param {Array|Object} edge - Edge in either format
+ * @returns {Object} - Edge in object format {from, to, directed}
+ */
+function normalizeEdge(edge) {
+    if (Array.isArray(edge)) {
+        return { from: edge[0], to: edge[1], directed: false };
+    }
+    return edge;
+}
+
+/**
+ * Migrates all edges in an array from legacy array format to object format.
+ * @param {Array} edges - Array of edges (may be mixed formats)
+ * @returns {Array} - Array of edges in object format
+ */
+function migrateEdges(edges) {
+    if (!edges) return [];
+    return edges.map(normalizeEdge);
+}
+
+/**
+ * Migrates childEdges for all nodes recursively.
+ * Converts array format [fromId, toId] to object format {from, to, directed}.
+ * @param {Array} nodes - Array of nodes to migrate
+ */
+function migrateAllChildEdges(nodes) {
+    if (!nodes) return;
+    for (const node of nodes) {
+        if (node.childEdges && node.childEdges.length > 0) {
+            node.childEdges = migrateEdges(node.childEdges);
+        }
+        if (node.children && node.children.length > 0) {
+            migrateAllChildEdges(node.children);
+        }
+    }
+}
+
+// ============================================================================
 // UNIFIED FIELD DEFINITIONS (First-Class + Second-Class)
 // ============================================================================
 
@@ -1413,11 +1457,12 @@ async function openProject(projectId) {
 
     // Load data
     state.nodes = data.nodes || [];
-    state.edges = data.edges || [];
+    state.edges = migrateEdges(data.edges || []);
     rebuildNodeIndex();
 
-    // Migrate legacy field storage (completion/priority at top-level) to unified storage (node.fields)
-    migrateAllNodeFields(state.nodes);
+    // Migrate legacy storage formats
+    migrateAllNodeFields(state.nodes);      // Field storage: top-level → node.fields
+    migrateAllChildEdges(state.nodes);      // Edge format: [id, id] → {from, to, directed}
     state.rootNodes = state.nodes;
     state.rootEdges = state.edges;
     state.hashtagColors = data.hashtagColors || {};
@@ -4195,10 +4240,11 @@ function renderEdges() {
     for (let i = 0; i < state.edges.length; i++) {
         const edge = state.edges[i];
 
-        // Backwards compatibility: convert array format to object format
+        // Safety fallback: convert any remaining array format edges to object format
+        // (Should not happen after migration, but kept for robustness)
         if (Array.isArray(edge)) {
             state.edges[i] = { from: edge[0], to: edge[1], directed: false };
-            continue; // Re-render on next frame with updated format
+            continue;
         }
 
         const nodeA = getNodeById(edge.from);
@@ -4611,12 +4657,13 @@ function deepCopyNode(node, offsetX = 0, offsetY = 0) {
         });
     }
 
-    // Copy child edges and remap IDs to new child IDs
+    // Copy child edges and remap IDs to new child IDs (object format)
     if (node.childEdges && node.childEdges.length > 0) {
-        newNode.childEdges = node.childEdges.map(edge => [
-            childIdMapping[edge[0]],
-            childIdMapping[edge[1]]
-        ]);
+        newNode.childEdges = node.childEdges.map(edge => ({
+            from: childIdMapping[edge.from],
+            to: childIdMapping[edge.to],
+            directed: edge.directed || false
+        }));
     }
 
     return newNode;
@@ -4640,7 +4687,7 @@ function deepCopyNodeForUndo(node) {
         position: { ...node.position },
         zIndex: node.zIndex || 0,
         children: [],
-        childEdges: [...(node.childEdges || [])],
+        childEdges: (node.childEdges || []).map(e => ({ from: e.from, to: e.to, directed: e.directed || false })),
         created: node.created,
         modified: node.modified
     };
@@ -4750,7 +4797,7 @@ function deleteNode(nodeId) {
     }
 
     // Remove edges connected to this node
-    state.edges = state.edges.filter(e => e[0] !== nodeId && e[1] !== nodeId);
+    state.edges = state.edges.filter(e => e.from !== nodeId && e.to !== nodeId);
 
     // Remove the node
     state.nodes = state.nodes.filter(n => n.id !== nodeId);
@@ -5184,10 +5231,6 @@ function completeEdgeCreation(targetNodeId) {
             if (existingIndex !== -1) {
                 state.edges.splice(existingIndex, 1);
             } else {
-                // ⚠️ TECHNICAL DEBT: Edges stored as objects {from, to, directed}
-                // but child edges and JSON schema use array format [id, id].
-                // This inconsistency causes bugs in edge operations (copy, delete).
-                // Consider standardizing to single format (see ROADMAP).
                 state.edges.push({
                     from: sourceId,
                     to: targetNodeId,
@@ -5207,10 +5250,6 @@ function completeEdgeCreation(targetNodeId) {
             state.edges.splice(existingIndex, 1);
             newEdgeIndex = null; // Edge was deleted, don't select
         } else {
-            // ⚠️ TECHNICAL DEBT: Edges stored as objects {from, to, directed}
-            // but child edges and JSON schema use array format [id, id].
-            // This inconsistency causes bugs in edge operations (copy, delete).
-            // Consider standardizing to single format (see ROADMAP).
             state.edges.push({
                 from: state.edgeStartNode,
                 to: targetNodeId,
@@ -6986,10 +7025,14 @@ function createNodeCopiesWithMapping(selectedNodeIds, allNodes) {
 function filterAndRemapEdges(edges, idMapping, selectedNodeIds) {
     return edges
         .filter(edge =>
-            selectedNodeIds.includes(edge[0]) &&
-            selectedNodeIds.includes(edge[1])
+            selectedNodeIds.includes(edge.from) &&
+            selectedNodeIds.includes(edge.to)
         )
-        .map(edge => [idMapping[edge[0]], idMapping[edge[1]]]);
+        .map(edge => ({
+            from: idMapping[edge.from],
+            to: idMapping[edge.to],
+            directed: edge.directed || false
+        }));
 }
 
 /**
@@ -8890,12 +8933,10 @@ function initEventListeners() {
                     // Copy edges where both endpoints are in the selection
                     const edgesToAdd = [];
                     state.edges.forEach(edge => {
-                        const srcId = edge.from || edge[0];
-                        const dstId = edge.to || edge[1];
-                        if (idMapping[srcId] && idMapping[dstId]) {
+                        if (idMapping[edge.from] && idMapping[edge.to]) {
                             edgesToAdd.push({
-                                from: idMapping[srcId],
-                                to: idMapping[dstId],
+                                from: idMapping[edge.from],
+                                to: idMapping[edge.to],
                                 directed: edge.directed || false
                             });
                         }
@@ -10060,12 +10101,10 @@ function initEventListeners() {
             // Copy edges where both endpoints are in the selection
             const edgesToAdd = [];
             state.edges.forEach(edge => {
-                const srcId = edge.from || edge[0];
-                const dstId = edge.to || edge[1];
-                if (idMapping[srcId] && idMapping[dstId]) {
+                if (idMapping[edge.from] && idMapping[edge.to]) {
                     edgesToAdd.push({
-                        from: idMapping[srcId],
-                        to: idMapping[dstId],
+                        from: idMapping[edge.from],
+                        to: idMapping[edge.to],
                         directed: edge.directed || false
                     });
                 }

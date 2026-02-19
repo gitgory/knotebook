@@ -77,9 +77,18 @@ function migrateNodeFields(node)  // line 558
         // Migrate completion from top-level
         // Migrate priority from top-level
         // Migrate old completion values to new ones (backward compatibility)
-function migrateAllNodeFields(nodes)  // line 560
+function migrateAllNodeFields(nodes)  // line 591
 // ============================================================================
-// UNIFIED FIELD DEFINITIONS (First-Class + Second-Class) (line 570)
+// EDGE FORMAT MIGRATION (line 600)
+// ============================================================================
+function normalizeEdge(edge)  // line 610
+        // Converts array [fromId, toId] to object {from, to, directed}
+function migrateEdges(edges)  // line 620
+        // Migrates all edges in array to object format
+function migrateAllChildEdges(nodes)  // line 630
+        // Recursively migrates childEdges for all nodes
+// ============================================================================
+// UNIFIED FIELD DEFINITIONS (First-Class + Second-Class) (line 645)
 // ============================================================================
 function getFieldDefinitions({ includeFirstClass = true, includeSecondClass = true } = {})  // line 584
 function getCustomFieldDefinitions()  // line 618
