@@ -77,7 +77,7 @@ async function exportCurrentDataForRecovery() {
     try {
         // Try to export current project if one is open
         if (state.currentProjectId) {
-            exportCurrentProject();
+            await exportToFile();
         } else {
             // Export all projects list
             const projects = getProjectsList();
@@ -904,7 +904,7 @@ function formatFieldDefinition(fieldDef) {
 // Autocomplete state (kept separate as it's transient UI state)
 const autocomplete = {
     active: false,
-    targetInput: null,   // DOM element (#note-text or #hashtag-input)
+    targetInput: null,   // DOM element (#note-text)
     query: '',           // text after '#'
     hashStart: -1,       // char index of '#'
     items: [],           // filtered tag strings
@@ -2800,11 +2800,8 @@ function nodeMatchesFilter(node) {
 
     // Fallback to legacy filter logic (for backward compatibility during transition)
     // Text search filter
-    if (state.filterText) {
-        const search = state.filterText.toLowerCase();
-        const titleMatch = (node.title || '').toLowerCase().includes(search);
-        const contentMatch = (node.content || '').toLowerCase().includes(search);
-        if (!titleMatch && !contentMatch) return false;
+    if (state.filterText && !matchesText(node, state.filterText)) {
+        return false;
     }
 
     // Hashtag filter (OR logic)
@@ -2824,25 +2821,8 @@ function getVisibleNodeIds() {
 }
 
 /**
- * Update sidebar button visual state (deprecated).
- * Sidebar button no longer shows active filter state since sidebar search was removed.
- */
-function updateSidebarButtonState() {
-    // Function kept for compatibility but does nothing now
-}
-
-/**
- * Update the hashtag filter from input field value.
- * Parses hashtags, updates state, shows/hides clear button, updates sidebar button state,
- * and triggers re-render.
- *
- * @param {string} inputValue - Raw input value containing hashtags
- */
-// Removed: updateFilter() - hashtag sidebar search input has been removed
-
-/**
- * Clear all filters (now just delegates to clearTextFilter).
- * Kept for backward compatibility with existing code.
+ * Clear all active filters and reset filter state.
+ * Wrapper for clearTextFilter() - used semantically in navigation functions.
  */
 function clearFilter() {
     clearTextFilter();
@@ -3073,11 +3053,6 @@ async function renameHashtag(oldTag, newTag) {
     const filterIndex = state.filterHashtags.findIndex(t => t.toLowerCase() === oldTag.toLowerCase());
     if (filterIndex !== -1) {
         state.filterHashtags[filterIndex] = newTag;
-        // Update the filter input to show the new tag
-        const input = document.getElementById('hashtag-input');
-        if (input) {
-            input.value = state.filterHashtags.join(' ');
-        }
     }
 
     // Update hidden tags if this tag was hidden
@@ -8227,36 +8202,25 @@ function downloadAsFile(filename, data) {
 }
 
 /**
- * Export current project to JSON file.
- * Captures root state, creates export data with version/name/nodes/edges/colors/settings,
- * uses File System Access API if available, otherwise falls back to data URL download.
+ * Generate export filename from project name.
+ * Truncates to max length and appends .json extension.
+ *
+ * @param {string|null} projectName - Project name or null for default
+ * @returns {string} - Safe filename with .json extension
  */
-async function exportToFile() {
-    if (!state.currentProjectId) {
-        await showAlert('No notebook open to export', 'Error');
-        return;
-    }
+function generateExportFilename(projectName) {
+    const baseName = (projectName || 'knotebook-notes').slice(0, FILENAME_MAX_LENGTH);
+    return baseName + '.json';
+}
 
-    // Ensure root state is captured
-    saveRootState();
-
-    // Get project name for filename
-    const projects = getProjectsList();
-    const project = projects.find(p => p.id === state.currentProjectId);
-    const filename = ((project ? project.name : 'knotebook-notes').slice(0, FILENAME_MAX_LENGTH)) + '.json';
-
-    const data = {
-        version: 1,
-        name: project ? project.name : 'Untitled',
-        created: new Date().toISOString(),
-        nodes: state.currentPath.length === 0 ? state.nodes : state.rootNodes,
-        edges: state.currentPath.length === 0 ? state.edges : state.rootEdges,
-        hashtagColors: state.hashtagColors,
-        settings: state.projectSettings,
-        hiddenHashtags: state.hiddenHashtags
-    };
-
-    // Try File System Access API first, fall back to data URL download
+/**
+ * Save data to file using File System Access API with fallback.
+ * Uses modern API for desktop browsers, falls back to downloadAsFile for mobile.
+ *
+ * @param {string} filename - Suggested filename
+ * @param {Object} data - Data to export as JSON
+ */
+async function saveDataToFile(filename, data) {
     if (window.showSaveFilePicker) {
         try {
             const handle = await window.showSaveFilePicker({
@@ -8283,6 +8247,39 @@ async function exportToFile() {
 }
 
 /**
+ * Export current project to JSON file.
+ * Captures root state, creates export data with version/name/nodes/edges/colors/settings,
+ * uses File System Access API if available, otherwise falls back to data URL download.
+ */
+async function exportToFile() {
+    if (!state.currentProjectId) {
+        await showAlert('No notebook open to export', 'Error');
+        return;
+    }
+
+    // Ensure root state is captured
+    saveRootState();
+
+    // Get project name for filename
+    const projects = getProjectsList();
+    const project = projects.find(p => p.id === state.currentProjectId);
+    const projectName = project ? project.name : null;
+
+    const data = {
+        version: 1,
+        name: projectName || 'Untitled',
+        created: new Date().toISOString(),
+        nodes: state.currentPath.length === 0 ? state.nodes : state.rootNodes,
+        edges: state.currentPath.length === 0 ? state.edges : state.rootEdges,
+        hashtagColors: state.hashtagColors,
+        settings: state.projectSettings,
+        hiddenHashtags: state.hiddenHashtags
+    };
+
+    await saveDataToFile(generateExportFilename(projectName), data);
+}
+
+/**
  * Export a specific project from the project menu (not currently open).
  * Loads project from storage, creates export data, uses File System Access API if
  * available, otherwise falls back to data URL download.
@@ -8298,11 +8295,11 @@ async function exportProjectToFile(projectId) {
 
     const projects = getProjectsList();
     const project = projects.find(p => p.id === projectId);
-    const filename = ((project ? project.name : 'knotebook-notes').slice(0, FILENAME_MAX_LENGTH)) + '.json';
+    const projectName = project ? project.name : null;
 
     const exportData = {
         version: 1,
-        name: project ? project.name : 'Untitled',
+        name: projectName || 'Untitled',
         created: new Date().toISOString(),
         nodes: data.nodes || [],
         edges: data.edges || [],
@@ -8311,30 +8308,7 @@ async function exportProjectToFile(projectId) {
         hiddenHashtags: data.hiddenHashtags || []
     };
 
-    // Try File System Access API first, fall back to data URL download
-    if (window.showSaveFilePicker) {
-        try {
-            const handle = await window.showSaveFilePicker({
-                suggestedName: filename,
-                types: [{
-                    description: 'JSON Files',
-                    accept: { 'application/json': ['.json'] }
-                }]
-            });
-
-            const writable = await handle.createWritable();
-            await writable.write(JSON.stringify(exportData, null, 2));
-            await writable.close();
-        } catch (err) {
-            if (err.name !== 'AbortError') {
-                console.error('Export failed:', err);
-                await showAlert('Failed to export: ' + err.message, 'Export Error');
-            }
-        }
-    } else {
-        // Fallback for mobile/unsupported browsers
-        downloadAsFile(filename, exportData);
-    }
+    await saveDataToFile(generateExportFilename(projectName), exportData);
 }
 
 /**
@@ -10009,8 +9983,6 @@ function initEventListeners() {
             closeAllColorPickers();
         }
     });
-
-    // Removed: hashtag-input and hashtag-clear event listeners (sidebar search removed)
 
     // Click-outside to dismiss autocomplete
     document.addEventListener('mousedown', (e) => {
