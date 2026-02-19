@@ -4,6 +4,46 @@ This file tracks significant technical and design decisions made during developm
 
 ---
 
+## 2026-02-18: Standardize Edge Format to Object
+
+DECISION: Standardize all edges to object format {from, to, directed}
+CHOSE: Object format everywhere (state.edges and node.childEdges)
+NOT: Keep mixed formats (objects in state.edges, arrays [id, id] in childEdges)
+
+Reasoning:
+- Bug discovery: removeNodesFromSourceNotebook used array format access on object-format edges
+- Consistency: Single format eliminates confusion and prevents format-related bugs
+- Expressiveness: Object format supports the `directed` property (arrays cannot)
+- Migration: Convert legacy array-format edges on data load
+
+Implementation:
+- Added normalizeEdge(), migrateEdges(), migrateAllChildEdges() migration functions
+- Data load calls migrateEdges() for state.edges and migrateAllChildEdges() for nested nodes
+- Updated deepCopyNode(), deepCopyNodeForUndo(), filterAndRemapEdges() to use object format
+- Fixed deleteNode() edge filter to use .from/.to instead of [0]/[1]
+- Kept safety fallback in renderEdges() for robustness
+
+---
+
+## 2026-02-18: Node Index Map for O(1) Lookups
+
+DECISION: Add nodeIndex Map for O(1) node lookups by ID
+CHOSE: Map-based index rebuilt on state.nodes changes
+NOT: Continue with O(n) array.find() for every lookup
+
+Reasoning:
+- Performance: 27 find() calls throughout codebase, each O(n) on potentially 1000+ nodes
+- Hot paths: Edge rendering does 2 lookups per edge, duplicate does N lookups
+- Simple implementation: rebuildNodeIndex() after mutations, getNodeById() for access
+
+Implementation:
+- state.nodeIndex: new Map() added to state object
+- rebuildNodeIndex() called after: load, navigation, undo, delete, filter
+- Incremental updates via nodeIndex.set() after push operations
+- getNodeById(id) replaces all state.nodes.find(n => n.id === id) calls
+
+---
+
 ## 2026-02-15: NOT Logic for Query Parser (v237)
 
 DECISION: Add NOT operator for exclusion queries with dual syntax support
