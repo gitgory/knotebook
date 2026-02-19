@@ -7474,8 +7474,9 @@ function removeNodesFromSourceNotebook(sourceProjectId, nodeIds) {
         project.nodes = removeNodesRecursively(project.nodes, nodeIds);
 
         // Remove edges that reference removed nodes
+        // Edges are stored as objects {from, to, directed}
         project.edges = project.edges.filter(edge =>
-            !nodeIds.includes(edge[0]) && !nodeIds.includes(edge[1])
+            !nodeIds.includes(edge.from) && !nodeIds.includes(edge.to)
         );
 
         // Save back to localStorage
@@ -9548,7 +9549,6 @@ function initEventListeners() {
         // D - Remove direction from selected edge
         if (e.key.toLowerCase() === 'd' && state.selectedEdge !== null) {
             e.preventDefault();
-            console.log('D pressed, edge:', state.edges[state.selectedEdge]);
             const edge = state.edges[state.selectedEdge];
             if (edge && edge.directed) {
                 edge.directed = false;
@@ -9559,7 +9559,6 @@ function initEventListeners() {
         // R - Reverse/toggle direction of selected edge
         if (e.key.toLowerCase() === 'r' && state.selectedEdge !== null) {
             e.preventDefault();
-            console.log('R pressed, toggling edge', state.selectedEdge);
             toggleEdgeDirection(state.selectedEdge);
         }
 
