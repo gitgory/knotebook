@@ -4,6 +4,28 @@ This file tracks significant technical and design decisions made during developm
 
 ---
 
+## 2026-02-18: knotebook v2 - Class-Based Note Architecture
+
+DECISION: Design a v2 architecture where notes are class instances with fields, queries, and actions
+CHOSE: User-defined classes with single inheritance, GraphQL query syntax, reference fields as connection handles
+NOT: Hardcoded classes in code (inflexible)
+NOT: Multiple inheritance (complex, messy)
+NOT: Custom DSL for queries (undocumented, learning curve)
+NOT: Archetype/prototype model (simpler but lacks live inheritance)
+
+Key design choices:
+- Everything is an instance (base Note class at minimum)
+- Class definitions live in note body text (schema is content)
+- Schema changes propagate to instances (live inheritance)
+- Reference fields become connection handles when dragging edges
+- Edge types emerge from fields (no separate edge-type system)
+- Queries use GraphQL syntax (well-documented, battle-tested)
+- Query results transclude into notes (class notes become dashboards)
+
+See: docs-project/knotebook-v2-design.md
+
+---
+
 ## 2026-02-18: Standardize Edge Format to Object
 
 DECISION: Standardize all edges to object format {from, to, directed}

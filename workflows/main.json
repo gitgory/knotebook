@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "name": "Claude Instructions",
-  "created": "2026-02-15T08:06:09.872Z",
+  "name": "Claude's Main Workflow",
+  "created": "2026-02-16T03:08:31.945Z",
   "nodes": [
     {
       "id": "note-1770846551473-1",
@@ -13,14 +13,14 @@
       ],
       "fields": {},
       "position": {
-        "x": 42.2107567523916,
-        "y": -651.3244771752895
+        "x": 474.0554958673637,
+        "y": -654.7901423389334
       },
       "zIndex": 0,
       "children": [],
       "childEdges": [],
       "created": "2026-02-11T21:49:11.473Z",
-      "modified": "2026-02-15T07:38:45.056Z"
+      "modified": "2026-02-16T02:59:21.246Z"
     },
     {
       "id": "note-1770848470111-9",
@@ -37,19 +37,19 @@
         ]
       },
       "position": {
-        "x": -259.3737451468841,
-        "y": -64.73235232512775
+        "x": -112.03848121354076,
+        "y": -69.81287866765683
       },
       "zIndex": 0,
       "children": [],
       "childEdges": [],
       "created": "2026-02-11T22:21:10.111Z",
-      "modified": "2026-02-15T06:02:09.879Z"
+      "modified": "2026-02-15T21:38:18.838Z"
     },
     {
       "id": "note-1770848473986-10",
       "title": "commit & push",
-      "content": "grigri is using the app via github-pages so you'll need to commit changes and push before he can test changes.\n\nBe sure to update the version number in the JS and CSS, as well as the landing page. Display the current version in the CLI.\n#claude",
+      "content": "grigri is using the app via github-pages so you'll need to commit changes and push before he can test changes.\n\nBe sure to update the version number in the JS and CSS. Display the current version in the CLI.\n#claude",
       "hashtags": [
         "#claude"
       ],
@@ -61,14 +61,14 @@
         ]
       },
       "position": {
-        "x": -259.42840545959587,
-        "y": 58.08174808935371
+        "x": -112.09314152625257,
+        "y": 53.001221746824626
       },
       "zIndex": 0,
       "children": [],
       "childEdges": [],
       "created": "2026-02-11T22:21:13.986Z",
-      "modified": "2026-02-14T07:47:55.614Z"
+      "modified": "2026-02-15T21:37:41.465Z"
     },
     {
       "id": "note-1770848481686-11",
@@ -79,7 +79,7 @@
       ],
       "fields": {},
       "position": {
-        "x": 329.89524254917035,
+        "x": 766.8205080066716,
         "y": 59.353379887535766
       },
       "zIndex": 0,
@@ -97,7 +97,7 @@
       ],
       "fields": {},
       "position": {
-        "x": 329.9310306595537,
+        "x": 766.8562961170549,
         "y": -62.921186190269395
       },
       "zIndex": 0,
@@ -109,26 +109,24 @@
     {
       "id": "note-1770849035808-19",
       "title": "Update documentation",
-      "content": "1. Update all relevant documentation.\n2. Show which documentation files were updated.\n3. If anything worked well about this workflow, notify grigri\n4. Similarly, if anything could be improved in this workflow, notify grigri.\n\n#claude ",
+      "content": "1. Update all relevant documentation.\n2. Show which documentation files were updated.\n\n#claude ",
       "hashtags": [
         "#claude"
       ],
       "fields": {
         "Files": [
-          "docs-project/FEATURE-NAME-progress.txt",
-          "docs-project/PROJECT-NAME-progress.txt",
           "docs-project/design-decisions.txt"
         ]
       },
       "position": {
-        "x": 331.1231146711092,
-        "y": -307.66286821588045
+        "x": 767.1462911916442,
+        "y": -317.7132518078492
       },
       "zIndex": 0,
       "children": [],
       "childEdges": [],
       "created": "2026-02-11T22:30:35.808Z",
-      "modified": "2026-02-15T06:07:49.821Z"
+      "modified": "2026-02-15T21:37:46.669Z"
     },
     {
       "id": "note-1770849145319-20",
@@ -137,21 +135,16 @@
       "hashtags": [
         "#claude"
       ],
-      "fields": {
-        "Files": [
-          "docs-project/FEATURE-NAME-design-spec.txt",
-          "docs-project/FEATURE-NAME-progress.txt"
-        ]
-      },
+      "fields": {},
       "position": {
-        "x": 40.85364173673884,
-        "y": -310.35393577227586
+        "x": 472.6983808517109,
+        "y": -313.74095333396184
       },
       "zIndex": 0,
       "children": [],
       "childEdges": [],
       "created": "2026-02-11T22:32:25.319Z",
-      "modified": "2026-02-15T06:07:20.361Z"
+      "modified": "2026-02-16T03:08:24.115Z"
     },
     {
       "id": "note-1770849800238-22",
@@ -162,7 +155,7 @@
       ],
       "fields": {},
       "position": {
-        "x": -290.57776352012115,
+        "x": 141.26697559485092,
         "y": -531.3403618283425
       },
       "zIndex": 0,
@@ -180,8 +173,8 @@
       ],
       "fields": {},
       "position": {
-        "x": -294.6403779842499,
-        "y": -1026.4014746817536
+        "x": 769.391010359582,
+        "y": -1002.4378611210432
       },
       "zIndex": 0,
       "children": [],
@@ -198,8 +191,8 @@
       ],
       "fields": {},
       "position": {
-        "x": -660.0984410077248,
-        "y": -1028.2528622563516
+        "x": -794.9226879605525,
+        "y": -977.6937696490409
       },
       "zIndex": 0,
       "children": [],
@@ -216,8 +209,8 @@
       ],
       "fields": {},
       "position": {
-        "x": -658.5260886459389,
-        "y": -938.7739704405931
+        "x": -793.3503355987667,
+        "y": -888.2148778332823
       },
       "zIndex": 0,
       "children": [],
@@ -234,8 +227,8 @@
       ],
       "fields": {},
       "position": {
-        "x": 793.0816165184787,
-        "y": -806.0323768273104
+        "x": -1148.7620513993338,
+        "y": -633.7569501653636
       },
       "zIndex": 0,
       "children": [],
@@ -252,8 +245,8 @@
       ],
       "fields": {},
       "position": {
-        "x": 793.1478114462858,
-        "y": -687.932037114185
+        "x": -1148.695856471527,
+        "y": -515.6566104522383
       },
       "zIndex": 0,
       "children": [],
@@ -270,8 +263,8 @@
       ],
       "fields": {},
       "position": {
-        "x": 790.9140594887623,
-        "y": -549.7622008540352
+        "x": -1150.9296084290504,
+        "y": -377.48677419208843
       },
       "zIndex": 0,
       "children": [],
@@ -288,8 +281,8 @@
       ],
       "fields": {},
       "position": {
-        "x": 1129.646328799889,
-        "y": -615.3182783865046
+        "x": -812.1973391179235,
+        "y": -416.3761850578911
       },
       "zIndex": 0,
       "children": [],
@@ -308,19 +301,18 @@
         "Files": [
           "docs-project/file_structure.txt",
           "docs-project/app_js_table_of_contents.txt",
-          "docs-project/PROJECT-NAME-progress.txt",
           "docs-project/design-decisions.txt"
         ]
       },
       "position": {
-        "x": 40.411984062472925,
-        "y": -425.6068662949026
+        "x": 472.256723177445,
+        "y": -427.3003750757456
       },
       "zIndex": 0,
       "children": [],
       "childEdges": [],
       "created": "2026-02-14T06:42:06.191Z",
-      "modified": "2026-02-15T06:06:02.048Z"
+      "modified": "2026-02-15T21:38:44.220Z"
     },
     {
       "id": "note-1771052154530-3",
@@ -331,32 +323,32 @@
       ],
       "fields": {},
       "position": {
-        "x": 40.411984062472925,
-        "y": -532.0054200537134
+        "x": 472.256723177445,
+        "y": -533.6989288345563
       },
       "zIndex": 0,
       "children": [],
       "childEdges": [],
       "created": "2026-02-14T06:55:54.530Z",
-      "modified": "2026-02-15T05:57:41.003Z"
+      "modified": "2026-02-15T21:38:53.815Z"
     },
     {
       "id": "note-1771054422094-9",
       "title": "DESIGN PROPOSAL",
-      "content": "Claude proposes the design.\n\nInclude:\n1. Technical approach - How will this be implemented?\n2. Files affected - Which files need changes?\n3. Open questions - What needs clarification?\n4. Estimated scope - How much work?\n\n#claude",
+      "content": "Claude proposes the design.\n\nInclude:\n1. Technical approach\n2. Files affected\n3. Open questions\n4. Estimated scope - How much work?\n\nFor new features, create a new feature-name/ folder to store relevant documents\n\n#claude",
       "hashtags": [
         "#claude"
       ],
       "fields": {},
       "position": {
-        "x": -259.5818365409425,
-        "y": -306.19755454934204
+        "x": 172.26290257402957,
+        "y": -307.89106333018503
       },
       "zIndex": 0,
       "children": [],
       "childEdges": [],
       "created": "2026-02-14T07:33:42.094Z",
-      "modified": "2026-02-15T06:00:15.231Z"
+      "modified": "2026-02-16T03:08:20.617Z"
     },
     {
       "id": "note-1771054422094-10",
@@ -367,14 +359,14 @@
       ],
       "fields": {},
       "position": {
-        "x": -256.24189001059233,
-        "y": -181.7017175041238
+        "x": -111.88329387039016,
+        "y": -307.0213672865079
       },
       "zIndex": 0,
       "children": [],
       "childEdges": [],
       "created": "2026-02-14T07:33:42.094Z",
-      "modified": "2026-02-15T05:54:55.211Z"
+      "modified": "2026-02-15T21:39:21.079Z"
     },
     {
       "id": "note-1771054422095-13",
@@ -386,8 +378,8 @@
       ],
       "fields": {},
       "position": {
-        "x": -300.1362756000352,
-        "y": -932.818845029055
+        "x": 769.9569767088226,
+        "y": -1080.0983915485979
       },
       "zIndex": 0,
       "children": [],
@@ -404,14 +396,87 @@
       ],
       "fields": {},
       "position": {
-        "x": 40.55114874503931,
-        "y": -1025.8232756921732
+        "x": 477.47641420254035,
+        "y": -1000.4206439795278
       },
       "zIndex": 0,
       "children": [],
       "childEdges": [],
       "created": "2026-02-14T08:08:50.936Z",
       "modified": "2026-02-14T08:08:57.515Z"
+    },
+    {
+      "id": "note-1771143608993-2",
+      "title": "End session",
+      "content": "1. Update the design-history.txt document with **design-related** decisions made during this session. Use the format shown in the user-level CLAUDE.md Do not include bug fixes, new features, etc, just include design-specific decisions.\n2. Update all other relevant documentation.\n3. If anything worked well about this workflow, notify grigri\n4. Similarly, if anything could be improved in this workflow, notify grigri.\n#claude ",
+      "hashtags": [
+        "#claude"
+      ],
+      "fields": {
+        "Files": [
+          "docs-project/file_structure.txt",
+          "docs-project/project-progress.txt",
+          "docs-project/design-decisions.txt",
+          "FEATURE-NAME/FEATURE-NAME-progress.txt"
+        ]
+      },
+      "position": {
+        "x": 767.4267167647224,
+        "y": -460.7927118563807
+      },
+      "zIndex": 0,
+      "children": [],
+      "childEdges": [],
+      "created": "2026-02-15T08:20:08.993Z",
+      "modified": "2026-02-16T02:57:45.304Z"
+    },
+    {
+      "id": "note-1771143686018-3",
+      "title": "Workflow types",
+      "content": "",
+      "hashtags": [],
+      "fields": {},
+      "position": {
+        "x": -767.3176684371646,
+        "y": -1158.109235336577
+      },
+      "zIndex": 0,
+      "children": [],
+      "childEdges": [],
+      "created": "2026-02-15T08:21:26.018Z",
+      "modified": "2026-02-15T08:21:31.219Z"
+    },
+    {
+      "id": "note-1771143701309-4",
+      "title": "Plan project/feature",
+      "content": "",
+      "hashtags": [],
+      "fields": {},
+      "position": {
+        "x": -1143.9171123780684,
+        "y": -971.6754389179187
+      },
+      "zIndex": 0,
+      "children": [],
+      "childEdges": [],
+      "created": "2026-02-15T08:21:41.309Z",
+      "modified": "2026-02-15T08:21:49.722Z"
+    },
+    {
+      "id": "note-1771143715640-5",
+      "title": "Task list/New Feature (main.json)",
+      "content": "",
+      "hashtags": [],
+      "fields": {},
+      "position": {
+        "x": -477.04854573803186,
+        "y": -968.3672523868055
+      },
+      "zIndex": 0,
+      "children": [],
+      "childEdges": [],
+      "created": "2026-02-15T08:21:55.640Z",
+      "modified": "2026-02-15T08:22:15.384Z"
     }
   ],
   "edges": [
@@ -571,11 +636,6 @@
       "directed": true
     },
     {
-      "from": "note-1770846551473-1",
-      "to": "note-1771051326191-13",
-      "directed": true
-    },
-    {
       "from": "note-1771051326191-13",
       "to": "note-1770848228124-6",
       "directed": true
@@ -618,11 +678,6 @@
     {
       "from": "note-1771056530936-1",
       "to": "note-1770846551473-1",
-      "directed": true
-    },
-    {
-      "from": "note-1770849819007-23",
-      "to": "note-1771054422095-13",
       "directed": true
     },
     {
@@ -678,6 +733,61 @@
     {
       "from": "note-1770972896737-9",
       "to": "note-1771051415628-14",
+      "directed": true
+    },
+    {
+      "from": "note-1770849035808-19",
+      "to": "note-1771143368796-1",
+      "directed": true
+    },
+    {
+      "from": "note-1771143368796-1",
+      "to": "note-1771143608993-2",
+      "directed": true
+    },
+    {
+      "from": "note-1771143608993-2",
+      "to": "note-1770849819007-23",
+      "directed": true
+    },
+    {
+      "from": "note-1771143686018-3",
+      "to": "note-1770849886891-24",
+      "directed": false
+    },
+    {
+      "from": "note-1770849886891-24",
+      "to": "note-1770849931407-26",
+      "directed": false
+    },
+    {
+      "from": "note-1771143686018-3",
+      "to": "note-1771143701309-4",
+      "directed": false
+    },
+    {
+      "from": "note-1771143686018-3",
+      "to": "note-1771143715640-5",
+      "directed": false
+    },
+    {
+      "from": "note-1771143701309-4",
+      "to": "note-1770971909744-2",
+      "directed": false
+    },
+    {
+      "from": "note-1770846551473-1",
+      "to": "note-1771052154530-3",
+      "directed": true
+    },
+    {
+      "from": "note-1771052154530-3",
+      "to": "note-1771051326191-13",
+      "directed": true
+    },
+    {
+      "from": "note-1770849035808-19",
+      "to": "note-1771143608993-2",
       "directed": true
     }
   ],

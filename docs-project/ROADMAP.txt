@@ -1,7 +1,7 @@
 ================================================================================
 KNOTEBOOK - ROADMAP
 ================================================================================
-Last updated: 2026-02-15
+Last updated: 2026-03-02
 
 ================================================================================
 COMPLETED
@@ -47,6 +47,10 @@ COMPLETED
   [x] Phase 2: Settings UI for custom field definitions
   [x] Phase 3: Editor integration for custom fields
   [x] Phase 4: Export/Import with custom fields
+[x] Add logical NOT to filter parsing (NOT keyword and - prefix)
+[x] Ctrl+Drag-to-Select adds to existing selection
+[x] Standardize edge format to object {from, to, directed}
+[x] Node index Map for O(1) lookups
 
 ================================================================================
 IN PROGRESS
@@ -61,23 +65,20 @@ UP NEXT / FUTURE TASKS
 
 Desktop:
 
-
 Both:
-- [x] Filter by fields with AND/OR logic (v230-233)
-- [x] Remove redundant sidebar search (v234)
-- [x] Hashtag toggle pills and implicit OR (v235-236)
-- [x] NOT logic for exclusion queries (v237)
-- Breadcrumbs are currently shortened with "..." Desired: Make allowed width 2.5x wider
-- Add a "tagless" option to tag search (note: NOT #* already works for this)
-- Add the same tag suggestion dropdown to the tag search box
-- Tag pill suggestions (outlines if not selected) to fill the first 2 lines?
-- Calculate "blocked" status for notes with directed edges and completion status
-- Calculate % complete for parents with child nodes with completion status
-- store last view
+[ ] Add a "tagless" option to tag search
+[ ] Add tag suggestion dropdown to the tag search box
+[ ] Allow breadcrumbs to be 2.5x longer
+[ ] Remember last view window
+[ ] Tag pill suggestions (outlines if not selected) to fill the first 2 lines?
+[ ] Calculate "blocked" status for notes with directed edges and completion status
+[ ] Calculate % complete for parents with child nodes with completion status
+[ ] Subtle glow to [Fit] button when notes are outside the current view area?
+[ ] Zoom to Fit edge case: notes very far away would be too tiny to locate or can't all fit in view
+[ ] Move filters to sidebar? need an indicator of the names of filters (completion, priority)
+[ ] Remove parent/child nesting? it just adds too much complexity. We can achieve most everything with visual collapsing and transclusion?
 
 
-Mobile updates:
--
 
 
 
@@ -104,25 +105,10 @@ Incremental commits
 TECHNICAL DEBT & RISKS
 ================================================================================
 
-EDGE DATA MODEL INCONSISTENCY (HIGH PRIORITY)
-  Problem: Edges have mixed storage formats causing recurring bugs
-  - Root-level edges: stored as objects {from, to, directed}
-  - Child edges (in nodes): stored as arrays [nodeId, nodeId]
-  - JSON schema specifies: edges should be arrays [nodeId, nodeId]
-
-  Impact:
-  - "edge is not iterable" errors when code assumes array format
-  - Bugs crop up when edge operations are added or refactored
-  - Occurs in: Ctrl+Drag copy (v217), batch operations, edge deletion
-
-  Solution (when prioritized):
-  - Standardize ALL edges to one format (recommend arrays per schema)
-  - Update edge creation (line ~4509-4532) to use array format
-  - Update edge operations to handle consistent format
-  - Consider: This affects data persistence, export/import, migration
-
-  Files to watch: scripts/app.js (edge creation, copying, deletion)
-  See also: docs-app/json-schema.md (defines expected format)
+EDGE DATA MODEL INCONSISTENCY — RESOLVED (2026-02-18)
+  All edges standardized to object format {from, to, directed}.
+  Migration functions added: normalizeEdge(), migrateEdges(), migrateAllChildEdges().
+  Legacy array-format edges are converted on data load.
 
 
 ================================================================================

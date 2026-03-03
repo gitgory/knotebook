@@ -938,7 +938,7 @@ const DEFAULT_VIEWPORT_HEIGHT = 600; // Default viewport height when no nodes
 
 // UI Layout & Spacing
 const TITLE_TRUNCATE_LENGTH = 20; // Max characters before truncating node titles
-const BREADCRUMB_TRUNCATE_LENGTH = 15; // Max characters for breadcrumb names
+const BREADCRUMB_TRUNCATE_LENGTH = 37; // Max characters for breadcrumb names
 const HASHTAG_PILL_SPACING = 4; // Space between hashtag pills
 const HASHTAG_PILL_PADDING_X = 6; // Horizontal padding inside pill
 const HASHTAG_PILL_PADDING_Y = 10; // Vertical padding inside pill
@@ -1267,7 +1267,8 @@ async function saveProjectToStorage() {
         hashtagColors: state.hashtagColors,
         settings: state.projectSettings,
         hiddenHashtags: state.hiddenHashtags,
-        theme: getCurrentTheme()
+        theme: getCurrentTheme(),
+        viewport: { x: state.viewport.x, y: state.viewport.y, zoom: state.viewport.zoom }
     };
 
     try {
@@ -1516,7 +1517,15 @@ async function openProject(projectId) {
         sidebar.classList.add('hidden');
     }
 
-    resetViewport();
+    // Restore saved viewport or reset to default
+    if (data.viewport) {
+        state.viewport.x = data.viewport.x ?? 0;
+        state.viewport.y = data.viewport.y ?? 0;
+        state.viewport.zoom = data.viewport.zoom ?? 1;
+        updateViewport();
+    } else {
+        resetViewport();
+    }
     showGraphView();
 
     // Check for pending move operation
@@ -10004,13 +10013,15 @@ function initEventListeners() {
     // Text search input
     document.getElementById('text-search-input').addEventListener('input', (e) => {
         updateTextFilter(e.target.value);
+        updateAutocompleteFromInput(e.target);
     });
 
     // Text search clear button
     document.getElementById('text-search-clear').addEventListener('click', clearTextFilter);
 
-    // Allow Escape to blur and clear text search
+    // Allow Escape to blur and clear text search; also handle autocomplete keyboard nav
     document.getElementById('text-search-input').addEventListener('keydown', (e) => {
+        if (handleAutocompleteKeydown(e)) return;
         if (e.key === 'Escape') {
             e.target.blur();
             clearTextFilter();
