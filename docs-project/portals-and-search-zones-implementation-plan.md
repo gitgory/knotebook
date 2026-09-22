@@ -1,7 +1,9 @@
 # Portals and Dynamic Search Zones: Implementation Plan
 
 Created: 2026-09-21
-Status: Proposed implementation plan; no production changes started
+Status: In progress. Phase 0 is complete; the Phase 1 edge-registry
+foundation and Phase 2 contextual edge views are implemented and manually
+validated. Portal and search-zone phases have not started.
 
 ## Relationship to the Design Roadmap
 
@@ -11,6 +13,19 @@ It deliberately extends the current nested data model; it does **not** begin
 the separate class/GraphQL architecture described in `knotebook-v2-design.md`.
 The existing boolean tag/field query language is the portal query language for
 the first release.
+
+## Current Status (2026-09-22)
+
+| Area | Status | Notes |
+| --- | --- | --- |
+| Phase 0: fixtures and compatibility baseline | Complete | Import fixtures and schema documentation were added; the legacy, system-architecture, media-recommendations, and invalid-edge fixtures were manually checked. |
+| Phase 1: global edge registry | In progress | Version 2 stores explicit edges once at project root and migrates legacy child-edge data. Deletion, duplication, moves, undo, save, export, and import use the registry. Closure work remains below. |
+| Phase 2: contextual edge rendering | Implemented and manually validated | Direct edges, labelled boundary continuations, and inspectable rolled-up summaries render from the global registry. Boundary endpoints navigate to the canonical note; rolled-up summaries disclose their contributing source edges. |
+| Phases 3–6: portals, zones, and drop updates | Not started | No portal data, editor, query-result rendering, zones, or drop mutations have been added. |
+
+The user manually verified the system-architecture and media-recommendations
+fixtures, including clickable boundary and rolled-up edge affordances. All
+tests performed for those fixtures passed.
 
 ## Outcome
 
@@ -227,6 +242,29 @@ notebooks and existing same-level behavior.
 7. Update save/export/import and `getCurrentProjectData()` so all project
    edges are exported once at the project root.
 
+### Delivered
+
+- Added a version 2 project-level edge registry and idempotent migration of
+  root and legacy child edges.
+- Normalized and de-duplicated imported edges; invalid, missing-endpoint, and
+  self edges are omitted rather than creating phantom notes.
+- Updated persistence and common edge-affecting operations to use the global
+  registry, including save/export/import, undo, subtree duplication, deletion,
+  and move cleanup.
+- Added fixtures for legacy nested edges, the system-architecture example, the
+  media-recommendations example, malformed edges, and Phase 0 validation.
+
+### Remaining closure work
+
+- Add an editor interaction for creating an edge whose target is outside the
+  active canvas; the registry and renderer support such edges, but the current
+  connect gesture only targets visible notes.
+- Replace console-only reporting of discarded invalid edges and removed
+  cross-notebook move edges with clear, user-visible warning/confirmation UI.
+- Manually regression-test parent deletion/promotion with remote edges,
+  nested-subtree duplication with internal edges, and moving a nested subtree
+  between notebooks.
+
 ### Important regression cases
 
 - Deleting a note removes every project edge touching it, including edges from
@@ -274,6 +312,17 @@ introduced.
 6. Update selection and deletion semantics: selecting a boundary or rolled-up
    visualization must not make it possible to delete unrelated explicit edges
    without an explicit drill-in action.
+
+### Delivered
+
+- Classified global edges per current view and preserved normal rendering when
+  both endpoints are visible.
+- Added dashed, labelled boundary continuations with a larger pointer target;
+  activating one navigates to the remote note's canonical context.
+- Added visually distinct rolled-up container summaries with a count and an
+  inspectable list of contributing source edges.
+- Confirmed boundary and rolled-up affordances are clickable in the manual
+  fixture tests.
 
 ### Exit criteria
 
@@ -515,9 +564,10 @@ format/version notice only if an old client cannot safely reload the newer file.
 - **Phase 6:** Confirm whether drop-to-update needs a modifier key in addition
   to the preview/Undo safeguard.
 
-## Recommended First Implementation Slice
+## Recommended Next Implementation Slice
 
-Start with Phase 1 only: globalize and migrate the edge registry, then render
-cross-parent connections as boundary endpoints. It unlocks the User/UI/Server
-example directly, is independently valuable, and establishes the identity and
-view-model foundation that portals and zones require.
+Close Phase 1 before beginning portal UI: add cross-context edge creation,
+make destructive edge consequences visible to the user, and complete the
+three remaining destructive-operation regression cases. The global registry
+and contextual renderers already unlock the User/UI/Server example and provide
+the identity/view-model foundation required by portals and zones.

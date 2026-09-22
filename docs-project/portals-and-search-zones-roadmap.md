@@ -1,7 +1,8 @@
 # Portals and Dynamic Search Zones Roadmap
 
 Created: 2026-09-21
-Status: Design direction agreed; not yet implemented
+Status: Implementation underway. The edge foundation is implemented and
+manually validated; portal and dynamic-search-zone work has not started.
 
 ## Purpose
 
@@ -12,6 +13,32 @@ same feature rendered directly on a canvas at a larger scale.
 
 This is an architectural roadmap, not a commitment to remove nesting. The
 existing nested-notebook format remains the foundation.
+
+## Current Status (2026-09-22)
+
+Completed and manually validated:
+
+- Version 2 has one project-level explicit-edge registry, with import
+  migration from legacy nested edge storage.
+- Invalid, duplicate, missing-endpoint, and self edges are filtered during
+  migration; save and export retain the global registry.
+- The system-architecture fixture renders normal direct edges, labelled
+  boundary continuations, and distinct rolled-up summaries. Boundary
+  activations navigate to the remote canonical note and rolled-up summaries
+  disclose their source edges.
+- The legacy, system-architecture, media-recommendations, and invalid-edge
+  fixture checks all passed.
+
+Still pending before portals begin:
+
+- A UI gesture for creating an edge to a note outside the active canvas.
+- User-visible warning/confirmation for discarded invalid edges and
+  cross-notebook move operations that remove edges.
+- Regression checks for remote edges during parent deletion/promotion, nested
+  subtree duplication, and moving a nested subtree between notebooks.
+
+The Portals editor, portal queries/results, expanded zones, overlap layout,
+and drop-to-update behavior remain unimplemented.
 
 ## Core Decisions
 
@@ -135,6 +162,9 @@ An explicit user-created edge and a rolled-up edge must look different. A
 rolled-up edge is a summary only; it must show its provenance rather than imply
 that the containers themselves were explicitly connected.
 
+Current implementation: the global registry, direct rendering, boundary
+navigation, and rolled-up edge disclosure are complete and manually tested.
+
 ## Reference Scenarios
 
 ### System architecture
@@ -173,12 +203,19 @@ belong to the recommendation rather than the media record.
 - Update the JSON schema and create fixture notebooks for the reference
   scenarios.
 
+Status: Completed. The schema and import fixtures now cover the compatibility
+baseline; manual fixture validation passed.
+
 ### Phase 1 — Global note references and cross-context edges
 
 - Allow edges between notes with different canonical parents.
 - Preserve and migrate existing edge data safely.
 - Render direct edges, boundary endpoints, and inspectable rolled-up edges.
 - Add tests for sibling, parent/child, cousin, and portal-context connections.
+
+The storage migration and contextual renderers are complete. Cross-context
+edge creation UI, visible destructive-operation feedback, and the remaining
+destructive-operation regression cases are still pending.
 
 ### Phase 2 — Collapsed portal notes
 
