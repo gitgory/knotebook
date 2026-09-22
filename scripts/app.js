@@ -4378,7 +4378,11 @@ function renderBoundaryEndpoint(layer, edge, visibleNode, remoteNode, isOutgoing
     const direction = edge.directed ? (isOutgoing ? '→ ' : '← ') : '↔ ';
     label.textContent = `${direction}${remoteNode.title || 'Untitled'}`;
     g.appendChild(label);
-    g.addEventListener('click', () => navigateToCanonicalNode(remoteNode.id));
+    g.addEventListener('mousedown', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        navigateToCanonicalNode(remoteNode.id);
+    });
     layer.appendChild(g);
 }
 
@@ -4534,7 +4538,11 @@ function renderEdges() {
         label.setAttribute('text-anchor', 'middle');
         label.textContent = `${summary.directed ? '→' : '↔'} ${summary.count} child link${summary.count === 1 ? '' : 's'}`;
         group.appendChild(label);
-        group.addEventListener('click', () => showRolledUpEdgeDetails(summary, projectContext.nodes));
+        group.addEventListener('mousedown', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            showRolledUpEdgeDetails(summary, projectContext.nodes);
+        });
         layer.appendChild(group);
     }
 }

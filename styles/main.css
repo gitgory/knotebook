@@ -205,9 +205,11 @@ body {
 
 #landing-page {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
     height: 100vh;
+    overflow-y: auto;
+    padding: 48px 20px;
     background: linear-gradient(135deg, var(--bg-primary) 0%, var(--surface) 100%);
 }
 
@@ -217,6 +219,8 @@ body {
 
 #landing-content {
     text-align: center;
+    width: min(100%, 760px);
+    margin: 0 auto;
 }
 
 #landing-content h1 {
@@ -3382,7 +3386,7 @@ button.loading::after {
     stroke: var(--highlight);
     stroke-width: 1.5;
     stroke-dasharray: 4, 3;
-    pointer-events: none;
+    pointer-events: stroke;
 }
 
 .edge-boundary-group,
@@ -3409,5 +3413,5 @@ button.loading::after {
     stroke-width: 1.5;
     stroke-dasharray: 7, 4;
     opacity: 0.85;
-    pointer-events: none;
+    pointer-events: stroke;
 }
