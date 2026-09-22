@@ -3376,3 +3376,33 @@ button.loading::after {
 @keyframes button-spin {
     to { transform: rotate(360deg); }
 }
+
+/* Cross-context edge continuations and derived container summaries. */
+.edge-boundary {
+    stroke: var(--highlight);
+    stroke-width: 1.5;
+    stroke-dasharray: 4, 3;
+    pointer-events: none;
+}
+
+.edge-boundary-endpoint {
+    fill: var(--bg-primary);
+    stroke: var(--highlight);
+    stroke-width: 1.5;
+    pointer-events: none;
+}
+
+.edge-boundary-label,
+.edge-rolled-up-label {
+    fill: var(--text-secondary);
+    font-size: 11px;
+    pointer-events: none;
+}
+
+.edge-rolled-up {
+    stroke: var(--text-secondary);
+    stroke-width: 1.5;
+    stroke-dasharray: 7, 4;
+    opacity: 0.85;
+    pointer-events: none;
+}

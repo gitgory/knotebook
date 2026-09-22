@@ -4265,6 +4265,77 @@ function renderNodes() {
 }
 
 /**
+ * Builds source-note and canonical-parent indexes for cross-context edge views.
+ * @returns {{nodes: Map<string, Object>, parents: Map<string, string|null>}}
+ */
+function buildProjectNodeContext() {
+    const nodes = new Map();
+    const parents = new Map();
+    const walk = (items, parentId = null) => {
+        for (const node of items || []) {
+            nodes.set(node.id, node);
+            parents.set(node.id, parentId);
+            walk(node.children, node.id);
+        }
+    };
+    walk(state.rootNodes);
+    return { nodes, parents };
+}
+
+/**
+ * Finds the visible container that represents a source note in the current view.
+ * @param {string} nodeId - Source note ID
+ * @param {Set<string>} visibleIds - Directly visible note IDs
+ * @param {Map<string, string|null>} parents - Canonical parent index
+ * @returns {string|null} Visible source/container ID, if any
+ */
+function getVisibleContainerId(nodeId, visibleIds, parents) {
+    let currentId = nodeId;
+    while (currentId) {
+        if (visibleIds.has(currentId)) return currentId;
+        currentId = parents.get(currentId) || null;
+    }
+    return null;
+}
+
+/**
+ * Renders a labelled continuation for an edge whose remote endpoint is outside
+ * the active canvas. Boundary edges are visual-only in this phase.
+ */
+function renderBoundaryEndpoint(layer, edge, visibleNode, remoteNode, isOutgoing) {
+    const center = getNodeCenter(visibleNode);
+    const endpointX = isOutgoing ? visibleNode.position.x + NODE_WIDTH + 36 : visibleNode.position.x - 36;
+    const endpointY = center.y;
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    g.setAttribute('class', 'edge-boundary-group');
+
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('class', 'edge-boundary');
+    line.setAttribute('x1', center.x);
+    line.setAttribute('y1', center.y);
+    line.setAttribute('x2', endpointX);
+    line.setAttribute('y2', endpointY);
+    g.appendChild(line);
+
+    const endpoint = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    endpoint.setAttribute('class', 'edge-boundary-endpoint');
+    endpoint.setAttribute('cx', endpointX);
+    endpoint.setAttribute('cy', endpointY);
+    endpoint.setAttribute('r', 6);
+    g.appendChild(endpoint);
+
+    const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    label.setAttribute('class', 'edge-boundary-label');
+    label.setAttribute('x', endpointX + (isOutgoing ? 10 : -10));
+    label.setAttribute('y', endpointY - 10);
+    label.setAttribute('text-anchor', isOutgoing ? 'start' : 'end');
+    const direction = edge.directed ? (isOutgoing ? '→ ' : '← ') : '↔ ';
+    label.textContent = `${direction}${remoteNode.title || 'Untitled'}`;
+    g.appendChild(label);
+    layer.appendChild(g);
+}
+
+/**
  * Render all edges (connections between nodes) to the SVG canvas.
  * Skips edges where either endpoint is hidden by filters. Creates invisible wider
  * hitbox for easier clicking, and visible edge line. Applies selection styling.
@@ -4275,6 +4346,9 @@ function renderEdges() {
 
     // Get visible node IDs for filtering edges
     const visibleIds = getVisibleNodeIds();
+    const visibleSet = new Set(visibleIds);
+    const projectContext = buildProjectNodeContext();
+    const rolledUpEdges = new Map();
 
     for (let i = 0; i < state.edges.length; i++) {
         const edge = state.edges[i];
@@ -4283,6 +4357,31 @@ function renderEdges() {
         // (Should not happen after migration, but kept for robustness)
         if (Array.isArray(edge)) {
             state.edges[i] = { from: edge[0], to: edge[1], directed: false };
+            continue;
+        }
+
+        const fromVisible = visibleSet.has(edge.from);
+        const toVisible = visibleSet.has(edge.to);
+        if (fromVisible !== toVisible) {
+            const visibleNode = getNodeById(fromVisible ? edge.from : edge.to);
+            const remoteNode = projectContext.nodes.get(fromVisible ? edge.to : edge.from);
+            if (visibleNode && remoteNode) {
+                renderBoundaryEndpoint(layer, edge, visibleNode, remoteNode, fromVisible);
+            }
+            continue;
+        }
+
+        if (!fromVisible && !toVisible) {
+            const fromContainer = getVisibleContainerId(edge.from, visibleSet, projectContext.parents);
+            const toContainer = getVisibleContainerId(edge.to, visibleSet, projectContext.parents);
+            if (fromContainer && toContainer && fromContainer !== toContainer) {
+                const key = edge.directed
+                    ? `d:${fromContainer}:${toContainer}`
+                    : `u:${[fromContainer, toContainer].sort().join(':')}`;
+                const summary = rolledUpEdges.get(key) || { from: fromContainer, to: toContainer, directed: edge.directed, count: 0 };
+                summary.count++;
+                rolledUpEdges.set(key, summary);
+            }
             continue;
         }
 
@@ -4360,6 +4459,31 @@ function renderEdges() {
         }
 
         layer.appendChild(g);
+    }
+
+    let summaryOffset = 0;
+    for (const summary of rolledUpEdges.values()) {
+        const fromNode = getNodeById(summary.from);
+        const toNode = getNodeById(summary.to);
+        if (!fromNode || !toNode) continue;
+        const fromCenter = getNodeCenter(fromNode);
+        const toCenter = getNodeCenter(toNode);
+        const offset = 8 + (summaryOffset++ * 8);
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('class', 'edge-rolled-up');
+        line.setAttribute('x1', fromCenter.x);
+        line.setAttribute('y1', fromCenter.y + offset);
+        line.setAttribute('x2', toCenter.x);
+        line.setAttribute('y2', toCenter.y + offset);
+        layer.appendChild(line);
+
+        const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        label.setAttribute('class', 'edge-rolled-up-label');
+        label.setAttribute('x', (fromCenter.x + toCenter.x) / 2);
+        label.setAttribute('y', (fromCenter.y + toCenter.y) / 2 + offset - 4);
+        label.setAttribute('text-anchor', 'middle');
+        label.textContent = `${summary.directed ? '→' : '↔'} ${summary.count} child link${summary.count === 1 ? '' : 's'}`;
+        layer.appendChild(label);
     }
 }
 
