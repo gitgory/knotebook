@@ -3385,6 +3385,11 @@ button.loading::after {
     pointer-events: none;
 }
 
+.edge-boundary-group,
+.edge-rolled-up-group {
+    cursor: pointer;
+}
+
 .edge-boundary-endpoint {
     fill: var(--bg-primary);
     stroke: var(--highlight);

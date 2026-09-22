@@ -4299,6 +4299,52 @@ function getVisibleContainerId(nodeId, visibleIds, parents) {
 }
 
 /**
+ * Opens the canonical canvas containing a source note and selects that note.
+ * @param {string} sourceId - ID of the source note to reveal
+ * @returns {void}
+ */
+function navigateToCanonicalNode(sourceId) {
+    const context = buildProjectNodeContext();
+    if (!context.nodes.has(sourceId)) return;
+
+    const path = [];
+    let parentId = context.parents.get(sourceId) || null;
+    while (parentId) {
+        const parent = context.nodes.get(parentId);
+        if (!parent) return;
+        path.unshift(parent);
+        parentId = context.parents.get(parentId) || null;
+    }
+
+    state.currentPath = path;
+    state.nodes = path.length > 0 ? path[path.length - 1].children : state.rootNodes;
+    state.edges = state.projectEdges;
+    rebuildNodeIndex();
+    state.selectedNodes = [sourceId];
+    state.selectedEdge = null;
+    clearFilter();
+    resetViewport();
+    updateBreadcrumbs();
+    render();
+    scheduleAutoSave();
+}
+
+/**
+ * Shows the explicit source edges represented by a rolled-up edge summary.
+ * @param {Object} summary - Derived container-edge summary
+ * @param {Map<string, Object>} nodes - Project source-note index
+ * @returns {Promise<void>}
+ */
+async function showRolledUpEdgeDetails(summary, nodes) {
+    const lines = summary.edges.map(edge => {
+        const from = nodes.get(edge.from)?.title || edge.from;
+        const to = nodes.get(edge.to)?.title || edge.to;
+        return `${from} ${edge.directed ? '→' : '↔'} ${to}`;
+    });
+    await showAlert(lines.join('\n'), `${summary.count} Child Link${summary.count === 1 ? '' : 's'}`);
+}
+
+/**
  * Renders a labelled continuation for an edge whose remote endpoint is outside
  * the active canvas. Boundary edges are visual-only in this phase.
  */
@@ -4332,6 +4378,7 @@ function renderBoundaryEndpoint(layer, edge, visibleNode, remoteNode, isOutgoing
     const direction = edge.directed ? (isOutgoing ? '→ ' : '← ') : '↔ ';
     label.textContent = `${direction}${remoteNode.title || 'Untitled'}`;
     g.appendChild(label);
+    g.addEventListener('click', () => navigateToCanonicalNode(remoteNode.id));
     layer.appendChild(g);
 }
 
@@ -4378,8 +4425,9 @@ function renderEdges() {
                 const key = edge.directed
                     ? `d:${fromContainer}:${toContainer}`
                     : `u:${[fromContainer, toContainer].sort().join(':')}`;
-                const summary = rolledUpEdges.get(key) || { from: fromContainer, to: toContainer, directed: edge.directed, count: 0 };
+                const summary = rolledUpEdges.get(key) || { from: fromContainer, to: toContainer, directed: edge.directed, count: 0, edges: [] };
                 summary.count++;
+                summary.edges.push(edge);
                 rolledUpEdges.set(key, summary);
             }
             continue;
@@ -4469,13 +4517,15 @@ function renderEdges() {
         const fromCenter = getNodeCenter(fromNode);
         const toCenter = getNodeCenter(toNode);
         const offset = 8 + (summaryOffset++ * 8);
+        const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        group.setAttribute('class', 'edge-rolled-up-group');
         const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
         line.setAttribute('class', 'edge-rolled-up');
         line.setAttribute('x1', fromCenter.x);
         line.setAttribute('y1', fromCenter.y + offset);
         line.setAttribute('x2', toCenter.x);
         line.setAttribute('y2', toCenter.y + offset);
-        layer.appendChild(line);
+        group.appendChild(line);
 
         const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
         label.setAttribute('class', 'edge-rolled-up-label');
@@ -4483,7 +4533,9 @@ function renderEdges() {
         label.setAttribute('y', (fromCenter.y + toCenter.y) / 2 + offset - 4);
         label.setAttribute('text-anchor', 'middle');
         label.textContent = `${summary.directed ? '→' : '↔'} ${summary.count} child link${summary.count === 1 ? '' : 's'}`;
-        layer.appendChild(label);
+        group.appendChild(label);
+        group.addEventListener('click', () => showRolledUpEdgeDetails(summary, projectContext.nodes));
+        layer.appendChild(group);
     }
 }
 
