@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "name": "Fixture - Legacy Nested Edges",
+  "created": "2026-09-21T00:00:00.000Z",
+  "nodes": [
+    {
+      "id": "legacy-project",
+      "title": "Project Planning",
+      "content": "A parent with a child-level legacy edge.",
+      "hashtags": ["#project"],
+      "fields": {},
+      "position": { "x": 100, "y": 100 },
+      "zIndex": 0,
+      "children": [
+        {
+          "id": "legacy-research",
+          "title": "Research",
+          "content": "#research",
+          "hashtags": ["#research"],
+          "fields": { "completion": "todo" },
+          "position": { "x": 100, "y": 100 },
+          "zIndex": 0,
+          "children": [],
+          "childEdges": [],
+          "created": "2026-09-21T00:00:00.000Z",
+          "modified": "2026-09-21T00:00:00.000Z"
+        },
+        {
+          "id": "legacy-outline",
+          "title": "Write Outline",
+          "content": "#writing",
+          "hashtags": ["#writing"],
+          "fields": { "completion": "partial" },
+          "position": { "x": 420, "y": 100 },
+          "zIndex": 0,
+          "children": [],
+          "childEdges": [],
+          "created": "2026-09-21T00:00:00.000Z",
+          "modified": "2026-09-21T00:00:00.000Z"
+        }
+      ],
+      "childEdges": [["legacy-research", "legacy-outline"]],
+      "created": "2026-09-21T00:00:00.000Z",
+      "modified": "2026-09-21T00:00:00.000Z"
+    },
+    {
+      "id": "legacy-review",
+      "title": "Review",
+      "content": "#review",
+      "hashtags": ["#review"],
+      "fields": {},
+      "position": { "x": 500, "y": 280 },
+      "zIndex": 0,
+      "children": [],
+      "childEdges": [],
+      "created": "2026-09-21T00:00:00.000Z",
+      "modified": "2026-09-21T00:00:00.000Z"
+    }
+  ],
+  "edges": [["legacy-project", "legacy-review"]],
+  "hashtagColors": {
+    "#project": "#3b82f6",
+    "#research": "#22c55e",
+    "#writing": "#f59e0b",
+    "#review": "#a855f7"
+  },
+  "settings": {
+    "fieldDefaults": { "completion": null, "priority": null },
+    "customFields": []
+  }
+}

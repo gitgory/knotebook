@@ -1,0 +1,186 @@
+{
+  "version": 2,
+  "name": "Fixture - User UI Server Architecture",
+  "created": "2026-09-21T00:00:00.000Z",
+  "nodes": [
+    {
+      "id": "system-user",
+      "title": "User",
+      "content": "Interacts with the UI and receives results. #actor",
+      "hashtags": ["#actor"],
+      "fields": {},
+      "position": { "x": 80, "y": 260 },
+      "zIndex": 0,
+      "children": [
+        {
+          "id": "system-results-for-user",
+          "title": "Results for User",
+          "content": "Results are presented back to the user. #results",
+          "hashtags": ["#results"],
+          "fields": {},
+          "position": { "x": 100, "y": 100 },
+          "zIndex": 0,
+          "children": [],
+          "childEdges": [],
+          "created": "2026-09-21T00:00:00.000Z",
+          "modified": "2026-09-21T00:00:00.000Z"
+        }
+      ],
+      "childEdges": [],
+      "created": "2026-09-21T00:00:00.000Z",
+      "modified": "2026-09-21T00:00:00.000Z"
+    },
+    {
+      "id": "system-ui",
+      "title": "UI",
+      "content": "The user-facing interface. #ui",
+      "hashtags": ["#ui"],
+      "fields": {},
+      "position": { "x": 430, "y": 260 },
+      "zIndex": 0,
+      "children": [
+        {
+          "id": "system-read",
+          "title": "Read",
+          "content": "Read data through the UI. #ui",
+          "hashtags": ["#ui"],
+          "fields": {},
+          "position": { "x": 80, "y": 80 },
+          "zIndex": 0,
+          "children": [],
+          "childEdges": [],
+          "created": "2026-09-21T00:00:00.000Z",
+          "modified": "2026-09-21T00:00:00.000Z"
+        },
+        {
+          "id": "system-write",
+          "title": "Write",
+          "content": "Write data through the UI. #ui",
+          "hashtags": ["#ui"],
+          "fields": {},
+          "position": { "x": 360, "y": 80 },
+          "zIndex": 0,
+          "children": [],
+          "childEdges": [],
+          "created": "2026-09-21T00:00:00.000Z",
+          "modified": "2026-09-21T00:00:00.000Z"
+        },
+        {
+          "id": "system-modify",
+          "title": "Modify",
+          "content": "Modify existing data through the UI. #ui",
+          "hashtags": ["#ui"],
+          "fields": {},
+          "position": { "x": 80, "y": 260 },
+          "zIndex": 0,
+          "children": [],
+          "childEdges": [],
+          "created": "2026-09-21T00:00:00.000Z",
+          "modified": "2026-09-21T00:00:00.000Z"
+        },
+        {
+          "id": "system-request-job",
+          "title": "Request Job",
+          "content": "Submit a job request to the server. #ui #job",
+          "hashtags": ["#job", "#ui"],
+          "fields": { "completion": "todo" },
+          "position": { "x": 360, "y": 260 },
+          "zIndex": 0,
+          "children": [],
+          "childEdges": [],
+          "created": "2026-09-21T00:00:00.000Z",
+          "modified": "2026-09-21T00:00:00.000Z"
+        }
+      ],
+      "childEdges": [],
+      "created": "2026-09-21T00:00:00.000Z",
+      "modified": "2026-09-21T00:00:00.000Z"
+    },
+    {
+      "id": "system-server",
+      "title": "Server",
+      "content": "Queues and processes jobs. #server",
+      "hashtags": ["#server"],
+      "fields": {},
+      "position": { "x": 780, "y": 260 },
+      "zIndex": 0,
+      "children": [
+        {
+          "id": "system-step-a",
+          "title": "Step A",
+          "content": "First pipeline step. #server #pipeline",
+          "hashtags": ["#pipeline", "#server"],
+          "fields": { "completion": "todo" },
+          "position": { "x": 60, "y": 100 },
+          "zIndex": 0,
+          "children": [],
+          "childEdges": [],
+          "created": "2026-09-21T00:00:00.000Z",
+          "modified": "2026-09-21T00:00:00.000Z"
+        },
+        {
+          "id": "system-step-b",
+          "title": "Step B",
+          "content": "Second pipeline step. #server #pipeline",
+          "hashtags": ["#pipeline", "#server"],
+          "fields": { "completion": "todo" },
+          "position": { "x": 320, "y": 100 },
+          "zIndex": 0,
+          "children": [],
+          "childEdges": [],
+          "created": "2026-09-21T00:00:00.000Z",
+          "modified": "2026-09-21T00:00:00.000Z"
+        },
+        {
+          "id": "system-step-c",
+          "title": "Step C",
+          "content": "Third pipeline step. #server #pipeline",
+          "hashtags": ["#pipeline", "#server"],
+          "fields": { "completion": "todo" },
+          "position": { "x": 580, "y": 100 },
+          "zIndex": 0,
+          "children": [],
+          "childEdges": [],
+          "created": "2026-09-21T00:00:00.000Z",
+          "modified": "2026-09-21T00:00:00.000Z"
+        },
+        {
+          "id": "system-return-results",
+          "title": "Return Results",
+          "content": "Return processed results to the UI. #server #results",
+          "hashtags": ["#results", "#server"],
+          "fields": { "completion": "todo" },
+          "position": { "x": 320, "y": 280 },
+          "zIndex": 0,
+          "children": [],
+          "childEdges": [],
+          "created": "2026-09-21T00:00:00.000Z",
+          "modified": "2026-09-21T00:00:00.000Z"
+        }
+      ],
+      "created": "2026-09-21T00:00:00.000Z",
+      "modified": "2026-09-21T00:00:00.000Z"
+    }
+  ],
+  "edges": [
+    { "from": "system-user", "to": "system-ui", "directed": true },
+    { "from": "system-ui", "to": "system-server", "directed": true },
+    { "from": "system-step-a", "to": "system-step-b", "directed": true },
+    { "from": "system-step-b", "to": "system-step-c", "directed": true },
+    { "from": "system-step-c", "to": "system-return-results", "directed": true },
+    { "from": "system-request-job", "to": "system-step-a", "directed": true },
+    { "from": "system-return-results", "to": "system-results-for-user", "directed": true }
+  ],
+  "hashtagColors": {
+    "#actor": "#3b82f6",
+    "#job": "#f59e0b",
+    "#pipeline": "#a855f7",
+    "#results": "#22c55e",
+    "#server": "#ef4444",
+    "#ui": "#06b6d4"
+  },
+  "settings": {
+    "fieldDefaults": { "completion": "todo", "priority": null },
+    "customFields": []
+  }
+}

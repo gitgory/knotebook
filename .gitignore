@@ -4,6 +4,8 @@
 # Test plans stay local
 TEST_*.md
 tests/*
+!tests/fixtures/
+!tests/fixtures/**
 
 # OS files
 .DS_Store

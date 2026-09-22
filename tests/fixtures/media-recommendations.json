@@ -1,0 +1,148 @@
+{
+  "version": 1,
+  "name": "Fixture - Media Recommendations",
+  "created": "2026-09-21T00:00:00.000Z",
+  "nodes": [
+    {
+      "id": "rec-shawshank-john",
+      "title": "The Shawshank Redemption",
+      "content": "Recommended by John. #recommendation #movie",
+      "hashtags": ["#movie", "#recommendation"],
+      "fields": {
+        "media": "movie",
+        "location": "Netflix",
+        "recommendedBy": "John",
+        "completion": "todo"
+      },
+      "position": { "x": 80, "y": 90 },
+      "zIndex": 0,
+      "children": [],
+      "childEdges": [],
+      "created": "2026-09-21T00:00:00.000Z",
+      "modified": "2026-09-21T00:00:00.000Z"
+    },
+    {
+      "id": "rec-sense-sarah",
+      "title": "Sense and Sensibility",
+      "content": "Recommended by Sarah. #recommendation #book",
+      "hashtags": ["#book", "#recommendation"],
+      "fields": {
+        "media": "book",
+        "location": "Library",
+        "recommendedBy": "Sarah",
+        "completion": "todo"
+      },
+      "position": { "x": 400, "y": 90 },
+      "zIndex": 0,
+      "children": [],
+      "childEdges": [],
+      "created": "2026-09-21T00:00:00.000Z",
+      "modified": "2026-09-21T00:00:00.000Z"
+    },
+    {
+      "id": "rec-the-bear-sarah",
+      "title": "The Bear",
+      "content": "Recommended by Sarah. #recommendation #show",
+      "hashtags": ["#recommendation", "#show"],
+      "fields": {
+        "media": "show",
+        "location": "Hulu",
+        "recommendedBy": "Sarah",
+        "completion": "todo"
+      },
+      "position": { "x": 720, "y": 90 },
+      "zIndex": 0,
+      "children": [],
+      "childEdges": [],
+      "created": "2026-09-21T00:00:00.000Z",
+      "modified": "2026-09-21T00:00:00.000Z"
+    },
+    {
+      "id": "rec-only-murders-john",
+      "title": "Only Murders in the Building",
+      "content": "Recommended by John. #recommendation #show",
+      "hashtags": ["#recommendation", "#show"],
+      "fields": {
+        "media": "show",
+        "location": "Hulu",
+        "recommendedBy": "John",
+        "completion": "done"
+      },
+      "position": { "x": 80, "y": 350 },
+      "zIndex": 0,
+      "children": [],
+      "childEdges": [],
+      "created": "2026-09-21T00:00:00.000Z",
+      "modified": "2026-09-21T00:00:00.000Z"
+    },
+    {
+      "id": "rec-reservation-dogs-maya",
+      "title": "Reservation Dogs",
+      "content": "Recommended by Maya. #recommendation #show",
+      "hashtags": ["#recommendation", "#show"],
+      "fields": {
+        "media": "show",
+        "location": "Hulu",
+        "recommendedBy": "Maya",
+        "completion": "todo"
+      },
+      "position": { "x": 400, "y": 350 },
+      "zIndex": 0,
+      "children": [],
+      "childEdges": [],
+      "created": "2026-09-21T00:00:00.000Z",
+      "modified": "2026-09-21T00:00:00.000Z"
+    },
+    {
+      "id": "rec-the-lord-of-the-rings-sarah",
+      "title": "The Lord of the Rings",
+      "content": "Recommended by Sarah. #recommendation #movie",
+      "hashtags": ["#movie", "#recommendation"],
+      "fields": {
+        "media": "movie",
+        "location": "Max",
+        "recommendedBy": "Sarah",
+        "completion": "partial"
+      },
+      "position": { "x": 720, "y": 350 },
+      "zIndex": 0,
+      "children": [],
+      "childEdges": [],
+      "created": "2026-09-21T00:00:00.000Z",
+      "modified": "2026-09-21T00:00:00.000Z"
+    }
+  ],
+  "edges": [],
+  "hashtagColors": {
+    "#book": "#a855f7",
+    "#movie": "#f59e0b",
+    "#recommendation": "#3b82f6",
+    "#show": "#22c55e"
+  },
+  "settings": {
+    "fieldDefaults": { "completion": "todo", "priority": null },
+    "customFields": [
+      {
+        "id": "field-media",
+        "name": "media",
+        "label": "Media",
+        "type": "single-select",
+        "options": ["book", "movie", "show"]
+      },
+      {
+        "id": "field-location",
+        "name": "location",
+        "label": "Location",
+        "type": "single-select",
+        "options": ["Hulu", "Library", "Max", "Netflix"]
+      },
+      {
+        "id": "field-recommended-by",
+        "name": "recommendedBy",
+        "label": "Recommended by",
+        "type": "single-select",
+        "options": ["John", "Maya", "Sarah"]
+      }
+    ]
+  }
+}

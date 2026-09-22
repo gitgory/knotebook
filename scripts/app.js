@@ -144,7 +144,8 @@ const state = {
         customFields: []  // Second-Class field definitions
     },
     rootNodes: [],                 // Root level nodes (when navigated into children)
-    rootEdges: [],                 // Root level edges (when navigated into children)
+    rootEdges: [],                 // Project-wide edge registry (legacy name retained for compatibility)
+    projectEdges: [],              // All explicit edges in the open notebook
 
     // Editor state
     editorSnapshot: null,          // Snapshot for cancel/revert
@@ -640,6 +641,55 @@ function migrateAllChildEdges(nodes) {
             migrateAllChildEdges(node.children);
         }
     }
+}
+
+/**
+ * Migrates legacy root and child edge arrays into one validated project registry.
+ * Removes childEdges after collection so future saves cannot recreate the
+ * sibling-only edge storage model.
+ *
+ * @param {Object} projectData - Imported or stored notebook data
+ * @returns {{edges: Object[], invalidCount: number}} Valid normalized edges and dropped count
+ */
+function migrateProjectEdges(projectData) {
+    const noteIds = new Set();
+    const collectNoteIds = (nodes) => {
+        for (const node of nodes || []) {
+            noteIds.add(node.id);
+            collectNoteIds(node.children);
+        }
+    };
+    collectNoteIds(projectData.nodes || []);
+
+    const candidates = [...migrateEdges(projectData.edges || [])];
+    const collectChildEdges = (nodes) => {
+        for (const node of nodes || []) {
+            candidates.push(...migrateEdges(node.childEdges || []));
+            delete node.childEdges;
+            collectChildEdges(node.children);
+        }
+    };
+    collectChildEdges(projectData.nodes || []);
+
+    const seen = new Set();
+    let invalidCount = 0;
+    const edges = [];
+    for (const edge of candidates) {
+        if (!edge || !noteIds.has(edge.from) || !noteIds.has(edge.to) || edge.from === edge.to) {
+            invalidCount++;
+            continue;
+        }
+        const key = edge.directed
+            ? `d:${edge.from}:${edge.to}`
+            : `u:${[edge.from, edge.to].sort().join(':')}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        edges.push({ from: edge.from, to: edge.to, directed: Boolean(edge.directed) });
+    }
+
+    projectData.edges = edges;
+    projectData.version = Math.max(Number(projectData.version) || 1, 2);
+    return { edges, invalidCount };
 }
 
 // ============================================================================
@@ -1261,9 +1311,9 @@ async function saveProjectToStorage() {
     saveRootState();
 
     const projectData = {
-        version: 1,
+        version: 2,
         nodes: state.currentPath.length === 0 ? state.nodes : state.rootNodes,
-        edges: state.currentPath.length === 0 ? state.edges : state.rootEdges,
+        edges: state.projectEdges,
         hashtagColors: state.hashtagColors,
         settings: state.projectSettings,
         hiddenHashtags: state.hiddenHashtags,
@@ -1365,7 +1415,7 @@ async function createProject(name) {
 
     // Save empty project data
     const projectData = {
-        version: 1,
+        version: 2,
         nodes: [],
         edges: [],
         hashtagColors: {},
@@ -1458,14 +1508,18 @@ async function openProject(projectId) {
 
     // Load data
     state.nodes = data.nodes || [];
-    state.edges = migrateEdges(data.edges || []);
-    rebuildNodeIndex();
 
     // Migrate legacy storage formats
     migrateAllNodeFields(state.nodes);      // Field storage: top-level → node.fields
-    migrateAllChildEdges(state.nodes);      // Edge format: [id, id] → {from, to, directed}
+    const edgeMigration = migrateProjectEdges(data);
+    state.projectEdges = edgeMigration.edges;
+    state.edges = state.projectEdges;
+    if (edgeMigration.invalidCount > 0) {
+        console.warn(`Dropped ${edgeMigration.invalidCount} invalid edge(s) while opening notebook.`);
+    }
+    rebuildNodeIndex();
     state.rootNodes = state.nodes;
-    state.rootEdges = state.edges;
+    state.rootEdges = state.projectEdges;
     state.hashtagColors = data.hashtagColors || {};
     state.projectSettings = data.settings || { fieldDefaults: { completion: null, priority: null }, customFields: [] };
 
@@ -1667,7 +1721,7 @@ function shouldUpdateToSaved() {
 function getCurrentProjectData() {
     return {
         nodes: state.currentPath.length === 0 ? state.nodes : state.rootNodes,
-        edges: state.currentPath.length === 0 ? state.edges : state.rootEdges,
+        edges: state.projectEdges,
         hashtagColors: state.hashtagColors,
         settings: state.projectSettings,
         hiddenHashtags: state.hiddenHashtags,
@@ -1783,7 +1837,7 @@ function scheduleAutoSave() {
     // Calculate hash of current data to detect changes
     const currentData = {
         nodes: state.currentPath.length === 0 ? state.nodes : state.rootNodes,
-        edges: state.currentPath.length === 0 ? state.edges : state.rootEdges,
+        edges: state.projectEdges,
         hashtagColors: state.hashtagColors,
         settings: state.projectSettings,
         hiddenHashtags: state.hiddenHashtags,
@@ -3682,6 +3736,7 @@ async function goHome() {
     // Reset state
     state.nodes = [];
     state.edges = [];
+    state.projectEdges = [];
     rebuildNodeIndex();
     state.selectedNodes = [];
     state.selectedEdge = null;
@@ -4490,11 +4545,11 @@ function navigateToBreadcrumbLevel(pathIndex) {
     if (state.currentPath.length === 0) {
         // Back to root - restore root state
         state.nodes = getRootNodes();
-        state.edges = getRootEdges();
+        state.edges = state.projectEdges;
     } else {
         const parent = state.currentPath[state.currentPath.length - 1];
         state.nodes = parent.children;
-        state.edges = parent.childEdges;
+        state.edges = state.projectEdges;
     }
     rebuildNodeIndex();
 
@@ -4585,7 +4640,6 @@ function createNode(x, y) {
         position: { x, y },
         zIndex: 0,
         children: [],
-        childEdges: [],
         created: new Date().toISOString(),
         modified: new Date().toISOString()
     };
@@ -4605,15 +4659,15 @@ function createNode(x, y) {
 
 /**
  * Create a deep copy of a node with new IDs and optional position offset.
- * Recursively copies children and remaps child edge IDs. Used for duplicate and
- * move-to-notebook operations. Creates new timestamps.
+ * Recursively copies canonical children. Project-wide edges are copied by the
+ * caller after it has the complete source-to-copy ID mapping.
  *
  * @param {Object} node - Node to copy
  * @param {number} offsetX - X offset for copied node position
  * @param {number} offsetY - Y offset for copied node position
  * @returns {Object} - Deep copy of node with new IDs
  */
-function deepCopyNode(node, offsetX = 0, offsetY = 0) {
+function deepCopyNode(node, offsetX = 0, offsetY = 0, idMapping = {}) {
     const newNode = {
         id: generateId(),
         title: node.title,
@@ -4626,28 +4680,17 @@ function deepCopyNode(node, offsetX = 0, offsetY = 0) {
         },
         zIndex: node.zIndex || 0,
         children: [],
-        childEdges: [],
         created: new Date().toISOString(),
         modified: new Date().toISOString()
     };
+    idMapping[node.id] = newNode.id;
 
-    // Deep copy children recursively and create ID mapping
-    const childIdMapping = {};
+    // Deep copy canonical children recursively.
     if (node.children && node.children.length > 0) {
         node.children.forEach(child => {
-            const copiedChild = deepCopyNode(child, 0, 0);
-            childIdMapping[child.id] = copiedChild.id;
+            const copiedChild = deepCopyNode(child, 0, 0, idMapping);
             newNode.children.push(copiedChild);
         });
-    }
-
-    // Copy child edges and remap IDs to new child IDs (object format)
-    if (node.childEdges && node.childEdges.length > 0) {
-        newNode.childEdges = node.childEdges.map(edge => ({
-            from: childIdMapping[edge.from],
-            to: childIdMapping[edge.to],
-            directed: edge.directed || false
-        }));
     }
 
     return newNode;
@@ -4655,7 +4698,7 @@ function deepCopyNode(node, offsetX = 0, offsetY = 0) {
 
 /**
  * Deep copy a node preserving original IDs for undo restoration.
- * Recursively copies children and child edges without ID remapping.
+ * Recursively copies canonical children without ID remapping.
  * Used exclusively for undo snapshots to restore exact state.
  *
  * @param {Object} node - Node to copy
@@ -4671,7 +4714,6 @@ function deepCopyNodeForUndo(node) {
         position: { ...node.position },
         zIndex: node.zIndex || 0,
         children: [],
-        childEdges: (node.childEdges || []).map(e => ({ from: e.from, to: e.to, directed: e.directed || false })),
         created: node.created,
         modified: node.modified
     };
@@ -4696,7 +4738,7 @@ function deepCopyNodeForUndo(node) {
 function createUndoSnapshot() {
     return {
         nodes: state.nodes.map(node => deepCopyNodeForUndo(node)),
-        edges: state.edges.map(edge => ({
+        edges: state.projectEdges.map(edge => ({
             from: edge.from,
             to: edge.to,
             directed: edge.directed
@@ -4721,11 +4763,12 @@ function performUndo() {
     try {
         // Restore state from snapshot
         state.nodes = state.undoSnapshot.nodes.map(node => deepCopyNodeForUndo(node));
-        state.edges = state.undoSnapshot.edges.map(edge => ({
+        state.projectEdges = state.undoSnapshot.edges.map(edge => ({
             from: edge.from,
             to: edge.to,
             directed: edge.directed
         }));
+        state.edges = state.projectEdges;
         rebuildNodeIndex();
         state.selectedNodes = [...state.undoSnapshot.selectedNodes];
         state.selectedEdge = null;
@@ -4774,14 +4817,11 @@ function deleteNode(nodeId) {
             state.nodeIndex.set(child.id, child);
         });
 
-        // Promote child edges to current level
-        if (node.childEdges && node.childEdges.length > 0) {
-            state.edges.push(...node.childEdges);
-        }
     }
 
     // Remove edges connected to this node
-    state.edges = state.edges.filter(e => e.from !== nodeId && e.to !== nodeId);
+    state.projectEdges = state.projectEdges.filter(e => e.from !== nodeId && e.to !== nodeId);
+    state.edges = state.projectEdges;
 
     // Remove the node
     state.nodes = state.nodes.filter(n => n.id !== nodeId);
@@ -5318,17 +5358,15 @@ function enterNode(nodeId) {
     if (state.currentPath.length > 0) {
         const parent = state.currentPath[state.currentPath.length - 1];
         parent.children = state.nodes;
-        parent.childEdges = state.edges;
     }
 
     // Push current node to path
     node.children = node.children || [];
-    node.childEdges = node.childEdges || [];
     state.currentPath.push(node);
 
     // Load children
     state.nodes = node.children;
-    state.edges = node.childEdges;
+    state.edges = state.projectEdges;
     rebuildNodeIndex();
     state.selectedNodes = [];
     state.selectedEdge = null;
@@ -5355,17 +5393,16 @@ function goBack() {
     // Save current state
     const current = state.currentPath.pop();
     current.children = state.nodes;
-    current.childEdges = state.edges;
 
     // Go to parent level
     if (state.currentPath.length === 0) {
         // Back to root - need to restore root state
         state.nodes = getRootNodes();
-        state.edges = getRootEdges();
+        state.edges = state.projectEdges;
     } else {
         const parent = state.currentPath[state.currentPath.length - 1];
         state.nodes = parent.children;
-        state.edges = parent.childEdges;
+        state.edges = state.projectEdges;
     }
     rebuildNodeIndex();
 
@@ -5395,7 +5432,7 @@ function getRootEdges() {
 function saveRootState() {
     if (state.currentPath.length === 0) {
         state.rootNodes = state.nodes;
-        state.rootEdges = state.edges;
+        state.rootEdges = state.projectEdges;
     }
 }
 
@@ -6991,8 +7028,7 @@ function createNodeCopiesWithMapping(selectedNodeIds, allNodes) {
     const idMapping = {};
     const nodes = selectedNodeIds.map(id => {
         const node = allNodes.find(n => n.id === id);
-        const copy = deepCopyNode(node);
-        idMapping[id] = copy.id;
+        const copy = deepCopyNode(node, 0, 0, idMapping);
         return copy;
     });
     return { nodes, idMapping };
@@ -7003,14 +7039,12 @@ function createNodeCopiesWithMapping(selectedNodeIds, allNodes) {
  *
  * @param {Array} edges - All edges in current level
  * @param {Object} idMapping - Map from old IDs to new IDs
- * @param {string[]} selectedNodeIds - IDs of selected nodes
  * @returns {Array} Edges with remapped IDs
  */
-function filterAndRemapEdges(edges, idMapping, selectedNodeIds) {
+function filterAndRemapEdges(edges, idMapping) {
     return edges
         .filter(edge =>
-            selectedNodeIds.includes(edge.from) &&
-            selectedNodeIds.includes(edge.to)
+            idMapping[edge.from] && idMapping[edge.to]
         )
         .map(edge => ({
             from: idMapping[edge.from],
@@ -7151,7 +7185,7 @@ function prepareMoveData(projectsList) {
     const edges = filterAndRemapEdges(
         state.edges,
         idMapping,
-        state.selectedNodes
+        idMapping
     );
 
     // Geometric calculations
@@ -7507,6 +7541,33 @@ function removeNodesRecursively(nodes, nodeIdsToRemove) {
 }
 
 /**
+ * Collects IDs for selected notes and every descendant that will leave a source
+ * notebook with them. Used to remove now-invalid project-wide edges on move.
+ *
+ * @param {Object[]} nodes - Root or nested canonical note array
+ * @param {string[]} selectedIds - IDs explicitly selected for removal
+ * @returns {Set<string>} IDs removed from the notebook
+ */
+function collectRemovedNodeIds(nodes, selectedIds) {
+    const removed = new Set();
+    const collectSubtree = (node) => {
+        removed.add(node.id);
+        for (const child of node.children || []) collectSubtree(child);
+    };
+    const walk = (items) => {
+        for (const node of items || []) {
+            if (selectedIds.includes(node.id)) {
+                collectSubtree(node);
+            } else {
+                walk(node.children);
+            }
+        }
+    };
+    walk(nodes);
+    return removed;
+}
+
+/**
  * Removes nodes from source notebook after they've been moved.
  * Searches recursively at all nesting levels to find and remove nodes.
  * Also removes edges that reference the removed nodes.
@@ -7537,15 +7598,21 @@ function removeNodesFromSourceNotebook(sourceProjectId, nodeIds) {
 
     try {
         const project = JSON.parse(sourceData);
+        const edgeMigration = migrateProjectEdges(project);
+        const removedNodeIds = collectRemovedNodeIds(project.nodes, nodeIds);
 
         // Remove nodes by ID recursively (searches all nesting levels)
         project.nodes = removeNodesRecursively(project.nodes, nodeIds);
 
-        // Remove edges that reference removed nodes
-        // Edges are stored as objects {from, to, directed}
+        // Remove cross-notebook edges. A moved subtree retains only copied
+        // internal edges in its target; every source edge touching a removed
+        // source or descendant is deliberately discarded.
         project.edges = project.edges.filter(edge =>
-            !nodeIds.includes(edge.from) && !nodeIds.includes(edge.to)
+            !removedNodeIds.has(edge.from) && !removedNodeIds.has(edge.to)
         );
+        if (edgeMigration.invalidCount > 0) {
+            console.warn(`Dropped ${edgeMigration.invalidCount} invalid edge(s) while moving notes.`);
+        }
 
         // Save back to localStorage
         localStorage.setItem(STORAGE_KEY_PREFIX + sourceProjectId, JSON.stringify(project));
@@ -8275,11 +8342,11 @@ async function exportToFile() {
     const projectName = project ? project.name : null;
 
     const data = {
-        version: 1,
+        version: 2,
         name: projectName || 'Untitled',
         created: new Date().toISOString(),
         nodes: state.currentPath.length === 0 ? state.nodes : state.rootNodes,
-        edges: state.currentPath.length === 0 ? state.edges : state.rootEdges,
+        edges: state.projectEdges,
         hashtagColors: state.hashtagColors,
         settings: state.projectSettings,
         hiddenHashtags: state.hiddenHashtags
@@ -8307,7 +8374,7 @@ async function exportProjectToFile(projectId) {
     const projectName = project ? project.name : null;
 
     const exportData = {
-        version: 1,
+        version: 2,
         name: projectName || 'Untitled',
         created: new Date().toISOString(),
         nodes: data.nodes || [],
@@ -8458,7 +8525,7 @@ async function importFromFile() {
                     delete importedSettings.defaultCompletion;
                 }
                 const projectData = {
-                    version: 1,
+                    version: 2,
                     nodes: data.nodes || [],
                     edges: data.edges || [],
                     hashtagColors: data.hashtagColors || {},
@@ -8466,6 +8533,10 @@ async function importFromFile() {
                     hiddenHashtags: data.hiddenHashtags || [],
                     theme: data.theme || getCurrentTheme()
                 };
+                const edgeMigration = migrateProjectEdges(projectData);
+                if (edgeMigration.invalidCount > 0) {
+                    console.warn(`Dropped ${edgeMigration.invalidCount} invalid edge(s) while importing ${file.name}.`);
+                }
                 localStorage.setItem(STORAGE_KEY_PREFIX + projectId, JSON.stringify(projectData));
 
                 // Update note count
@@ -8902,11 +8973,10 @@ function initEventListeners() {
                     state.selectedNodes.forEach(id => {
                         const originalNode = getNodeById(id);
                         if (originalNode) {
-                            const copy = deepCopyNode(originalNode, 0, 0);
+                            const copy = deepCopyNode(originalNode, 0, 0, idMapping);
                             state.nodes.push(copy);
                             state.nodeIndex.set(copy.id, copy);
                             newNodeIds.push(copy.id);
-                            idMapping[id] = copy.id;
 
                             // Use the same offsets for the copies
                             newDragOffsets[copy.id] = state.dragOffsets[id];
@@ -10073,11 +10143,10 @@ function initEventListeners() {
             state.selectedNodes.forEach(id => {
                 const originalNode = getNodeById(id);
                 if (originalNode) {
-                    const copy = deepCopyNode(originalNode, offset, offset);
+                    const copy = deepCopyNode(originalNode, offset, offset, idMapping);
                     state.nodes.push(copy);
                     state.nodeIndex.set(copy.id, copy);
                     newNodeIds.push(copy.id);
-                    idMapping[id] = copy.id;
                 }
             });
 
