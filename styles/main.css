@@ -219,7 +219,6 @@ body {
 
 #landing-content {
     text-align: center;
-    width: min(100%, 760px);
     margin: 0 auto;
 }
 
@@ -3394,18 +3393,24 @@ button.loading::after {
     cursor: pointer;
 }
 
+.edge-interaction-hitbox {
+    stroke: transparent;
+    stroke-width: 18;
+    pointer-events: stroke;
+}
+
 .edge-boundary-endpoint {
     fill: var(--bg-primary);
     stroke: var(--highlight);
     stroke-width: 1.5;
-    pointer-events: none;
+    pointer-events: all;
 }
 
 .edge-boundary-label,
 .edge-rolled-up-label {
     fill: var(--text-secondary);
     font-size: 11px;
-    pointer-events: none;
+    pointer-events: all;
 }
 
 .edge-rolled-up {

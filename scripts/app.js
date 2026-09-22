@@ -4355,6 +4355,14 @@ function renderBoundaryEndpoint(layer, edge, visibleNode, remoteNode, isOutgoing
     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
     g.setAttribute('class', 'edge-boundary-group');
 
+    const hitbox = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    hitbox.setAttribute('class', 'edge-interaction-hitbox');
+    hitbox.setAttribute('x1', center.x);
+    hitbox.setAttribute('y1', center.y);
+    hitbox.setAttribute('x2', endpointX);
+    hitbox.setAttribute('y2', endpointY);
+    g.appendChild(hitbox);
+
     const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
     line.setAttribute('class', 'edge-boundary');
     line.setAttribute('x1', center.x);
@@ -4523,6 +4531,13 @@ function renderEdges() {
         const offset = 8 + (summaryOffset++ * 8);
         const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
         group.setAttribute('class', 'edge-rolled-up-group');
+        const hitbox = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        hitbox.setAttribute('class', 'edge-interaction-hitbox');
+        hitbox.setAttribute('x1', fromCenter.x);
+        hitbox.setAttribute('y1', fromCenter.y + offset);
+        hitbox.setAttribute('x2', toCenter.x);
+        hitbox.setAttribute('y2', toCenter.y + offset);
+        group.appendChild(hitbox);
         const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
         line.setAttribute('class', 'edge-rolled-up');
         line.setAttribute('x1', fromCenter.x);
