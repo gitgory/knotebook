@@ -150,6 +150,7 @@ const state = {
     // Editor state
     editorSnapshot: null,          // Snapshot for cancel/revert
     removedTagsInSession: new Set(), // Tags marked for removal in batch edit
+    portalEditorDraft: [],         // Unsaved portal definitions for the single-note editor
 
     // Undo state
     undoSnapshot: null,            // { nodes: [], edges: [], selectedNodes: [] } for single-level undo
@@ -551,6 +552,43 @@ function getNodeById(nodeId) {
 }
 
 /**
+ * Verifies that every node in a canonical tree has a unique, non-empty ID.
+ * Duplicate IDs make project-wide edges and source-note indexes ambiguous, so
+ * callers must reject the notebook rather than silently choosing one node.
+ *
+ * @param {Object[]} nodes - Root or nested canonical note array
+ * @throws {Error} If an ID is missing or duplicated
+ */
+function assertUniqueNodeIds(nodes) {
+    const seen = new Set();
+    const duplicates = new Set();
+    let missingCount = 0;
+
+    const walk = (items) => {
+        for (const node of items || []) {
+            if (!node || typeof node.id !== 'string' || node.id.trim() === '') {
+                missingCount++;
+            } else if (seen.has(node.id)) {
+                duplicates.add(node.id);
+            } else {
+                seen.add(node.id);
+            }
+            walk(node && node.children);
+        }
+    };
+    walk(nodes);
+
+    if (missingCount > 0) {
+        throw new Error(`Notebook contains ${missingCount} note${missingCount === 1 ? '' : 's'} without a valid ID`);
+    }
+    if (duplicates.size > 0) {
+        const labels = Array.from(duplicates).slice(0, 3).join(', ');
+        const suffix = duplicates.size > 3 ? ', …' : '';
+        throw new Error(`Notebook contains duplicate note ID${duplicates.size === 1 ? '' : 's'}: ${labels}${suffix}`);
+    }
+}
+
+/**
  * Migrates a node from legacy storage (top-level completion/priority) to unified storage (node.fields).
  * Called during data load to ensure backwards compatibility.
  * @param {Object} node - Node object to migrate
@@ -597,6 +635,54 @@ function migrateAllNodeFields(nodes) {
             migrateAllNodeFields(node.children);
         }
     }
+}
+
+/**
+ * Normalizes portal definitions recursively without computing memberships.
+ * A portal presentation belongs to its definition so independently expanded
+ * zones cannot overwrite one another's geometry.
+ *
+ * @param {Object[]} nodes - Root or nested canonical note array
+ */
+function migrateNodePortals(nodes) {
+    for (const node of nodes || []) {
+        const rawPortals = Array.isArray(node.portals) ? node.portals : [];
+        const usedPortalIds = new Set();
+        node.portals = rawPortals
+            .filter(portal => portal && typeof portal === 'object')
+            .map((portal, index) => {
+                const baseId = typeof portal.id === 'string' && portal.id.trim()
+                    ? portal.id
+                    : `portal-${node.id}-${index + 1}`;
+                let id = baseId;
+                let suffix = 2;
+                while (usedPortalIds.has(id)) id = `${baseId}-${suffix++}`;
+                usedPortalIds.add(id);
+                return {
+                    ...portal,
+                    id,
+                    name: typeof portal.name === 'string' ? portal.name.trim() : '',
+                    query: normalizePortalQuery(typeof portal.query === 'string' ? portal.query : ''),
+                    scope: 'notebook',
+                    presentation: portal.presentation && typeof portal.presentation === 'object'
+                        ? { ...portal.presentation }
+                        : { mode: 'collapsed' }
+                };
+            });
+        for (const portal of node.portals) {
+            portal.presentation.mode = portal.presentation.mode === 'expanded' ? 'expanded' : 'collapsed';
+        }
+        migrateNodePortals(node.children);
+    }
+}
+
+/**
+ * Normalizes hashtag literals while preserving the existing query language.
+ * @param {string} query - Portal query text
+ * @returns {string} Trimmed query with hashtag literals lower-cased
+ */
+function normalizePortalQuery(query) {
+    return query.trim().replace(/(^|[\s(])#([^\s()]+)/g, (match, prefix, tag) => `${prefix}#${tag.toLowerCase()}`);
 }
 
 // ============================================================================
@@ -1501,6 +1587,13 @@ async function openProject(projectId) {
         return;
     }
 
+    try {
+        assertUniqueNodeIds(data.nodes || []);
+    } catch (error) {
+        await showAlert(error.message, 'Cannot Open Notebook');
+        return;
+    }
+
     state.currentProjectId = projectId;
 
     // Reset navigation
@@ -1511,12 +1604,10 @@ async function openProject(projectId) {
 
     // Migrate legacy storage formats
     migrateAllNodeFields(state.nodes);      // Field storage: top-level → node.fields
+    migrateNodePortals(state.nodes);
     const edgeMigration = migrateProjectEdges(data);
     state.projectEdges = edgeMigration.edges;
     state.edges = state.projectEdges;
-    if (edgeMigration.invalidCount > 0) {
-        console.warn(`Dropped ${edgeMigration.invalidCount} invalid edge(s) while opening notebook.`);
-    }
     rebuildNodeIndex();
     state.rootNodes = state.nodes;
     state.rootEdges = state.projectEdges;
@@ -4873,6 +4964,7 @@ function deepCopyNode(node, offsetX = 0, offsetY = 0, idMapping = {}) {
         content: node.content,
         hashtags: [...(node.hashtags || [])],
         fields: { ...(node.fields || {}) },  // Copy all fields
+        portals: clonePortalDefinitions(node.portals),
         position: {
             x: node.position.x + offsetX,
             y: node.position.y + offsetY
@@ -4910,6 +5002,7 @@ function deepCopyNodeForUndo(node) {
         content: node.content,
         hashtags: [...(node.hashtags || [])],
         fields: { ...(node.fields || {}) },
+        portals: clonePortalDefinitions(node.portals),
         position: { ...node.position },
         zIndex: node.zIndex || 0,
         children: [],
@@ -5668,12 +5761,153 @@ function getEditorElements() {
     };
 }
 
+function clonePortalDefinitions(portals) {
+    return (portals || []).map(portal => ({
+        ...portal,
+        dropBehavior: portal.dropBehavior ? { ...portal.dropBehavior } : undefined,
+        presentation: portal.presentation ? { ...portal.presentation } : { mode: 'collapsed' }
+    }));
+}
+
+function getPortalEditorElements() {
+    return {
+        section: document.getElementById('portal-editor-section'),
+        list: document.getElementById('portal-editor-list')
+    };
+}
+
+function setPortalEditorVisibility(hidden) {
+    getPortalEditorElements().section.classList.toggle('hidden', hidden);
+}
+
+function getPortalCandidates() {
+    const candidates = [];
+    const walk = (nodes) => {
+        for (const node of nodes || []) {
+            candidates.push(node);
+            walk(node.children);
+        }
+    };
+    walk(state.rootNodes.length > 0 ? state.rootNodes : state.nodes);
+    return candidates;
+}
+
+function getPortalQueryError(query) {
+    if (!query) return 'Enter a query.';
+    const tokens = tokenizeQuery(query);
+    let depth = 0;
+    for (const token of tokens) {
+        if (token === '(') depth++;
+        if (token === ')') depth--;
+        if (depth < 0) return 'Parentheses do not match.';
+    }
+    if (depth !== 0) return 'Parentheses do not match.';
+    return parseExpression(tokens) ? '' : 'Enter a valid query.';
+}
+
+function updatePortalPreview(row, sourceNode) {
+    const queryInput = row.querySelector('.portal-query');
+    const preview = row.querySelector('.portal-preview');
+    const error = row.querySelector('.portal-error');
+    const query = normalizePortalQuery(queryInput.value);
+    const queryError = getPortalQueryError(query);
+    error.textContent = queryError;
+    if (queryError) {
+        preview.textContent = '';
+        return;
+    }
+    const ast = parseExpression(tokenizeQuery(query));
+    const matches = getPortalCandidates().filter(node => node.id !== sourceNode.id && evaluateAST(node, ast));
+    preview.textContent = `${matches.length} matching ${matches.length === 1 ? 'note' : 'notes'}`;
+}
+
+function renderPortalEditor(sourceNode) {
+    const { list } = getPortalEditorElements();
+    list.replaceChildren();
+    state.portalEditorDraft.forEach((portal, index) => {
+        const row = document.createElement('div');
+        row.className = 'portal-row';
+        row.dataset.index = String(index);
+
+        const nameLabel = document.createElement('label');
+        nameLabel.textContent = 'Name';
+        const nameInput = document.createElement('input');
+        nameInput.className = 'portal-name';
+        nameInput.type = 'text';
+        nameInput.value = portal.name || '';
+        nameInput.placeholder = 'e.g., UI-related notes';
+        nameLabel.appendChild(nameInput);
+
+        const queryLabel = document.createElement('label');
+        queryLabel.textContent = 'Query';
+        const queryInput = document.createElement('input');
+        queryInput.className = 'portal-query';
+        queryInput.type = 'text';
+        queryInput.value = portal.query || '';
+        queryInput.placeholder = 'e.g., #UI or completion=done';
+        queryLabel.appendChild(queryInput);
+
+        const preview = document.createElement('p');
+        preview.className = 'portal-preview';
+        const error = document.createElement('p');
+        error.className = 'portal-error';
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.className = 'portal-remove';
+        remove.textContent = 'Remove portal';
+        remove.addEventListener('click', () => {
+            state.portalEditorDraft.splice(index, 1);
+            renderPortalEditor(sourceNode);
+        });
+        queryInput.addEventListener('input', () => updatePortalPreview(row, sourceNode));
+
+        row.append(nameLabel, queryLabel, preview, error, remove);
+        list.appendChild(row);
+        updatePortalPreview(row, sourceNode);
+    });
+}
+
+function createPortalDefinition(nodeId) {
+    return {
+        id: `portal-${nodeId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        name: '',
+        query: '',
+        scope: 'notebook',
+        presentation: { mode: 'collapsed' }
+    };
+}
+
+function readPortalDefinitions(sourceNode) {
+    const rows = Array.from(getPortalEditorElements().list.querySelectorAll('.portal-row'));
+    const portals = [];
+    for (const row of rows) {
+        const index = Number(row.dataset.index);
+        const original = state.portalEditorDraft[index];
+        const name = row.querySelector('.portal-name').value.trim();
+        const query = normalizePortalQuery(row.querySelector('.portal-query').value);
+        const error = !name ? 'Enter a portal name.' : getPortalQueryError(query);
+        row.querySelector('.portal-error').textContent = error;
+        if (error) return { valid: false, portals: [] };
+        portals.push({
+            ...original,
+            name,
+            query,
+            scope: 'notebook',
+            presentation: original.presentation ? { ...original.presentation } : { mode: 'collapsed' }
+        });
+    }
+    return { valid: true, portals };
+}
+
 /**
  * Opens the editor in batch mode for editing multiple nodes.
  * @param {Array} nodes - Array of node objects to edit
  */
 function openBatchEditor(nodes) {
     if (nodes.length === 0) return;
+
+    state.portalEditorDraft = [];
+    setPortalEditorVisibility(true);
 
     // Snapshot all nodes for cancel/revert
     const snapshots = nodes.map(node => {
@@ -5751,7 +5985,8 @@ function openSingleEditor(node, nodeId) {
         title: node.title || '',
         content: node.content || '',
         hashtags: [...(node.hashtags || [])],
-        fields: { ...(node.fields || {}) }  // Copy all fields
+        fields: { ...(node.fields || {}) },  // Copy all fields
+        portals: clonePortalDefinitions(node.portals)
     };
     state.editorSnapshot = snapshot;
 
@@ -5775,6 +6010,10 @@ function openSingleEditor(node, nodeId) {
 
     // Render and load Second-Class custom fields
     renderCustomFieldsInEditor(node, null, false);
+
+    state.portalEditorDraft = clonePortalDefinitions(node.portals);
+    setPortalEditorVisibility(false);
+    renderPortalEditor(node);
 
     // Update enter button based on whether node has children
     if (node.children && node.children.length > 0) {
@@ -6282,6 +6521,8 @@ function closeEditor() {
     delete modal.dataset.nodeId;
     delete modal.dataset.batchMode;
     state.removedTagsInSession.clear();
+    state.portalEditorDraft = [];
+    setPortalEditorVisibility(true);
 }
 
 /**
@@ -6315,6 +6556,7 @@ function cancelEditor() {
             node.hashtags = state.editorSnapshot.hashtags;
             // Restore all fields from snapshot
             node.fields = { ...state.editorSnapshot.fields };
+            node.portals = clonePortalDefinitions(state.editorSnapshot.portals);
         }
 
         // Delete empty nodes (new node that was never filled in)
@@ -6458,7 +6700,7 @@ async function validateSingleNodeInput(titleValue, contentValue) {
  * @param {string} contentValue - Content textarea value
  * @param {Object} fieldValues - Object with all field values (First-Class and Second-Class)
  */
-function saveSingleNode(node, nodeId, titleValue, contentValue, fieldValues) {
+function saveSingleNode(node, nodeId, titleValue, contentValue, fieldValues, portals) {
     if (!node) return;
 
     node.title = titleValue;
@@ -6468,6 +6710,7 @@ function saveSingleNode(node, nodeId, titleValue, contentValue, fieldValues) {
 
     // Update all fields (First-Class and Second-Class)
     updateNodeFields(node, fieldValues);
+    node.portals = clonePortalDefinitions(portals);
 
     // Delete empty nodes (created but never filled in)
     if (!node.title.trim() && !node.content.trim()) {
@@ -6520,8 +6763,11 @@ async function saveEditor() {
     } else {
         if (!await validateSingleNodeInput(formData.titleInput, formData.textarea)) return;
 
+        const portalResult = readPortalDefinitions(node);
+        if (!portalResult.valid) return;
+
         // formData already contains all field values from getAllFieldValues()
-        saveSingleNode(node, nodeId, formData.titleInput, formData.textarea, formData);
+        saveSingleNode(node, nodeId, formData.titleInput, formData.textarea, formData, portalResult.portals);
 
         // Save all Second-Class custom fields from editor
         saveCustomFieldsFromEditor(node, null, false);
@@ -7809,10 +8055,6 @@ function removeNodesFromSourceNotebook(sourceProjectId, nodeIds) {
         project.edges = project.edges.filter(edge =>
             !removedNodeIds.has(edge.from) && !removedNodeIds.has(edge.to)
         );
-        if (edgeMigration.invalidCount > 0) {
-            console.warn(`Dropped ${edgeMigration.invalidCount} invalid edge(s) while moving notes.`);
-        }
-
         // Save back to localStorage
         localStorage.setItem(STORAGE_KEY_PREFIX + sourceProjectId, JSON.stringify(project));
 
@@ -8667,6 +8909,8 @@ function validateImportData(data) {
         throw new Error('Missing or invalid nodes array');
     }
 
+    assertUniqueNodeIds(data.nodes);
+
     if (!Array.isArray(data.edges)) {
         throw new Error('Missing or invalid edges array');
     }
@@ -8732,10 +8976,8 @@ async function importFromFile() {
                     hiddenHashtags: data.hiddenHashtags || [],
                     theme: data.theme || getCurrentTheme()
                 };
+                migrateNodePortals(projectData.nodes);
                 const edgeMigration = migrateProjectEdges(projectData);
-                if (edgeMigration.invalidCount > 0) {
-                    console.warn(`Dropped ${edgeMigration.invalidCount} invalid edge(s) while importing ${file.name}.`);
-                }
                 localStorage.setItem(STORAGE_KEY_PREFIX + projectId, JSON.stringify(projectData));
 
                 // Update note count
@@ -10123,6 +10365,15 @@ function initEventListeners() {
     // Editor buttons — Cancel (X) reverts changes, Save closes (mobile only)
     document.getElementById('editor-cancel').addEventListener('click', cancelEditor);
     document.getElementById('editor-save-mobile').addEventListener('click', saveEditor);
+    document.getElementById('portal-add').addEventListener('click', () => {
+        const modal = document.getElementById('editor-modal');
+        if (modal.dataset.batchMode === 'true') return;
+        const node = getNodeById(modal.dataset.nodeId);
+        if (!node) return;
+        state.portalEditorDraft.push(createPortalDefinition(node.id));
+        renderPortalEditor(node);
+        document.querySelector('#portal-editor-list .portal-row:last-child .portal-name')?.focus();
+    });
     // Click outside editor content to save (only if mousedown also started on backdrop,
     // so dragging a text selection out of the editor doesn't accidentally close it)
     let editorMouseDownOnBackdrop = false;
@@ -10144,6 +10395,8 @@ function initEventListeners() {
 
         // Sync editor fields to node before navigating
         if (node) {
+            const portalResult = readPortalDefinitions(node);
+            if (!portalResult.valid) return;
             const titleInput = document.getElementById('note-title');
             const textarea = document.getElementById('note-text');
             node.title = titleInput.value;
@@ -10154,6 +10407,7 @@ function initEventListeners() {
             // Update all First Class Fields
             const fieldValues = getAllFieldValues();
             updateNodeFields(node, fieldValues);
+            node.portals = clonePortalDefinitions(portalResult.portals);
         }
 
         state.editorSnapshot = null;

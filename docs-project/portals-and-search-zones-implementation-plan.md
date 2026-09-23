@@ -3,7 +3,8 @@
 Created: 2026-09-21
 Status: In progress. Phase 0 is complete; the Phase 1 edge-registry
 foundation and Phase 2 contextual edge views are implemented and manually
-validated. Portal and search-zone phases have not started.
+validated. Phase 3 portal-definition configuration is implemented pending
+browser validation; search-zone phases have not started.
 
 ## Relationship to the Design Roadmap
 
@@ -19,9 +20,10 @@ the first release.
 | Area | Status | Notes |
 | --- | --- | --- |
 | Phase 0: fixtures and compatibility baseline | Complete | Import fixtures and schema documentation were added; the legacy, system-architecture, media-recommendations, and invalid-edge fixtures were manually checked. |
-| Phase 1: global edge registry | In progress | Version 2 stores explicit edges once at project root and migrates legacy child-edge data. Deletion, duplication, moves, undo, save, export, and import use the registry. Closure work remains below. |
+| Phase 1: global edge registry | Complete | Version 2 stores explicit edges once at project root and migrates legacy child-edge data. Deletion, duplication, moves, undo, save, export, and import use the registry; focused destructive-operation regressions pass. |
 | Phase 2: contextual edge rendering | Implemented and manually validated | Direct edges, labelled boundary continuations, and inspectable rolled-up summaries render from the global registry. Boundary endpoints navigate to the canonical note; rolled-up summaries disclose their contributing source edges. |
-| Phases 3–6: portals, zones, and drop updates | Not started | No portal data, editor, query-result rendering, zones, or drop mutations have been added. |
+| Phase 3: portal query model and editor | Implemented; browser validation pending | Portal definitions normalize on load/import, persist through save/export/import, and can be edited with query validation and a notebook-scope match preview. Batch editing leaves portals unavailable. |
+| Phases 4–6: portal views, zones, and drop updates | Not started | No query-result rendering, zones, or drop mutations have been added. |
 
 The user manually verified the system-architecture and media-recommendations
 fixtures, including clickable boundary and rolled-up edge affordances. All
@@ -53,12 +55,19 @@ After the phased work is complete, a user can:
 The current implementation is a vanilla-JavaScript, immediate-mode SVG app.
 Relevant existing code is concentrated in `scripts/app.js`:
 
-- `state.nodes` and `state.edges` represent the currently entered level.
-- Root edges live at project level; child edges live in `node.childEdges`.
+- `state.nodes` represents the canonical nodes in the currently entered level.
+- `state.projectEdges` is the project-wide explicit-edge registry; `state.edges`
+  is a compatibility alias used by current render and interaction code.
 - `enterNode()` and `goBack()` swap the current-level arrays.
 - `renderNodes()` and `renderEdges()` assume every rendered node is a native
   node in `state.nodes` and every edge has both endpoints there.
 - `state.nodeIndex` indexes only the current level.
+- `buildProjectNodeContext()` currently derives recursive source-note and
+  parent maps for edge rendering and boundary navigation; a persistent project
+  index remains a portal-performance improvement, not a prerequisite already
+  present in state.
+- Notebook open and file import reject missing or duplicate canonical note IDs
+  with a user-visible error, because a project-wide source ID must be unique.
 - `parseExpression()` and `evaluateAST()` already implement the required
   tag/text/field/AND/OR/NOT matching.
 - Import/load already uses explicit migration helpers for field and edge
@@ -113,14 +122,15 @@ All notes retain their current data. Portal-capable notes gain optional data:
       dropBehavior: {
         type: "addTag",
         tag: "#UI"
+      },
+      presentation: {
+        mode: "collapsed",
+        position: { x: 200, y: 100 },
+        width: 620,
+        height: 420
       }
     }
-  ],
-  portalPresentation: {
-    mode: "collapsed",
-    width: 620,
-    height: 420
-  }
+  ]
 }
 ```
 
@@ -128,12 +138,18 @@ Rules:
 
 - `portals` defaults to `[]`; old notebooks need no prompt or data rewrite
   beyond defaults at load time.
-- `portalPresentation` is optional and defaults to `collapsed`.
-- `width` and `height` matter only for the expanded presentation. `position`
-  stays the note's canonical position.
+- Every portal definition has an optional `presentation`, which defaults to
+  `collapsed`; there is no note-level zone presentation.
+- `presentation.position`, `width`, and `height` matter only for that
+  definition's expanded zone. `node.position` remains the canonical position
+  of the collapsed note and is never changed by zone move/resize gestures.
+- On first expansion, initialize `presentation.position` from `node.position`.
+  Thereafter that zone reopens at its last presentation position, while
+  collapsing it restores the ordinary note at its unchanged canonical position.
 - A note may store multiple portal definitions. In version one their results
-  are unioned in the entered/expanded view while preserving membership
-  provenance for future labels and inspection.
+  are unioned only in the entered note view while preserving membership
+  provenance. An expanded zone belongs to one selected definition, so its
+  query and drop behaviour are always unambiguous.
 - Portal membership is computed, never persisted as copies of source notes.
 
 ### Portal scopes
@@ -171,6 +187,7 @@ state.currentView      // derived ViewModel, rebuilt before render
       instanceId: "native:note-request-job",
       sourceId: "note-request-job",
       role: "native",             // native | portal
+      contextId: "canvas:root",   // ordinary canvas | zone:<portal-note-id>:<portal-id>
       portalIds: ["portal-ui-related"],
       position: { x: 80, y: 100 }
     }
@@ -184,6 +201,31 @@ state.currentView      // derived ViewModel, rebuilt before render
 edges. `instanceId` is view-local identity used only by rendering and pointer
 interaction. A source note may have multiple instances in separate zones, but
 only one instance in a single ordinary child/portal view.
+
+### Edge-instance resolution
+
+Explicit edges remain pairs of `sourceId` values; instances do not create or
+own edges. Resolve each source edge to at most one visual representation in a
+view:
+
+1. Gather local contexts in which each endpoint has an instance. An ordinary
+   canvas uses `canvas:<contextNodeId|root>` and each expanded zone uses
+   `zone:<portal-note-id>:<portal-id>`.
+2. If the endpoints share one or more contexts, draw one direct edge in the
+   ordinary canvas when available; otherwise draw it in the lexicographically
+   first shared zone context. Use that context's two instances.
+3. If both endpoints are visible but share no context, choose one stable
+   primary instance for each endpoint (native first, then lexicographically
+   first zone ID) and draw a paired cross-context continuation labelled with
+   the remote source note. It behaves like the existing boundary affordance;
+   it is not a direct line spanning zones.
+4. If exactly one endpoint is visible, render the existing single boundary
+   continuation from that endpoint's stable primary instance. If neither is
+   visible, use the existing rolled-up rule.
+
+This ranking is deterministic, so unrelated zone movement and the presence of
+additional portal appearances cannot duplicate an edge or make pointer
+interaction target an arbitrary instance.
 
 ## Phase 0 — Safety Baseline and Fixtures
 
@@ -248,22 +290,24 @@ notebooks and existing same-level behavior.
   root and legacy child edges.
 - Normalized and de-duplicated imported edges; invalid, missing-endpoint, and
   self edges are omitted rather than creating phantom notes.
+- Rejects notebook data with missing or duplicate canonical note IDs instead of
+  silently overwriting a source record in a project index.
 - Updated persistence and common edge-affecting operations to use the global
   registry, including save/export/import, undo, subtree duplication, deletion,
   and move cleanup.
 - Added fixtures for legacy nested edges, the system-architecture example, the
   media-recommendations example, malformed edges, and Phase 0 validation.
 
-### Remaining closure work
+### Deferred follow-up
 
-- Add an editor interaction for creating an edge whose target is outside the
-  active canvas; the registry and renderer support such edges, but the current
-  connect gesture only targets visible notes.
-- Replace console-only reporting of discarded invalid edges and removed
-  cross-notebook move edges with clear, user-visible warning/confirmation UI.
-- Manually regression-test parent deletion/promotion with remote edges,
-  nested-subtree duplication with internal edges, and moving a nested subtree
-  between notebooks.
+Cross-context edge creation is deferred and does not block portal work. If it
+is added later, prefer a contextual action that searches canonical paths over
+making the canvas connect gesture a global graph picker.
+
+Invalid imported edges are normalized or discarded quietly. Edges are
+notebook-local: when notes move to another notebook, edges whose two endpoints
+move together are retained there, while edges to notes left behind are removed
+without a separate warning or confirmation.
 
 ### Important regression cases
 
@@ -272,9 +316,10 @@ notebooks and existing same-level behavior.
 - Promoting native children after parent deletion retains their valid edges.
 - Duplicating a subtree remaps only edges whose two endpoints were duplicated;
   it must not accidentally connect copied nodes to the originals.
-- Moving nodes between notebooks either moves their internal edges and removes
-  cross-notebook edges with a confirmation, or blocks the move until a policy
-  is chosen. Do not silently leave dangling edges.
+- Moving nodes between notebooks retains edges whose two endpoints move
+  together and removes every edge to a note left behind. Edges never span
+  notebooks, and the operation does not require a separate warning or
+  confirmation.
 
 ### Exit criteria
 
@@ -340,8 +385,8 @@ Let any note define portal queries while changing no canvas presentation yet.
 
 ### Implementation steps
 
-1. Add `migrateNodePortals(nodes)` to normalize `portals` and
-   `portalPresentation` defaults recursively on load/import.
+1. Add `migrateNodePortals(nodes)` to normalize `portals` and each portal
+   definition's `presentation` defaults recursively on load/import.
 2. Add portal validation helpers:
    - trim name and query;
    - parse through `parseExpression()`;
@@ -350,7 +395,7 @@ Let any note define portal queries while changing no canvas presentation yet.
      searches.
 3. Add a **Portals** section to the existing single-note editor:
    - list portal definitions;
-   - add, rename, edit query, change scope, and delete;
+   - add, rename, edit a notebook-scope query, and delete;
    - preserve the existing batch editor by disabling portal edits in batch
      mode for version one;
    - make Cancel restore portal changes using the existing editor snapshot.
@@ -365,6 +410,16 @@ Let any note define portal queries while changing no canvas presentation yet.
 - An old notebook opens without visible change.
 - A user can configure `#UI` or `completion=done AND location=Hulu` in a note
   editor, save, reload, and export/import it without data loss.
+
+### Delivered
+
+- Added recursive portal-definition normalization with unique local IDs,
+  notebook scope, normalized hashtag literals, and per-definition collapsed
+  presentation defaults.
+- Added a single-note **Portals** editor section with add, edit, remove, query
+  validation, and a self-excluding notebook match preview.
+- Preserved portal definitions during save, import, export, duplication, undo,
+  and editor cancel. Batch editing intentionally does not expose portal edits.
 
 ## Phase 4 — Collapsed Portal Views
 
@@ -395,8 +450,8 @@ deduplicated query results.
    The marker must not obscure existing completion, priority, child-stack, or
    tag indicators.
 6. Use the same combined view for direct-edge classification so a real edge is
-   shown normally whenever both source notes are visible via native or portal
-   instances.
+   shown normally whenever both source notes have instances in the same local
+   context. Apply edge-instance resolution for every other visibility case.
 
 ### Exit criteria
 
@@ -410,45 +465,55 @@ deduplicated query results.
 
 ### Goal
 
-Render the same combined portal view directly on the parent canvas.
+Render one selected portal definition and the note's native children directly
+on the parent canvas.
 
 ### Implementation steps
 
-1. Add a node context-menu/editor action: **Expand on canvas** / **Collapse
-   to node**. It is available only when the note has native children or a
-   portal definition.
+1. Add a portal-definition action: **Expand on canvas** / **Collapse to
+   node**. When a note has multiple definitions, the menu names each one and
+   expands/collapses that definition independently.
 2. Add SVG zone layers in a deliberate z-order:
    - zone backgrounds;
    - zone labels and resize handles;
    - edges;
    - note instances;
    - selection and interaction overlays.
-3. Render an expanded portal as a resizable region using
-   `portalPresentation.width` and `.height` anchored at its canonical
-   position. Its title remains visible; its ordinary collapsed node is not
-   rendered separately in that parent view.
-4. Reuse `buildCombinedView()` inside the zone, but transform its automatic
-   layout into zone-local bounds.
+3. Render an expanded portal definition as a resizable region using its
+   `presentation.position`, `.width`, and `.height`. Initialize that position
+   from the portal note's canonical `position` the first time it is expanded.
+   Its title remains visible; its ordinary collapsed node is not rendered
+   separately in that parent view.
+4. Reuse the native-child layout plus `getPortalMatches()` for the selected
+   definition inside the zone, and transform the result into zone-local bounds.
 5. Implement move and resize gestures for the zone itself. These update only
-   the portal note's canonical position/presentation size and do not change
-   portal-member notes.
-6. Support overlap in the layout engine:
+   the definition's `presentation.position` and its size; they never update
+   the portal note's canonical `position` or portal-member notes.
+6. Extend edge rendering with edge-instance resolution. Draw an explicit edge
+   once in its selected shared context; otherwise render paired cross-context
+   continuations. Never create an edge per portal-instance pair.
+7. Support overlap in the layout engine:
    - calculate each instance's matching zone set;
    - place notes matching all overlapping zones in their geometric shared
      area when it has usable space;
-   - otherwise retain separate portal instances in each relevant non-overlap
-     region;
+   - when a shared area has no usable space, place each qualifying note once
+     in a labelled intersection overflow strip rather than an exclusive area;
+   - retain separate portal instances only for zones that do not geometrically
+     overlap;
    - use collision avoidance and a clear empty-state message when an
      intersection has no qualifying notes.
-7. Recalculate membership and layout after source field/tag edits, portal
+8. Recalculate membership and layout after source field/tag edits, portal
    query edits, and zone geometry changes. Debounce expensive recomputation
    during continuous resize/drag events.
 
 ### Exit criteria
 
-- Expanding a portal note shows the same source-note set as entering it.
-- Collapsing it hides only the expanded presentation; no source note, edge, or
-  canonical membership changes.
+- Expanding a portal definition shows the note's native children plus exactly
+  that definition's matching source-note set. For a note with one definition,
+  this is the same source-note set as entering the note.
+- Collapsing it hides only the expanded presentation and restores the
+  unchanged canonical card position; no source note, edge, or canonical
+  membership changes.
 - Overlapping `media=show`, `location=Hulu`, and `completion=todo` zones show
   only triple-matching notes in their shared area.
 
@@ -554,7 +619,6 @@ format/version notice only if an old client cannot safely reload the newer file.
 
 ## Decisions Required Before Coding Each Phase
 
-- **Phase 1:** Confirm the cross-notebook edge policy for Move to Notebook.
 - **Phase 2:** Confirm whether boundary endpoint activation navigates directly
   first (recommended) or opens an in-place preview.
 - **Phase 3:** Confirm whether `notebook` scope is sufficient for the initial
@@ -566,8 +630,7 @@ format/version notice only if an old client cannot safely reload the newer file.
 
 ## Recommended Next Implementation Slice
 
-Close Phase 1 before beginning portal UI: add cross-context edge creation,
-make destructive edge consequences visible to the user, and complete the
-three remaining destructive-operation regression cases. The global registry
-and contextual renderers already unlock the User/UI/Server example and provide
-the identity/view-model foundation required by portals and zones.
+Begin Phase 4 collapsed portal views after browser validation of the editor.
+In parallel or before a release, run the broader manual test matrix. The global
+registry and contextual renderers already unlock the User/UI/Server example and
+provide the identity/view-model foundation required by portals and zones.

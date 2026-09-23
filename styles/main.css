@@ -1153,6 +1153,91 @@ body {
     color: var(--accent);
 }
 
+#portal-editor-section {
+    border-top: 1px solid var(--surface);
+    margin-top: 16px;
+    padding-top: 14px;
+}
+
+#portal-editor-section.hidden {
+    display: none;
+}
+
+.portal-editor-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.portal-editor-heading h4 {
+    margin: 0;
+    color: var(--accent);
+}
+
+#portal-add,
+.portal-remove {
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    padding: 6px 10px;
+}
+
+#portal-add {
+    background: var(--surface);
+    color: var(--text-primary);
+}
+
+.portal-editor-help,
+.portal-preview,
+.portal-error {
+    color: var(--text-secondary);
+    font-size: 12px;
+    line-height: 1.4;
+    margin: 6px 0;
+}
+
+.portal-row {
+    border: 1px solid var(--surface);
+    border-radius: 6px;
+    margin-top: 10px;
+    padding: 10px;
+}
+
+.portal-row label {
+    color: var(--text-secondary);
+    display: block;
+    font-size: 12px;
+    margin: 8px 0 4px;
+}
+
+.portal-row input {
+    background: var(--bg-primary);
+    border: 1px solid var(--surface);
+    border-radius: 4px;
+    box-sizing: border-box;
+    color: var(--text-primary);
+    padding: 7px 8px;
+    width: 100%;
+}
+
+.portal-row input:focus {
+    border-color: var(--accent);
+    outline: none;
+}
+
+.portal-remove {
+    background: transparent;
+    color: #f87171;
+    margin-top: 8px;
+    padding-left: 0;
+}
+
+.portal-error {
+    color: #f87171;
+}
+
 #editor-cancel {
     background: #dc2626;
     color: #fff;

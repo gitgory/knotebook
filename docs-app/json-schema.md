@@ -32,6 +32,20 @@ Note Structure:
   "position": { "x": 100, "y": 200 },
   "zIndex": 0,
   "children": [ /* nested note objects (same structure, recursive) */ ],
+  "portals": [
+    {
+      "id": "portal-ui-related",
+      "name": "UI-related notes",
+      "query": "#ui",
+      "scope": "notebook",
+      "presentation": {
+        "mode": "collapsed",
+        "position": { "x": 200, "y": 100 },
+        "width": 620,
+        "height": 420
+      }
+    }
+  ],
   "childEdges": [ /* edges between children: { from, to, directed } objects */ ],
   "created": "2026-01-21T12:00:00Z",
   "modified": "2026-01-21T12:00:00Z"
@@ -43,6 +57,11 @@ Note Structure:
 is one project-wide registry: either endpoint may be any note in the nested
 tree. `hashtagColors` maps normalized hashtags to hex colors.
 `hiddenHashtags` hides tags from cards without removing them from data.
+
+`portals` is optional. Each definition has a unique ID within its note, a
+non-empty name and query, and a `notebook` scope. Its optional `presentation`
+is stored with that definition so expanded zones remain independent. Portal
+membership is derived at runtime and is never exported as copied notes.
 
 Browser localStorage additionally persists a `theme` string and a `viewport`
 object (`{ x, y, zoom }`). They are honored on load but are not currently
@@ -82,3 +101,7 @@ migration, Knotebook recursively collects root edges and legacy `childEdges`,
 normalizes/deduplicates them, and drops edges whose endpoint is missing or
 self-referential. New saves and exports use only the root project-wide edge
 registry; `childEdges` are removed from migrated notes.
+
+Every canonical note must have a non-empty, unique `id` across the entire
+nested tree. Import and notebook open reject duplicate or missing IDs because
+they would make project-wide edges ambiguous.

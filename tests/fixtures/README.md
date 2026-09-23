@@ -3,14 +3,21 @@
 These fixtures support Phase 0 of the portals and dynamic-search-zones plan.
 They are intentionally small enough to inspect and import by hand.
 
+`node tests/global-edge-regressions.js` additionally checks the destructive
+project-wide-edge cases without requiring a browser.
+
+`node tests/portal-definition-regressions.js` checks portal-definition
+normalization without requiring a browser.
+
 ## Files
 
 | File | Purpose | Current import expectation |
 | --- | --- | --- |
 | `legacy-nested-edges.json` | Existing v1 nested notes with legacy array-format root and child edges. | Imports successfully; legacy edges render at their native level. |
-| `system-architecture-baseline.json` | The User, UI, and Server example. UI and Server are separate parent notes with their own children. | Imports successfully with global cross-parent edges. The later boundary/rolled-up renderer will make those links visible outside a shared view. |
+| `system-architecture-baseline.json` | The User, UI, and Server example. UI and Server are separate parent notes with their own children. | Imports successfully with global cross-parent edges and renders their boundary/rolled-up representations outside a shared view. |
 | `media-recommendations.json` | A separate recommendation-database notebook with custom fields for media, location, and recommender. | Imports successfully. It provides future portal/zone query examples. |
 | `invalid-edge-endpoints.json` | Deliberately contains edges to missing note IDs. | Must never silently create phantom notes. Phase 1 should report/drop invalid edges predictably. |
+| `duplicate-note-ids.json` | Deliberately contains two canonical notes with the same ID. | Import must reject it with a clear duplicate-ID error; it must not create a notebook. |
 
 ## System Architecture Scenario
 
@@ -26,9 +33,9 @@ Return Results -> Results for User
 ```
 
 They are stored in the version-2 project-wide edge registry. Current rendering
-shows only edges whose two endpoints are in the active canvas; the boundary and
-rolled-up renderers planned after Phase 1 will expose these cross-context links
-at detail and overview levels.
+shows boundary continuations when one endpoint is visible and inspectable
+rolled-up summaries at overview level when neither endpoint is directly
+visible.
 
 ## Recommendation Queries for Later Phases
 

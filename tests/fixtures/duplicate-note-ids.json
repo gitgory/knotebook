@@ -1,0 +1,37 @@
+{
+  "version": 2,
+  "name": "Fixture - Duplicate Note IDs",
+  "created": "2026-09-22T00:00:00.000Z",
+  "nodes": [
+    {
+      "id": "duplicate-note",
+      "title": "First Note",
+      "content": "This ID is intentionally duplicated.",
+      "hashtags": [],
+      "fields": {},
+      "position": { "x": 100, "y": 100 },
+      "zIndex": 0,
+      "children": [],
+      "created": "2026-09-22T00:00:00.000Z",
+      "modified": "2026-09-22T00:00:00.000Z"
+    },
+    {
+      "id": "duplicate-note",
+      "title": "Second Note",
+      "content": "Import must reject this notebook before it is saved.",
+      "hashtags": [],
+      "fields": {},
+      "position": { "x": 400, "y": 100 },
+      "zIndex": 0,
+      "children": [],
+      "created": "2026-09-22T00:00:00.000Z",
+      "modified": "2026-09-22T00:00:00.000Z"
+    }
+  ],
+  "edges": [],
+  "hashtagColors": {},
+  "settings": {
+    "fieldDefaults": { "completion": null, "priority": null },
+    "customFields": []
+  }
+}

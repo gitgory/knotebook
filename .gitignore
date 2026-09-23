@@ -6,6 +6,8 @@ TEST_*.md
 tests/*
 !tests/fixtures/
 !tests/fixtures/**
+!tests/global-edge-regressions.js
+!tests/portal-definition-regressions.js
 
 # OS files
 .DS_Store
